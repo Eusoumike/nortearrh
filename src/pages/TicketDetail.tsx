@@ -331,6 +331,7 @@ export default function TicketDetail() {
                 <TabsList>
                   <TabsTrigger value="timeline">Histórico</TabsTrigger>
                   <TabsTrigger value="add">Registrar atendimento</TabsTrigger>
+                  <TabsTrigger value="tasks"><ListChecks className="mr-1 h-3.5 w-3.5" />Tarefas</TabsTrigger>
                 </TabsList>
               </div>
               <TabsContent value="timeline" className="m-0">
