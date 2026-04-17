@@ -26,6 +26,7 @@ export default function NewTicket() {
     channel: "portal" as TicketChannel,
     category: "",
     client_id: "" as string,
+    opened_at: nowBrasilia(),
   });
 
   const { data: clients } = useQuery({
