@@ -156,7 +156,8 @@ export default function Clients() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="p-3">
