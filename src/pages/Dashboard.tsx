@@ -357,10 +357,12 @@ export default function Dashboard() {
             )}
             {recentTickets.map((t: any) => (
               <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-muted">
-                <span className="font-mono text-[11px] text-muted-foreground w-12">#{t.ticket_number}</span>
+                <span className="font-mono text-sm font-semibold text-foreground w-14">#{String(t.ticket_number).padStart(3, "0")}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{t.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{t.client?.name ?? "Sem cliente"} · {timeAgo(t.created_at)}</p>
+                  <p className="truncate text-xs text-muted-foreground" title={formatBrazilDateTime(t.opened_at ?? t.created_at)}>
+                    {t.client?.name ?? t.client_name ?? "Sem cliente"} · {timeAgo(t.opened_at ?? t.created_at)}
+                  </p>
                 </div>
                 <PriorityBadge priority={t.priority} />
                 <StatusBadge status={t.status} />
@@ -385,15 +387,33 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {attentionClients.map((c) => (
-                <Link key={c.id} to={`/clientes/${c.id}`} className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-medium">{c.name}</p>
-                    <HealthBadge health={c.health} />
+              {attentionClients.map((c) => {
+                const inner = (
+                  <>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium">{c.name}</p>
+                      {c.hasUrgent ? (
+                        <HealthBadge health="critico" />
+                      ) : (
+                        <HealthBadge health="em_atencao" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {c.openCount} chamado{c.openCount === 1 ? "" : "s"} aberto{c.openCount === 1 ? "" : "s"}
+                      {c.hasUrgent ? " · ao menos 1 urgente" : ""}
+                    </p>
+                  </>
+                );
+                return c.clientId ? (
+                  <Link key={c.clientId} to={`/clientes/${c.clientId}`} className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted">
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={c.name} className="rounded-md border border-border bg-surface p-3">
+                    {inner}
                   </div>
-                  {c.health_reason && <p className="line-clamp-2 text-xs text-muted-foreground">{c.health_reason}</p>}
-                </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
