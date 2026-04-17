@@ -84,7 +84,7 @@ export default function TicketDetail() {
   });
 
   const updateField = useMutation({
-    mutationFn: async (patch: Record<string, any>) => {
+    mutationFn: async (patch: { priority?: TicketPriority; assigned_to?: string | null }) => {
       const { error } = await supabase.from("tickets").update(patch).eq("id", id!);
       if (error) throw error;
     },
