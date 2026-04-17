@@ -13,7 +13,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Filter, LayoutList, KanbanSquare } from "lucide-react";
 import { CHANNEL_LABEL, STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
-import { timeAgo } from "@/lib/formatters";
+import { timeAgo, formatBrazilDateTime } from "@/lib/formatters";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { TicketKanban } from "@/components/TicketKanban";
 
@@ -154,11 +154,11 @@ export default function Tickets() {
                   to={`/tickets/${t.id}`}
                   className="grid grid-cols-[60px_1fr_160px_120px_140px_120px_36px] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-muted"
                 >
-                  <span className="font-mono text-xs text-muted-foreground">#{t.ticket_number}</span>
+                  <span className="font-mono text-sm font-semibold text-foreground">#{String(t.ticket_number).padStart(3, "0")}</span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">{t.title}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {t.client?.name ?? "Sem cliente"} · {CHANNEL_LABEL[t.channel as keyof typeof CHANNEL_LABEL]}
+                      {t.client?.name ?? t.client_name ?? "Sem cliente"} · {CHANNEL_LABEL[t.channel as keyof typeof CHANNEL_LABEL]}
                     </p>
                   </div>
                   <StatusBadge status={t.status} />
@@ -170,7 +170,7 @@ export default function Tickets() {
                       <SLAIndicator deadline={t.sla_resolution_deadline} size="sm" />
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">{timeAgo(t.updated_at)}</span>
+                  <span className="text-xs text-muted-foreground" title={formatBrazilDateTime(t.updated_at)}>{timeAgo(t.updated_at)}</span>
                   {t.assignee ? (
                     <UserAvatar name={t.assignee.full_name} url={t.assignee.avatar_url} size="sm" />
                   ) : <span />}

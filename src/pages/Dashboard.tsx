@@ -9,7 +9,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { timeAgo, formatDuration } from "@/lib/formatters";
+import { timeAgo, formatDuration, formatBrazilDateTime } from "@/lib/formatters";
 import { CHANNEL_LABEL, STATUS_LABEL, TIMED_STAGES, type TicketStatus } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
@@ -157,8 +157,28 @@ export default function Dashboard() {
     return { open, overdue, approachingSla, resolvedThisWeek, avgResp, byStatus, days, channels, stageAverages };
   }, [tickets]);
 
-  const recentTickets = tickets?.slice(0, 6) ?? [];
-  const attentionClients = clients?.filter((c) => c.health !== "saudavel").slice(0, 5) ?? [];
+  const recentTickets = tickets?.slice(0, 5) ?? [];
+
+  // Clientes em atenção — critério do briefing:
+  // 3+ chamados abertos OU pelo menos 1 chamado urgente aberto
+  const attentionClients = useMemo(() => {
+    if (!tickets) return [] as { name: string; openCount: number; hasUrgent: boolean; clientId?: string | null }[];
+    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
+    const buckets = new Map<string, { name: string; openCount: number; hasUrgent: boolean; clientId?: string | null }>();
+    tickets.filter((t: any) => isOpen(t.status)).forEach((t: any) => {
+      const key = t.client?.id ?? t.client_name ?? t.organization;
+      if (!key) return;
+      const name = t.client?.name ?? t.client_name ?? t.organization ?? "Sem cliente";
+      const cur = buckets.get(key) ?? { name, openCount: 0, hasUrgent: false, clientId: t.client?.id ?? null };
+      cur.openCount += 1;
+      if (["urgente", "critica"].includes(t.priority)) cur.hasUrgent = true;
+      buckets.set(key, cur);
+    });
+    return Array.from(buckets.values())
+      .filter((b) => b.openCount >= 3 || b.hasUrgent)
+      .sort((a, b) => Number(b.hasUrgent) - Number(a.hasUrgent) || b.openCount - a.openCount)
+      .slice(0, 5);
+  }, [tickets]);
 
   const handleExport = (kind: "csv" | "pdf") => {
     if (!tickets || !stats) return;
@@ -337,10 +357,12 @@ export default function Dashboard() {
             )}
             {recentTickets.map((t: any) => (
               <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-muted">
-                <span className="font-mono text-[11px] text-muted-foreground w-12">#{t.ticket_number}</span>
+                <span className="font-mono text-sm font-semibold text-foreground w-14">#{String(t.ticket_number).padStart(3, "0")}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{t.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{t.client?.name ?? "Sem cliente"} · {timeAgo(t.created_at)}</p>
+                  <p className="truncate text-xs text-muted-foreground" title={formatBrazilDateTime(t.opened_at ?? t.created_at)}>
+                    {t.client?.name ?? t.client_name ?? "Sem cliente"} · {timeAgo(t.opened_at ?? t.created_at)}
+                  </p>
                 </div>
                 <PriorityBadge priority={t.priority} />
                 <StatusBadge status={t.status} />
@@ -365,15 +387,33 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {attentionClients.map((c) => (
-                <Link key={c.id} to={`/clientes/${c.id}`} className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-medium">{c.name}</p>
-                    <HealthBadge health={c.health} />
+              {attentionClients.map((c) => {
+                const inner = (
+                  <>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium">{c.name}</p>
+                      {c.hasUrgent ? (
+                        <HealthBadge health="critico" />
+                      ) : (
+                        <HealthBadge health="em_atencao" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {c.openCount} chamado{c.openCount === 1 ? "" : "s"} aberto{c.openCount === 1 ? "" : "s"}
+                      {c.hasUrgent ? " · ao menos 1 urgente" : ""}
+                    </p>
+                  </>
+                );
+                return c.clientId ? (
+                  <Link key={c.clientId} to={`/clientes/${c.clientId}`} className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted">
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={c.name} className="rounded-md border border-border bg-surface p-3">
+                    {inner}
                   </div>
-                  {c.health_reason && <p className="line-clamp-2 text-xs text-muted-foreground">{c.health_reason}</p>}
-                </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
