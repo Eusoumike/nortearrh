@@ -45,7 +45,7 @@ import {
   type InteractionResult,
   type TicketChannel,
 } from "@/lib/constants";
-import { formatDate, timeAgo, formatDuration } from "@/lib/formatters";
+import { formatDate, timeAgo, formatDuration, nowBrasilia, brazilInputToISO, formatBrazilDateTime, formatBrazilTime } from "@/lib/formatters";
 
 const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: string }>> = {
   nota: FileText,
@@ -55,11 +55,6 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   reuniao: Calendar,
   mudanca_status: FileText,
 };
-
-function toLocalInputValue(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default function TicketDetail() {
   const { id } = useParams();
@@ -172,7 +167,7 @@ export default function TicketDetail() {
     channel: "telefone" as TicketChannel,
     summary: "",
     result: "resolvido" as InteractionResult,
-    interaction_at: toLocalInputValue(new Date()),
+    interaction_at: nowBrasilia(),
     time_spent_minutes: "" as string,
     is_internal: true,
   });
@@ -185,7 +180,7 @@ export default function TicketDetail() {
         type: newInt.type,
         channel: newInt.channel,
         result: newInt.result,
-        interaction_at: new Date(newInt.interaction_at).toISOString(),
+        interaction_at: brazilInputToISO(newInt.interaction_at) ?? new Date().toISOString(),
         time_spent_minutes: newInt.time_spent_minutes ? parseInt(newInt.time_spent_minutes, 10) : null,
         summary: newInt.summary,
         content: newInt.summary,
@@ -210,7 +205,7 @@ export default function TicketDetail() {
         channel: "telefone",
         summary: "",
         result: "resolvido",
-        interaction_at: toLocalInputValue(new Date()),
+        interaction_at: nowBrasilia(),
         time_spent_minutes: "",
         is_internal: true,
       });
