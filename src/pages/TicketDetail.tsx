@@ -45,7 +45,7 @@ import {
   type InteractionResult,
   type TicketChannel,
 } from "@/lib/constants";
-import { formatDate, timeAgo, formatDuration } from "@/lib/formatters";
+import { timeAgo, formatDuration, nowBrasilia, brazilInputToISO, formatBrazilDateTime, formatBrazilTime } from "@/lib/formatters";
 
 const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: string }>> = {
   nota: FileText,
@@ -55,11 +55,6 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   reuniao: Calendar,
   mudanca_status: FileText,
 };
-
-function toLocalInputValue(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default function TicketDetail() {
   const { id } = useParams();
@@ -172,7 +167,7 @@ export default function TicketDetail() {
     channel: "telefone" as TicketChannel,
     summary: "",
     result: "resolvido" as InteractionResult,
-    interaction_at: toLocalInputValue(new Date()),
+    interaction_at: nowBrasilia(),
     time_spent_minutes: "" as string,
     is_internal: true,
   });
@@ -185,7 +180,7 @@ export default function TicketDetail() {
         type: newInt.type,
         channel: newInt.channel,
         result: newInt.result,
-        interaction_at: new Date(newInt.interaction_at).toISOString(),
+        interaction_at: brazilInputToISO(newInt.interaction_at) ?? new Date().toISOString(),
         time_spent_minutes: newInt.time_spent_minutes ? parseInt(newInt.time_spent_minutes, 10) : null,
         summary: newInt.summary,
         content: newInt.summary,
@@ -210,7 +205,7 @@ export default function TicketDetail() {
         channel: "telefone",
         summary: "",
         result: "resolvido",
-        interaction_at: toLocalInputValue(new Date()),
+        interaction_at: nowBrasilia(),
         time_spent_minutes: "",
         is_internal: true,
       });
@@ -263,7 +258,7 @@ export default function TicketDetail() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{ticket.title}</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            Criado por {(ticket as any).creator?.full_name ?? "—"} {timeAgo(ticket.created_at)}
+            Aberto em {formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)} · por {(ticket as any).creator?.full_name ?? "—"}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -639,10 +634,10 @@ export default function TicketDetail() {
           {/* Datas */}
           <Card className="p-5 space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datas</h3>
-            <Detail label="Criado">{formatDate(ticket.created_at)}</Detail>
-            <Detail label="Atualizado">{formatDate(ticket.updated_at)}</Detail>
-            {ticket.first_response_at && <Detail label="Primeira resposta">{formatDate(ticket.first_response_at)}</Detail>}
-            {ticket.resolved_at && <Detail label="Resolvido em">{formatDate(ticket.resolved_at)}</Detail>}
+            <Detail label="Aberto em">{formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)}</Detail>
+            <Detail label="Atualizado">{formatBrazilDateTime(ticket.updated_at)}</Detail>
+            {ticket.first_response_at && <Detail label="Primeira resposta">{formatBrazilDateTime(ticket.first_response_at)}</Detail>}
+            {ticket.resolved_at && <Detail label="Resolvido em">{formatBrazilDateTime(ticket.resolved_at)}</Detail>}
           </Card>
         </div>
       </div>

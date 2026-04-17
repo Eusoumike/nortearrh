@@ -17,13 +17,23 @@ import { timeAgo } from "@/lib/formatters";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { TicketKanban } from "@/components/TicketKanban";
 
+const VIEW_KEY = "nortear_view_chamados";
+
 export default function Tickets() {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
-  const [view, setView] = useState<"list" | "kanban">("list");
+  const [view, setView] = useState<"list" | "kanban">(() => {
+    if (typeof window === "undefined") return "list";
+    const saved = window.localStorage.getItem(VIEW_KEY);
+    return saved === "kanban" || saved === "list" ? saved : "list";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_KEY, view);
+  }, [view]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
