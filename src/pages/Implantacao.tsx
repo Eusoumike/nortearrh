@@ -74,13 +74,14 @@ export default function Implantacao() {
 
 function ImplantacaoKanban() {
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<any | null>(null);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["implantacoes"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("implantacoes")
-        .select("*, responsavel:profiles!responsavel_id(full_name, avatar_url)")
+        .select("*, responsavel:profiles!responsavel_id(full_name, avatar_url), client:clients!client_id(phone, email)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -127,38 +128,47 @@ function ImplantacaoKanban() {
   }
 
   return (
-    <div className="grid gap-3 lg:grid-cols-6">
-      {ETAPAS.map((stage) => (
-        <div
-          key={stage.key}
-          className="flex min-h-[400px] flex-col rounded-lg border border-border bg-surface-muted/30 p-2"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleDrop(e, stage.key)}
-        >
-          <div className="mb-2 flex items-center justify-between px-1">
-            <ToneBadge tone={stage.tone} size="sm">{stage.label}</ToneBadge>
-            <span className="text-[10px] text-muted-foreground">{grouped[stage.key].length}</span>
+    <>
+      <div className="grid gap-3 lg:grid-cols-6">
+        {ETAPAS.map((stage) => (
+          <div
+            key={stage.key}
+            className="flex min-h-[400px] flex-col rounded-lg border border-border bg-surface-muted/30 p-2"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, stage.key)}
+          >
+            <div className="mb-2 flex items-center justify-between px-1">
+              <ToneBadge tone={stage.tone} size="sm">{stage.label}</ToneBadge>
+              <span className="text-[10px] text-muted-foreground">{grouped[stage.key].length}</span>
+            </div>
+            <div className="flex flex-1 flex-col gap-2">
+              {grouped[stage.key].length === 0 && (
+                <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">vazio</p>
+              )}
+              {grouped[stage.key].map((it: any) => (
+                <ImplantacaoCard
+                  key={it.id}
+                  item={it}
+                  onEdit={() => setEditing(it)}
+                  onDelete={() => removeImpl.mutate(it.id)}
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex flex-1 flex-col gap-2">
-            {grouped[stage.key].length === 0 && (
-              <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">vazio</p>
-            )}
-            {grouped[stage.key].map((it: any) => (
-              <ImplantacaoCard key={it.id} item={it} onDelete={() => removeImpl.mutate(it.id)} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      <EditImplantacaoDialog item={editing} onClose={() => setEditing(null)} qc={qc} />
+    </>
   );
 }
 
-function ImplantacaoCard({ item, onDelete }: { item: any; onDelete: () => void }) {
+function ImplantacaoCard({ item, onEdit, onDelete }: { item: any; onEdit: () => void; onDelete: () => void }) {
   return (
     <div
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/plain", item.id)}
-      className="group cursor-grab rounded-md border border-border bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
+      onClick={onEdit}
+      className="group cursor-grab rounded-md border border-border bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md hover:border-primary/40 active:cursor-grabbing"
     >
       <div className="flex items-start gap-2">
         <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
@@ -177,14 +187,24 @@ function ImplantacaoCard({ item, onDelete }: { item: any; onDelete: () => void }
             )}
           </div>
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
+        <div className="flex flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 text-muted-foreground hover:text-primary"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
     </div>
   );
