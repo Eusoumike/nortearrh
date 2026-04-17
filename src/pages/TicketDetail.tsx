@@ -153,11 +153,24 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteTicket = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("tickets").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-tickets"] });
+      toast.success("Chamado excluído.");
+      navigate("/tickets");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [newInt, setNewInt] = useState({
     type: "ligacao" as InteractionType,
     channel: "telefone" as TicketChannel,
-    problem_description: "",
-    solution_applied: "",
+    summary: "",
     result: "resolvido" as InteractionResult,
     interaction_at: toLocalInputValue(new Date()),
     time_spent_minutes: "" as string,
@@ -167,17 +180,15 @@ export default function TicketDetail() {
   const addInteraction = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const summary = `${newInt.problem_description.slice(0, 80)}${newInt.problem_description.length > 80 ? "…" : ""}`;
       const { error } = await supabase.from("ticket_interactions").insert({
         ticket_id: id!,
         type: newInt.type,
         channel: newInt.channel,
-        problem_description: newInt.problem_description,
-        solution_applied: newInt.solution_applied,
         result: newInt.result,
         interaction_at: new Date(newInt.interaction_at).toISOString(),
         time_spent_minutes: newInt.time_spent_minutes ? parseInt(newInt.time_spent_minutes, 10) : null,
-        summary,
+        summary: newInt.summary,
+        content: newInt.summary,
         is_internal: newInt.is_internal,
         author_id: user.id,
       });
@@ -197,8 +208,7 @@ export default function TicketDetail() {
       setNewInt({
         type: "ligacao",
         channel: "telefone",
-        problem_description: "",
-        solution_applied: "",
+        summary: "",
         result: "resolvido",
         interaction_at: toLocalInputValue(new Date()),
         time_spent_minutes: "",
@@ -213,7 +223,7 @@ export default function TicketDetail() {
   }
 
   const isClosed = ["resolvido", "fechado"].includes(ticket.status);
-  const interactionFormReady = newInt.problem_description.trim() && newInt.solution_applied.trim();
+  const interactionFormReady = newInt.summary.trim().length > 0;
 
   // Status efetivo no fluxo (fechado → resolvido)
   const effectiveStatus: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
