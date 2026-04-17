@@ -24,7 +24,7 @@ export default function Tickets() {
     queryFn: async () => {
       let query = supabase
         .from("tickets")
-        .select("*, client:clients(id, name), assignee:profiles!tickets_assigned_to_fkey(full_name, avatar_url)")
+        .select("*, client:clients(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(200);
 

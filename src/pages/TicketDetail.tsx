@@ -38,7 +38,7 @@ export default function TicketDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("*, client:clients(id, name, email, company, health), assignee:profiles!tickets_assigned_to_fkey(id, full_name, avatar_url, email), creator:profiles!tickets_created_by_fkey(full_name, avatar_url)")
+        .select("*, client:clients(id, name, email, company, health), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -52,7 +52,7 @@ export default function TicketDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ticket_interactions")
-        .select("*, author:profiles!ticket_interactions_author_id_fkey(full_name, avatar_url)")
+        .select("*, author:profiles!author_id(full_name, avatar_url)")
         .eq("ticket_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
