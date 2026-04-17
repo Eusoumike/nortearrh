@@ -224,6 +224,39 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               />
             </div>
 
+            {/* Linha 1.5 — Tipo de chamado (full width) */}
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">
+                Tipo de chamado <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.ticket_type || undefined}
+                onValueChange={(v) => setForm({ ...form, ticket_type: v as TicketType })}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione o tipo de chamado" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[360px]">
+                  {TICKET_TYPE_GROUPS.map((group, idx) => (
+                    <div key={group.label}>
+                      {idx > 0 && <SelectSeparator />}
+                      <SelectGroup>
+                        <SelectLabel className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                          <span>{group.label}</span>
+                          <span className="font-normal text-muted-foreground normal-case tracking-normal">{group.hint}</span>
+                        </SelectLabel>
+                        {group.types.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {TICKET_TYPE_LABEL[t]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Linha 2 — Cliente | Atendente */}
             <div className="space-y-1">
               <Label className="text-xs">
