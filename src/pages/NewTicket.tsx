@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { STATUS_LABEL, PRIORITY_LABEL, CHANNEL_LABEL, SLA_RESPONSE_HOURS, SLA_RESOLUTION_HOURS, type TicketPriority, type TicketChannel } from "@/lib/constants";
+import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 
 export default function NewTicket() {
   const navigate = useNavigate();
