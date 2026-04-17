@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2, ListChecks } from "lucide-react";
+import { TicketTasks } from "@/components/TicketTasks";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
