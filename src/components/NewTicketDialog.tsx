@@ -30,6 +30,7 @@ import {
   type TicketType,
 } from "@/lib/constants";
 import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
+import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 
 interface NewTicketDialogProps {
   open: boolean;
