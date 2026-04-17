@@ -399,11 +399,13 @@ export type Database = {
         | "outro"
       ticket_priority: "baixa" | "media" | "alta" | "critica"
       ticket_status:
-        | "aberto"
-        | "em_andamento"
+        | "novo"
+        | "em_atendimento"
         | "aguardando_cliente"
         | "resolvido"
         | "fechado"
+        | "suporte_vera_n1"
+        | "abertura_chamado_n2"
       ticket_type:
         | "duvida_uso"
         | "configuracao"
@@ -569,11 +571,13 @@ export const Constants = {
       ],
       ticket_priority: ["baixa", "media", "alta", "critica"],
       ticket_status: [
-        "aberto",
-        "em_andamento",
+        "novo",
+        "em_atendimento",
         "aguardando_cliente",
         "resolvido",
         "fechado",
+        "suporte_vera_n1",
+        "abertura_chamado_n2",
       ],
       ticket_type: [
         "duvida_uso",
