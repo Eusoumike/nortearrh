@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2, ListChecks } from "lucide-react";
+import { TicketTasks } from "@/components/TicketTasks";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -330,6 +331,7 @@ export default function TicketDetail() {
                 <TabsList>
                   <TabsTrigger value="timeline">Histórico</TabsTrigger>
                   <TabsTrigger value="add">Registrar atendimento</TabsTrigger>
+                  <TabsTrigger value="tasks"><ListChecks className="mr-1 h-3.5 w-3.5" />Tarefas</TabsTrigger>
                 </TabsList>
               </div>
               <TabsContent value="timeline" className="m-0">
@@ -468,6 +470,9 @@ export default function TicketDetail() {
                 <p className="text-[11px] text-muted-foreground">
                   💡 Se o resultado for "Resolvido", o status do chamado vira <strong>Resolvido</strong> automaticamente.
                 </p>
+              </TabsContent>
+              <TabsContent value="tasks" className="m-0">
+                <TicketTasks ticketId={id!} />
               </TabsContent>
             </Tabs>
           </Card>
