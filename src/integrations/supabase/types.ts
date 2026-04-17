@@ -122,35 +122,53 @@ export type Database = {
       ticket_interactions: {
         Row: {
           author_id: string | null
+          channel: Database["public"]["Enums"]["ticket_channel"] | null
           content: string | null
           created_at: string
           id: string
+          interaction_at: string
           is_internal: boolean
           metadata: Json | null
-          summary: string
+          problem_description: string | null
+          result: Database["public"]["Enums"]["interaction_result"] | null
+          solution_applied: string | null
+          summary: string | null
           ticket_id: string
+          time_spent_minutes: number | null
           type: Database["public"]["Enums"]["interaction_type"]
         }
         Insert: {
           author_id?: string | null
+          channel?: Database["public"]["Enums"]["ticket_channel"] | null
           content?: string | null
           created_at?: string
           id?: string
+          interaction_at?: string
           is_internal?: boolean
           metadata?: Json | null
-          summary: string
+          problem_description?: string | null
+          result?: Database["public"]["Enums"]["interaction_result"] | null
+          solution_applied?: string | null
+          summary?: string | null
           ticket_id: string
+          time_spent_minutes?: number | null
           type?: Database["public"]["Enums"]["interaction_type"]
         }
         Update: {
           author_id?: string | null
+          channel?: Database["public"]["Enums"]["ticket_channel"] | null
           content?: string | null
           created_at?: string
           id?: string
+          interaction_at?: string
           is_internal?: boolean
           metadata?: Json | null
-          summary?: string
+          problem_description?: string | null
+          result?: Database["public"]["Enums"]["interaction_result"] | null
+          solution_applied?: string | null
+          summary?: string | null
           ticket_id?: string
+          time_spent_minutes?: number | null
           type?: Database["public"]["Enums"]["interaction_type"]
         }
         Relationships: [
@@ -230,12 +248,14 @@ export type Database = {
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           resolved_at: string | null
+          sla_alert_sent: boolean
           sla_resolution_deadline: string | null
           sla_response_deadline: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           status_changed_at: string
           tags: string[] | null
           ticket_number: number
+          ticket_type: Database["public"]["Enums"]["ticket_type"] | null
           title: string
           total_active_seconds: number
           updated_at: string
@@ -254,12 +274,14 @@ export type Database = {
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
+          sla_alert_sent?: boolean
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_changed_at?: string
           tags?: string[] | null
           ticket_number?: number
+          ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title: string
           total_active_seconds?: number
           updated_at?: string
@@ -278,12 +300,14 @@ export type Database = {
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
+          sla_alert_sent?: boolean
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_changed_at?: string
           tags?: string[] | null
           ticket_number?: number
+          ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title?: string
           total_active_seconds?: number
           updated_at?: string
@@ -353,6 +377,11 @@ export type Database = {
     Enums: {
       app_role: "admin" | "manager" | "agent" | "viewer"
       client_health: "saudavel" | "em_atencao" | "critico"
+      interaction_result:
+        | "resolvido"
+        | "parcialmente_resolvido"
+        | "escalado"
+        | "aguardando"
       interaction_type:
         | "nota"
         | "email"
@@ -375,6 +404,17 @@ export type Database = {
         | "aguardando_cliente"
         | "resolvido"
         | "fechado"
+      ticket_type:
+        | "duvida_uso"
+        | "configuracao"
+        | "fechamento"
+        | "admissao_demissao"
+        | "bug_sistema"
+        | "produto_rh_digital"
+        | "beneficios_vr"
+        | "upgrade"
+        | "downgrade"
+        | "financeiro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -504,6 +544,12 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "manager", "agent", "viewer"],
       client_health: ["saudavel", "em_atencao", "critico"],
+      interaction_result: [
+        "resolvido",
+        "parcialmente_resolvido",
+        "escalado",
+        "aguardando",
+      ],
       interaction_type: [
         "nota",
         "email",
@@ -528,6 +574,18 @@ export const Constants = {
         "aguardando_cliente",
         "resolvido",
         "fechado",
+      ],
+      ticket_type: [
+        "duvida_uso",
+        "configuracao",
+        "fechamento",
+        "admissao_demissao",
+        "bug_sistema",
+        "produto_rh_digital",
+        "beneficios_vr",
+        "upgrade",
+        "downgrade",
+        "financeiro",
       ],
     },
   },
