@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { HealthBadge } from "@/components/badges";
-import { Plus, Search, Building2, Mail, Phone, Loader2 } from "lucide-react";
+import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 
@@ -63,6 +63,23 @@ export default function Clients() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const syncPipedrive = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("pipedrive-sync");
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as { inserted: number; unique_clients: number; skipped_existing: number };
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["clients-min"] });
+      toast.success(
+        `Sincronização concluída: ${data.inserted} novos · ${data.skipped_existing} já existiam`,
+      );
+    },
+    onError: (e: any) => toast.error(`Pipedrive: ${e.message}`),
+  });
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-start justify-between gap-4">
@@ -70,12 +87,26 @@ export default function Clients() {
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
           <p className="text-sm text-muted-foreground">{filtered.length} clientes</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
-              <Plus className="mr-1.5 h-4 w-4" /> Novo cliente
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => syncPipedrive.mutate()}
+            disabled={syncPipedrive.isPending}
+            title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
+          >
+            {syncPipedrive.isPending ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-1.5 h-4 w-4" />
+            )}
+            Sincronizar Pipedrive
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
+                <Plus className="mr-1.5 h-4 w-4" /> Novo cliente
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
             <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
