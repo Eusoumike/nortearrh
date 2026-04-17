@@ -387,21 +387,12 @@ export default function TicketDetail() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Descrição do problema *</p>
+                  <p className="text-[11px] text-muted-foreground">Resumo *</p>
                   <Textarea
-                    rows={3}
-                    value={newInt.problem_description}
-                    onChange={(e) => setNewInt({ ...newInt, problem_description: e.target.value })}
-                    placeholder="O que o cliente relatou — em suas palavras"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Solução aplicada *</p>
-                  <Textarea
-                    rows={3}
-                    value={newInt.solution_applied}
-                    onChange={(e) => setNewInt({ ...newInt, solution_applied: e.target.value })}
-                    placeholder="O que foi feito para resolver — específico e consultável"
+                    rows={5}
+                    value={newInt.summary}
+                    onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })}
+                    placeholder="O que aconteceu neste atendimento — problema relatado e solução aplicada, em poucas linhas"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
