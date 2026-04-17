@@ -177,7 +177,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           ticket_type: form.ticket_type as TicketType,
           client_id: form.client_id || null,
           created_by: user.id,
-          created_at: opened.toISOString(),
+          created_at: openedISO,
           sla_response_deadline: respDeadline.toISOString(),
           sla_resolution_deadline: resDeadline.toISOString(),
         })
