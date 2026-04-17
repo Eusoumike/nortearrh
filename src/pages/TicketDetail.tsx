@@ -471,6 +471,9 @@ export default function TicketDetail() {
                   💡 Se o resultado for "Resolvido", o status do chamado vira <strong>Resolvido</strong> automaticamente.
                 </p>
               </TabsContent>
+              <TabsContent value="tasks" className="m-0">
+                <TicketTasks ticketId={id!} />
+              </TabsContent>
             </Tabs>
           </Card>
 
