@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { ToneBadge } from "@/components/ui/tone-badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Calendar, GripVertical, Copy, MessageSquare, Trash2 } from "lucide-react";
+import { Plus, Loader2, Calendar, GripVertical, Copy, MessageSquare, Trash2, Pencil, Send } from "lucide-react";
 import { formatBrazilDateTime } from "@/lib/formatters";
 
 type Etapa = "novo_cliente" | "kickoff" | "configuracao" | "treinamento" | "go_live" | "finalizado";
