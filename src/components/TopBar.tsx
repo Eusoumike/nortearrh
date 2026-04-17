@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Search, Plus, Bell, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { NewTicketDialog } from "@/components/NewTicketDialog";
 
 export function TopBar() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [newTicketOpen, setNewTicketOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,10 +47,11 @@ export function TopBar() {
         <Button variant="ghost" size="icon" className="h-8 w-8" title="Notificações">
           <Bell className="h-4 w-4" />
         </Button>
-        <Button size="sm" className="ml-2 h-8 gap-1.5 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90" onClick={() => navigate("/tickets/novo")}>
-          <Plus className="h-3.5 w-3.5" /> Novo ticket
+        <Button size="sm" className="ml-2 h-8 gap-1.5 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90" onClick={() => setNewTicketOpen(true)}>
+          <Plus className="h-3.5 w-3.5" /> Novo chamado
         </Button>
       </div>
+      <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
     </header>
   );
 }
