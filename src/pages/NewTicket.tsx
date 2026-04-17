@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { STATUS_LABEL, PRIORITY_LABEL, CHANNEL_LABEL, SLA_RESPONSE_HOURS, SLA_RESOLUTION_HOURS, type TicketPriority, type TicketChannel } from "@/lib/constants";
+import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 
 export default function NewTicket() {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export default function NewTicket() {
     channel: "portal" as TicketChannel,
     category: "",
     client_id: "" as string,
+    opened_at: nowBrasilia(),
   });
 
   const { data: clients } = useQuery({
@@ -39,9 +41,10 @@ export default function NewTicket() {
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const now = new Date();
-      const respDeadline = new Date(now.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
-      const resDeadline = new Date(now.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
+      const openedISO = brazilInputToISO(form.opened_at) ?? new Date().toISOString();
+      const openedDate = new Date(openedISO);
+      const respDeadline = new Date(openedDate.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
+      const resDeadline = new Date(openedDate.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
       const { data, error } = await supabase.from("tickets").insert({
         title: form.title,
         description: form.description || null,
@@ -50,6 +53,7 @@ export default function NewTicket() {
         category: form.category || null,
         client_id: form.client_id || null,
         created_by: user.id,
+        created_at: openedISO,
         sla_response_deadline: respDeadline.toISOString(),
         sla_resolution_deadline: resDeadline.toISOString(),
       }).select().single();
@@ -126,6 +130,17 @@ export default function NewTicket() {
                   {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label htmlFor="opened_at">Data de abertura *</Label>
+              <Input
+                id="opened_at"
+                type="datetime-local"
+                required
+                value={form.opened_at}
+                onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
+              />
+              <p className="text-[11px] text-muted-foreground">Horário de Brasília (GMT-3).</p>
             </div>
           </div>
 

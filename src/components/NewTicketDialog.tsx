@@ -30,6 +30,7 @@ import {
   type TicketType,
 } from "@/lib/constants";
 import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
+import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 
 interface NewTicketDialogProps {
   open: boolean;
@@ -60,14 +61,23 @@ function maskPhone(v: string) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-function toLocalInputValue(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// Retorna data de Brasília no formato YYYY-MM-DD para inputs <input type="date">
+function nowBrasiliaDate(): string {
+  return nowBrasilia().slice(0, 10);
 }
 
-function toLocalDateValue(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Adiciona N horas a um datetime-local de Brasília e devolve no mesmo formato
+function addHoursToBrasiliaInput(localValue: string, hours: number): string {
+  const iso = brazilInputToISO(localValue);
+  if (!iso) return localValue;
+  const future = new Date(new Date(iso).getTime() + hours * 3600_000);
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(future);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || "00";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
@@ -75,11 +85,11 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const now = useMemo(() => new Date(), [open]);
-  const defaultSla = useMemo(() => {
-    const d = new Date(now.getTime() + SLA_RESOLUTION_HOURS.media * 3600_000);
-    return d;
-  }, [now]);
+  const openedDefault = useMemo(() => nowBrasilia(), [open]);
+  const slaDefault = useMemo(
+    () => addHoursToBrasiliaInput(openedDefault, SLA_RESOLUTION_HOURS.media),
+    [openedDefault],
+  );
 
   const [form, setForm] = useState({
     title: "",
@@ -93,16 +103,16 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
-    opened_at: toLocalInputValue(now),
-    sla_deadline: toLocalDateValue(defaultSla),
+    opened_at: openedDefault,
+    sla_deadline: slaDefault,
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
 
   // Reset on open
   useEffect(() => {
     if (open) {
-      const n = new Date();
-      const sla = new Date(n.getTime() + SLA_RESOLUTION_HOURS.media * 3600_000);
+      const n = nowBrasilia();
+      const sla = addHoursToBrasiliaInput(n, SLA_RESOLUTION_HOURS.media);
       setForm({
         title: "",
         client_id: "",
@@ -115,8 +125,8 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         ticket_type: "",
         phone: "",
         anydesk: "",
-        opened_at: toLocalInputValue(n),
-        sla_deadline: toLocalDateValue(sla),
+        opened_at: n,
+        sla_deadline: sla,
       });
     }
   }, [open]);
@@ -139,11 +149,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const opened = new Date(form.opened_at);
-      const respDeadline = new Date(opened.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
+      const openedISO = brazilInputToISO(form.opened_at) ?? new Date().toISOString();
+      const openedDate = new Date(openedISO);
+      const respDeadline = new Date(openedDate.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
+      // SLA: input <date> é dia em Brasília → 23:59:59 BRT
       const resDeadline = form.sla_deadline
-        ? new Date(`${form.sla_deadline}T23:59:59`)
-        : new Date(opened.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
+        ? new Date(`${form.sla_deadline}T23:59:59-03:00`)
+        : new Date(openedDate.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
 
       const metadataNote = [
         form.anydesk ? `AnyDesk: ${form.anydesk}` : null,
@@ -165,7 +177,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           ticket_type: form.ticket_type as TicketType,
           client_id: form.client_id || null,
           created_by: user.id,
-          created_at: opened.toISOString(),
+          created_at: openedISO,
           sla_response_deadline: respDeadline.toISOString(),
           sla_resolution_deadline: resDeadline.toISOString(),
         })
