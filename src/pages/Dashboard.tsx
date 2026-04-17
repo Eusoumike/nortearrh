@@ -290,8 +290,9 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-
-            <Link to="/tickets" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+        <Card className="p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Tickets recentes</h2>
               Ver todos <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
