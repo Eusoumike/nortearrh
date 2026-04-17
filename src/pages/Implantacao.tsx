@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -380,13 +380,21 @@ function MensagensTemplates() {
 
   const renderBody = (body: string) => {
     if (!selected) return body;
+    const goLiveStr = selected.data_go_live
+      ? formatBrazilDateTime(selected.data_go_live + "T12:00:00-03:00").split(" ")[0]
+      : "";
     const data: Record<string, string> = {
+      // mapeamento amplo: cobre variáveis dos templates do briefing e variantes
+      nome: selected.client_name ?? "",
       cliente: selected.client_name ?? "",
       produto: selected.produto ?? "",
+      atendente: (selected as any).responsavel?.full_name ?? "",
       responsavel: (selected as any).responsavel?.full_name ?? "",
-      data_go_live: selected.data_go_live
-        ? formatBrazilDateTime(selected.data_go_live + "T12:00:00-03:00").split(" ")[0]
-        : "",
+      data: goLiveStr,
+      datas: goLiveStr,
+      data_go_live: goLiveStr,
+      hora: "____",
+      link: "____",
     };
     return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => data[k] ?? `{{${k}}}`);
   };
@@ -496,7 +504,7 @@ function EditImplantacaoDialog({
   });
 
   // Sincroniza form ao abrir
-  useMemo(() => {
+  useEffect(() => {
     if (item) {
       setForm({
         client_name: item.client_name ?? "",
