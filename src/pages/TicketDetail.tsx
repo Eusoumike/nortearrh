@@ -267,7 +267,37 @@ export default function TicketDetail() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <SLAIndicator deadline={ticket.sla_resolution_deadline} resolved={isClosed} label="Resolução" size="lg" />
+          <div className="flex items-center gap-2">
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                    Excluir
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir chamado #{ticket.ticket_number}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação é permanente. Todos os atendimentos e o histórico de status deste chamado também serão removidos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteTicket.mutate()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleteTicket.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <SLAIndicator deadline={ticket.sla_resolution_deadline} resolved={isClosed} label="Resolução" size="lg" />
+          </div>
           {ticket.sla_response_deadline && !ticket.first_response_at && (
             <SLAIndicator deadline={ticket.sla_response_deadline} label="1ª resp." />
           )}
