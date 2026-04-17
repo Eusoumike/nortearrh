@@ -65,7 +65,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("*, client:clients(id, name, health), assignee:profiles!tickets_assigned_to_fkey(full_name, avatar_url)")
+        .select("*, client:clients(id, name, health), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
