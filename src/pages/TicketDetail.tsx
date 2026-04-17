@@ -45,7 +45,7 @@ import {
   type InteractionResult,
   type TicketChannel,
 } from "@/lib/constants";
-import { formatDate, timeAgo, formatDuration, nowBrasilia, brazilInputToISO, formatBrazilDateTime, formatBrazilTime } from "@/lib/formatters";
+import { timeAgo, formatDuration, nowBrasilia, brazilInputToISO, formatBrazilDateTime, formatBrazilTime } from "@/lib/formatters";
 
 const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: string }>> = {
   nota: FileText,
