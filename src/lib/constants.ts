@@ -93,25 +93,33 @@ export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   baixa: "Baixa",
   media: "Média",
   alta: "Alta",
-  critica: "Crítica",
+  urgente: "Urgente",
+  critica: "Urgente", // legado: tratado como urgente na UI
 };
 
 export const PRIORITY_TONE: Record<TicketPriority, "muted" | "info" | "warning" | "danger"> = {
   baixa: "muted",
   media: "info",
   alta: "warning",
+  urgente: "danger",
   critica: "danger",
 };
 
 export const CHANNEL_LABEL: Record<TicketChannel, string> = {
-  email: "E-mail",
   whatsapp: "WhatsApp",
   telefone: "Telefone",
+  reuniao: "Reunião",
+  anydesk: "AnyDesk",
+  email: "E-mail",
+  // canais legados (mantidos só para compatibilidade com tickets antigos)
   chat: "Chat",
   portal: "Portal",
   pipedrive: "Pipedrive",
   outro: "Outro",
 };
+
+// Canais oferecidos no UI ao criar/editar (os legados ficam escondidos)
+export const ACTIVE_CHANNELS: TicketChannel[] = ["whatsapp", "telefone", "reuniao", "anydesk", "email"];
 
 export const HEALTH_LABEL: Record<ClientHealth, string> = {
   saudavel: "Saudável",
@@ -134,8 +142,9 @@ export const INTERACTION_LABEL: Record<InteractionType, string> = {
   mudanca_status: "Mudança de status",
 };
 
-// Defaults SLA (em horas) por prioridade
+// Defaults SLA (em horas) por prioridade — alinhado com trigger compute_ticket_sla_deadline
 export const SLA_RESPONSE_HOURS: Record<TicketPriority, number> = {
+  urgente: 1,
   critica: 1,
   alta: 4,
   media: 8,
@@ -143,8 +152,10 @@ export const SLA_RESPONSE_HOURS: Record<TicketPriority, number> = {
 };
 
 export const SLA_RESOLUTION_HOURS: Record<TicketPriority, number> = {
-  critica: 4,
-  alta: 24,
-  media: 72,
-  baixa: 168,
+  urgente: 2,
+  critica: 2,
+  alta: 6,
+  media: 24,
+  baixa: 72,
 };
+
