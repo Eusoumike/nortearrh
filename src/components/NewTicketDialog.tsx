@@ -149,11 +149,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const opened = new Date(form.opened_at);
-      const respDeadline = new Date(opened.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
+      const openedISO = brazilInputToISO(form.opened_at) ?? new Date().toISOString();
+      const openedDate = new Date(openedISO);
+      const respDeadline = new Date(openedDate.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
+      // SLA: input <date> é dia em Brasília → 23:59:59 BRT
       const resDeadline = form.sla_deadline
-        ? new Date(`${form.sla_deadline}T23:59:59`)
-        : new Date(opened.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
+        ? new Date(`${form.sla_deadline}T23:59:59-03:00`)
+        : new Date(openedDate.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
 
       const metadataNote = [
         form.anydesk ? `AnyDesk: ${form.anydesk}` : null,
