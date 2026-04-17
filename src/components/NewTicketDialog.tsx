@@ -23,9 +23,13 @@ import { cn } from "@/lib/utils";
 import {
   SLA_RESPONSE_HOURS,
   SLA_RESOLUTION_HOURS,
+  TICKET_TYPE_GROUPS,
+  TICKET_TYPE_LABEL,
   type TicketPriority,
   type TicketChannel,
+  type TicketType,
 } from "@/lib/constants";
+import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 
 interface NewTicketDialogProps {
   open: boolean;
@@ -86,6 +90,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     email: "",
     channel: "whatsapp" as TicketChannel,
     priority: "media" as TicketPriority,
+    ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
     opened_at: toLocalInputValue(now),
@@ -107,6 +112,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         email: "",
         channel: "whatsapp",
         priority: "media",
+        ticket_type: "",
         phone: "",
         anydesk: "",
         opened_at: toLocalInputValue(n),
@@ -156,6 +162,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           description: metadataNote || null,
           priority: form.priority,
           channel: form.channel,
+          ticket_type: form.ticket_type as TicketType,
           client_id: form.client_id || null,
           created_by: user.id,
           created_at: opened.toISOString(),
@@ -178,7 +185,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
 
   const requiredOk =
-    form.title.trim() && form.client_id && form.channel && form.priority && form.phone && form.opened_at;
+    form.title.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.phone && form.opened_at;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
