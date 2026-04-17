@@ -1,21 +1,36 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge, PriorityBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
-import { UserAvatar } from "@/components/UserAvatar";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { STATUS_LABEL, PRIORITY_LABEL, CHANNEL_LABEL, INTERACTION_LABEL, type TicketStatus, type TicketPriority, type InteractionType } from "@/lib/constants";
+import {
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+  CHANNEL_LABEL,
+  INTERACTION_LABEL,
+  TICKET_TYPE_LABEL,
+  TICKET_TYPE_GROUPS,
+  INTERACTION_RESULT_LABEL,
+  INTERACTION_RESULT_TONE,
+  type TicketStatus,
+  type TicketPriority,
+  type TicketType,
+  type InteractionType,
+  type InteractionResult,
+  type TicketChannel,
+} from "@/lib/constants";
 import { formatDate, timeAgo } from "@/lib/formatters";
 
 const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: string }>> = {
@@ -27,9 +42,13 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   mudanca_status: FileText,
 };
 
+function toLocalInputValue(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function TicketDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -54,11 +73,27 @@ export default function TicketDetail() {
         .from("ticket_interactions")
         .select("*, author:profiles!author_id(full_name, avatar_url)")
         .eq("ticket_id", id!)
-        .order("created_at", { ascending: false });
+        .order("interaction_at", { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: clientHistory } = useQuery({
+    queryKey: ["client-history", ticket?.client_id, id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("id, ticket_number, title, status, ticket_type, created_at")
+        .eq("client_id", ticket!.client_id!)
+        .neq("id", id!)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ticket?.client_id,
   });
 
   const { data: profiles } = useQuery({
@@ -84,7 +119,7 @@ export default function TicketDetail() {
   });
 
   const updateField = useMutation({
-    mutationFn: async (patch: { priority?: TicketPriority; assigned_to?: string | null }) => {
+    mutationFn: async (patch: { priority?: TicketPriority; assigned_to?: string | null; ticket_type?: TicketType | null }) => {
       const { error } = await supabase.from("tickets").update(patch).eq("id", id!);
       if (error) throw error;
     },
@@ -95,15 +130,32 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // New interaction
-  const [newInt, setNewInt] = useState({ type: "nota" as InteractionType, summary: "", is_internal: true });
+  // New structured interaction (P2)
+  const [newInt, setNewInt] = useState({
+    type: "ligacao" as InteractionType,
+    channel: "telefone" as TicketChannel,
+    problem_description: "",
+    solution_applied: "",
+    result: "resolvido" as InteractionResult,
+    interaction_at: toLocalInputValue(new Date()),
+    time_spent_minutes: "" as string,
+    is_internal: true,
+  });
+
   const addInteraction = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
+      const summary = `${newInt.problem_description.slice(0, 80)}${newInt.problem_description.length > 80 ? "…" : ""}`;
       const { error } = await supabase.from("ticket_interactions").insert({
         ticket_id: id!,
         type: newInt.type,
-        summary: newInt.summary,
+        channel: newInt.channel,
+        problem_description: newInt.problem_description,
+        solution_applied: newInt.solution_applied,
+        result: newInt.result,
+        interaction_at: new Date(newInt.interaction_at).toISOString(),
+        time_spent_minutes: newInt.time_spent_minutes ? parseInt(newInt.time_spent_minutes, 10) : null,
+        summary,
         is_internal: newInt.is_internal,
         author_id: user.id,
       });
@@ -112,8 +164,17 @@ export default function TicketDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["interactions", id] });
       qc.invalidateQueries({ queryKey: ["ticket", id] });
-      setNewInt({ type: "nota", summary: "", is_internal: true });
-      toast.success("Interação registrada.");
+      setNewInt({
+        type: "ligacao",
+        channel: "telefone",
+        problem_description: "",
+        solution_applied: "",
+        result: "resolvido",
+        interaction_at: toLocalInputValue(new Date()),
+        time_spent_minutes: "",
+        is_internal: true,
+      });
+      toast.success("Atendimento registrado.");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -123,6 +184,7 @@ export default function TicketDetail() {
   }
 
   const isClosed = ["resolvido", "fechado"].includes(ticket.status);
+  const interactionFormReady = newInt.problem_description.trim() && newInt.solution_applied.trim();
 
   return (
     <div className="space-y-4 p-6">
@@ -133,11 +195,14 @@ export default function TicketDetail() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
             <span className="font-mono text-sm text-muted-foreground">#{ticket.ticket_number}</span>
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
             <ToneBadge tone="muted">{CHANNEL_LABEL[ticket.channel as keyof typeof CHANNEL_LABEL]}</ToneBadge>
+            {(ticket as any).ticket_type && (
+              <ToneBadge tone="info">{TICKET_TYPE_LABEL[(ticket as any).ticket_type as TicketType]}</ToneBadge>
+            )}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{ticket.title}</h1>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -165,19 +230,20 @@ export default function TicketDetail() {
           <Card className="p-5">
             <Tabs defaultValue="timeline">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Atividade</h2>
+                <h2 className="text-sm font-semibold">Atendimentos</h2>
                 <TabsList>
-                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                  <TabsTrigger value="add">Adicionar</TabsTrigger>
+                  <TabsTrigger value="timeline">Histórico</TabsTrigger>
+                  <TabsTrigger value="add">Registrar atendimento</TabsTrigger>
                 </TabsList>
               </div>
               <TabsContent value="timeline" className="m-0">
                 {!interactions || interactions.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma interação ainda. Registre a primeira em "Adicionar".</p>
+                  <p className="py-8 text-center text-sm text-muted-foreground">Nenhum atendimento registrado ainda.</p>
                 ) : (
                   <div className="space-y-3">
                     {interactions.map((it: any) => {
                       const Icon = TYPE_ICON[it.type as InteractionType] ?? FileText;
+                      const hasStructured = it.problem_description || it.solution_applied;
                       return (
                         <div key={it.id} className="flex gap-3">
                           <div className="flex flex-col items-center">
@@ -190,10 +256,37 @@ export default function TicketDetail() {
                             <div className="flex flex-wrap items-center gap-2 text-xs">
                               <span className="font-medium">{it.author?.full_name ?? "Sistema"}</span>
                               <ToneBadge tone="muted" size="sm">{INTERACTION_LABEL[it.type as InteractionType]}</ToneBadge>
-                              {it.is_internal && <ToneBadge tone="warning" size="sm">interna</ToneBadge>}
-                              <span className="text-muted-foreground">· {timeAgo(it.created_at)}</span>
+                              {it.channel && (
+                                <ToneBadge tone="muted" size="sm">{CHANNEL_LABEL[it.channel as keyof typeof CHANNEL_LABEL]}</ToneBadge>
+                              )}
+                              {it.result && (
+                                <ToneBadge tone={INTERACTION_RESULT_TONE[it.result as InteractionResult]} size="sm">
+                                  {INTERACTION_RESULT_LABEL[it.result as InteractionResult]}
+                                </ToneBadge>
+                              )}
+                              {it.time_spent_minutes != null && (
+                                <span className="text-muted-foreground">· {it.time_spent_minutes} min</span>
+                              )}
+                              <span className="text-muted-foreground">· {timeAgo(it.interaction_at ?? it.created_at)}</span>
                             </div>
-                            <p className="mt-1 whitespace-pre-wrap text-sm">{it.summary}</p>
+                            {hasStructured ? (
+                              <div className="mt-2 space-y-2 rounded-md border border-border bg-surface-muted/40 p-3">
+                                {it.problem_description && (
+                                  <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Problema</p>
+                                    <p className="mt-0.5 whitespace-pre-wrap text-sm">{it.problem_description}</p>
+                                  </div>
+                                )}
+                                {it.solution_applied && (
+                                  <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Solução</p>
+                                    <p className="mt-0.5 whitespace-pre-wrap text-sm">{it.solution_applied}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="mt-1 whitespace-pre-wrap text-sm">{it.summary}</p>
+                            )}
                           </div>
                         </div>
                       );
@@ -203,25 +296,85 @@ export default function TicketDetail() {
               </TabsContent>
               <TabsContent value="add" className="m-0 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(INTERACTION_LABEL).filter(([k]) => k !== "mudanca_status").map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Tipo de atendimento *</p>
+                    <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(INTERACTION_LABEL).filter(([k]) => k !== "mudanca_status").map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Canal de contato *</p>
+                    <Select value={newInt.channel} onValueChange={(v) => setNewInt({ ...newInt, channel: v as TicketChannel })}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Descrição do problema *</p>
+                  <Textarea
+                    rows={3}
+                    value={newInt.problem_description}
+                    onChange={(e) => setNewInt({ ...newInt, problem_description: e.target.value })}
+                    placeholder="O que o cliente relatou — em suas palavras"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Solução aplicada *</p>
+                  <Textarea
+                    rows={3}
+                    value={newInt.solution_applied}
+                    onChange={(e) => setNewInt({ ...newInt, solution_applied: e.target.value })}
+                    placeholder="O que foi feito para resolver — específico e consultável"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Resultado *</p>
+                    <Select value={newInt.result} onValueChange={(v) => setNewInt({ ...newInt, result: v as InteractionResult })}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(INTERACTION_RESULT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Hora *</p>
+                    <Input
+                      type="datetime-local"
+                      value={newInt.interaction_at}
+                      onChange={(e) => setNewInt({ ...newInt, interaction_at: e.target.value })}
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-muted-foreground">Tempo (min)</p>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={newInt.time_spent_minutes}
+                      onChange={(e) => setNewInt({ ...newInt, time_spent_minutes: e.target.value })}
+                      placeholder="—"
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
                   <Select value={newInt.is_internal ? "internal" : "public"} onValueChange={(v) => setNewInt({ ...newInt, is_internal: v === "internal" })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="internal">Nota interna</SelectItem>
-                      <SelectItem value="public">Resposta ao cliente</SelectItem>
+                      <SelectItem value="public">Visível ao cliente</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <Textarea rows={4} value={newInt.summary} onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })} placeholder="O que aconteceu, próximos passos…" />
-                <div className="flex justify-end">
-                  <Button onClick={() => addInteraction.mutate()} disabled={!newInt.summary || addInteraction.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+                  <Button onClick={() => addInteraction.mutate()} disabled={!interactionFormReady || addInteraction.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
                     {addInteraction.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Registrar
+                    Registrar atendimento
                   </Button>
                 </div>
               </TabsContent>
@@ -233,6 +386,27 @@ export default function TicketDetail() {
         <div className="space-y-4">
           <Card className="p-5 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalhes</h3>
+            <Field label="Tipo de chamado">
+              <Select
+                value={(ticket as any).ticket_type ?? ""}
+                onValueChange={(v) => updateField.mutate({ ticket_type: v as TicketType })}
+              >
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Classificar…" /></SelectTrigger>
+                <SelectContent className="max-h-[320px]">
+                  {TICKET_TYPE_GROUPS.map((group, idx) => (
+                    <div key={group.label}>
+                      {idx > 0 && <SelectSeparator />}
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] uppercase tracking-wider">{group.label}</SelectLabel>
+                        {group.types.map((t) => (
+                          <SelectItem key={t} value={t}>{TICKET_TYPE_LABEL[t]}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
             <Field label="Status">
               <Select value={ticket.status} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -268,6 +442,40 @@ export default function TicketDetail() {
                 {(ticket.client as any).company && <p className="text-xs text-muted-foreground">{(ticket.client as any).company}</p>}
                 {(ticket.client as any).email && <p className="text-xs text-muted-foreground">{(ticket.client as any).email}</p>}
               </Link>
+            </Card>
+          )}
+
+          {ticket.client_id && (
+            <Card className="p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <History className="h-3.5 w-3.5 text-muted-foreground" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Histórico do cliente</h3>
+              </div>
+              {!clientHistory || clientHistory.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Primeiro chamado deste cliente.</p>
+              ) : (
+                <div className="space-y-2">
+                  {clientHistory.map((h: any) => (
+                    <Link
+                      key={h.id}
+                      to={`/tickets/${h.id}`}
+                      className="block rounded-md border border-border bg-surface p-2.5 transition-colors hover:bg-surface-muted"
+                    >
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="font-mono text-[10px] text-muted-foreground">#{h.ticket_number}</span>
+                        <StatusBadge status={h.status} />
+                      </div>
+                      <p className="line-clamp-2 text-xs font-medium">{h.title}</p>
+                      <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                        {h.ticket_type ? (
+                          <span className="truncate">{TICKET_TYPE_LABEL[h.ticket_type as TicketType]}</span>
+                        ) : <span>—</span>}
+                        <span>{timeAgo(h.created_at)}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </Card>
           )}
 

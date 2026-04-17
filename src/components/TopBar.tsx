@@ -4,11 +4,18 @@ import { Search, Plus, Bell, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Link } from "react-router-dom";
+import { timeAgo } from "@/lib/formatters";
+import { toast } from "sonner";
 
 export function TopBar() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   useEffect(() => {
     const saved = localStorage.getItem("hub-theme");
@@ -24,6 +31,47 @@ export function TopBar() {
     document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("hub-theme", next ? "dark" : "light");
   };
+
+  // SLA alerts (P5): tickets with sla_alert_sent = true and still open
+  const { data: alerts } = useQuery({
+    queryKey: ["sla-alerts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("id, ticket_number, title, sla_resolution_deadline, status")
+        .eq("sla_alert_sent", true)
+        .in("status", ["aberto", "em_andamento", "aguardando_cliente"])
+        .order("sla_resolution_deadline", { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 60_000,
+  });
+
+  // Realtime subscription on tickets to refresh alerts and toast on new ones
+  useEffect(() => {
+    const channel = supabase
+      .channel("tickets-sla-alerts")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tickets" },
+        (payload) => {
+          const newRow: any = payload.new;
+          const oldRow: any = payload.old;
+          if (newRow?.sla_alert_sent && !oldRow?.sla_alert_sent) {
+            toast.warning(`SLA próximo: #${newRow.ticket_number} ${newRow.title}`);
+            qc.invalidateQueries({ queryKey: ["sla-alerts"] });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
+  const alertCount = alerts?.length ?? 0;
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
@@ -44,9 +92,43 @@ export function TopBar() {
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme} title="Trocar tema">
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Notificações">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative h-8 w-8" title="Alertas SLA">
+              <Bell className="h-4 w-4" />
+              {alertCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-warning px-1 text-[10px] font-semibold text-warning-foreground">
+                  {alertCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0">
+            <div className="border-b border-border px-3 py-2">
+              <p className="text-sm font-semibold">Alertas de SLA</p>
+              <p className="text-xs text-muted-foreground">Chamados com mais de 80% do prazo consumido.</p>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {alertCount === 0 ? (
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum alerta ativo.</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {alerts!.map((a: any) => (
+                    <Link key={a.id} to={`/tickets/${a.id}`} className="block px-3 py-2 hover:bg-surface-muted">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-muted-foreground">#{a.ticket_number}</span>
+                        <p className="flex-1 truncate text-xs font-medium">{a.title}</p>
+                      </div>
+                      {a.sla_resolution_deadline && (
+                        <p className="text-[10px] text-muted-foreground">vence {timeAgo(a.sla_resolution_deadline)}</p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
         <Button size="sm" className="ml-2 h-8 gap-1.5 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90" onClick={() => setNewTicketOpen(true)}>
           <Plus className="h-3.5 w-3.5" /> Novo chamado
         </Button>
