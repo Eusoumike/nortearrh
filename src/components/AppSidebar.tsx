@@ -1,4 +1,4 @@
-import { LayoutDashboard, Ticket, Users, BarChart3, Settings, Inbox, Sparkles, ListChecks } from "lucide-react";
+import { LayoutDashboard, Ticket, Users, BarChart3, Settings, Inbox, Sparkles, ListChecks, Rocket } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -23,6 +23,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Chamados", url: "/tickets", icon: Ticket },
   { title: "Minhas tarefas", url: "/tarefas", icon: ListChecks },
+  { title: "Implantação", url: "/implantacao", icon: Rocket },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Caixa de entrada", url: "/inbox", icon: Inbox },
 ];

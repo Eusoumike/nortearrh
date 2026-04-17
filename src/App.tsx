@@ -11,6 +11,7 @@ import Tickets from "./pages/Tickets";
 import NewTicket from "./pages/NewTicket";
 import TicketDetail from "./pages/TicketDetail";
 import MyTasks from "./pages/MyTasks";
+import Implantacao from "./pages/Implantacao";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/tickets/novo" element={<NewTicket />} />
             <Route path="/tickets/:id" element={<TicketDetail />} />
             <Route path="/tarefas" element={<MyTasks />} />
+            <Route path="/implantacao" element={<Implantacao />} />
             <Route path="/clientes" element={<Clients />} />
             <Route path="/clientes/:id" element={<ClientDetail />} />
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
