@@ -86,6 +86,120 @@ export type Database = {
           },
         ]
       }
+      implantacoes: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          data_go_live: string | null
+          data_inicio: string | null
+          etapa: Database["public"]["Enums"]["implantacao_etapa"]
+          id: string
+          observacoes: string | null
+          ordem: number
+          produto: string | null
+          responsavel_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          data_go_live?: string | null
+          data_inicio?: string | null
+          etapa?: Database["public"]["Enums"]["implantacao_etapa"]
+          id?: string
+          observacoes?: string | null
+          ordem?: number
+          produto?: string | null
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          data_go_live?: string | null
+          data_inicio?: string | null
+          etapa?: Database["public"]["Enums"]["implantacao_etapa"]
+          id?: string
+          observacoes?: string | null
+          ordem?: number
+          produto?: string | null
+          responsavel_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "implantacoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "implantacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+          variables: string[] | null
+        }
+        Insert: {
+          body: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -504,6 +618,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "manager" | "agent" | "viewer"
       client_health: "saudavel" | "em_atencao" | "critico"
+      implantacao_etapa:
+        | "novo_cliente"
+        | "kickoff"
+        | "configuracao"
+        | "treinamento"
+        | "go_live"
+        | "finalizado"
       interaction_result:
         | "resolvido"
         | "parcialmente_resolvido"
@@ -675,6 +796,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "manager", "agent", "viewer"],
       client_health: ["saudavel", "em_atencao", "critico"],
+      implantacao_etapa: [
+        "novo_cliente",
+        "kickoff",
+        "configuracao",
+        "treinamento",
+        "go_live",
+        "finalizado",
+      ],
       interaction_result: [
         "resolvido",
         "parcialmente_resolvido",
