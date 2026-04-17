@@ -131,6 +131,17 @@ export default function NewTicket() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label htmlFor="opened_at">Data de abertura *</Label>
+              <Input
+                id="opened_at"
+                type="datetime-local"
+                required
+                value={form.opened_at}
+                onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
+              />
+              <p className="text-[11px] text-muted-foreground">Horário de Brasília (GMT-3).</p>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
