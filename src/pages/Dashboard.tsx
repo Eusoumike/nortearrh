@@ -9,7 +9,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { timeAgo, formatDuration } from "@/lib/formatters";
+import { timeAgo, formatDuration, formatBrazilDateTime } from "@/lib/formatters";
 import { CHANNEL_LABEL, STATUS_LABEL, TIMED_STAGES, type TicketStatus } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
@@ -157,8 +157,28 @@ export default function Dashboard() {
     return { open, overdue, approachingSla, resolvedThisWeek, avgResp, byStatus, days, channels, stageAverages };
   }, [tickets]);
 
-  const recentTickets = tickets?.slice(0, 6) ?? [];
-  const attentionClients = clients?.filter((c) => c.health !== "saudavel").slice(0, 5) ?? [];
+  const recentTickets = tickets?.slice(0, 5) ?? [];
+
+  // Clientes em atenção — critério do briefing:
+  // 3+ chamados abertos OU pelo menos 1 chamado urgente aberto
+  const attentionClients = useMemo(() => {
+    if (!tickets) return [] as { name: string; openCount: number; hasUrgent: boolean; clientId?: string | null }[];
+    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
+    const buckets = new Map<string, { name: string; openCount: number; hasUrgent: boolean; clientId?: string | null }>();
+    tickets.filter((t: any) => isOpen(t.status)).forEach((t: any) => {
+      const key = t.client?.id ?? t.client_name ?? t.organization;
+      if (!key) return;
+      const name = t.client?.name ?? t.client_name ?? t.organization ?? "Sem cliente";
+      const cur = buckets.get(key) ?? { name, openCount: 0, hasUrgent: false, clientId: t.client?.id ?? null };
+      cur.openCount += 1;
+      if (["urgente", "critica"].includes(t.priority)) cur.hasUrgent = true;
+      buckets.set(key, cur);
+    });
+    return Array.from(buckets.values())
+      .filter((b) => b.openCount >= 3 || b.hasUrgent)
+      .sort((a, b) => Number(b.hasUrgent) - Number(a.hasUrgent) || b.openCount - a.openCount)
+      .slice(0, 5);
+  }, [tickets]);
 
   const handleExport = (kind: "csv" | "pdf") => {
     if (!tickets || !stats) return;
