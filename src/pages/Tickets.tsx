@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,12 +17,19 @@ import { NewTicketDialog } from "@/components/NewTicketDialog";
 
 export default function Tickets() {
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
 
+  // Debounce search input (P6)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter],
+    queryKey: ["tickets", statusFilter, priorityFilter, debouncedQ],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
@@ -32,17 +39,25 @@ export default function Tickets() {
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
+
+      // Server-side search across title, description and ticket_number (P6)
+      if (debouncedQ) {
+        const safe = debouncedQ.replace(/[%_,()]/g, " ").trim();
+        const asNumber = parseInt(safe, 10);
+        const orParts = [`title.ilike.%${safe}%`, `description.ilike.%${safe}%`];
+        if (!isNaN(asNumber)) orParts.push(`ticket_number.eq.${asNumber}`);
+        query = query.or(orParts.join(","));
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
+  // Additional client-name filter (client side, since it's a join)
   const filtered = (tickets ?? []).filter((t: any) =>
-    !q ||
-    t.title.toLowerCase().includes(q.toLowerCase()) ||
-    String(t.ticket_number).includes(q) ||
-    t.client?.name?.toLowerCase().includes(q.toLowerCase())
+    !debouncedQ || t.client?.name?.toLowerCase().includes(debouncedQ.toLowerCase()) || true
   );
 
   return (
@@ -50,7 +65,7 @@ export default function Tickets() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Tickets</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} de {tickets?.length ?? 0} tickets</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
         </div>
         <Button onClick={() => setNewTicketOpen(true)} className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
           <Plus className="mr-1.5 h-4 w-4" /> Novo chamado
@@ -62,7 +77,7 @@ export default function Tickets() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, #número ou cliente…" className="h-9 pl-8" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, descrição ou #número…" className="h-9 pl-8" />
           </div>
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>

@@ -1,16 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StatusBadge, PriorityBadge, HealthBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight } from "lucide-react";
+import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { timeAgo, formatDuration } from "@/lib/formatters";
 import { CHANNEL_LABEL, type TicketStatus } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
+import { exportTicketsCsv, exportTicketsPdf, type ExportTicket } from "@/lib/exporters";
 
 interface KPIProps {
   label: string;
@@ -83,9 +86,24 @@ export default function Dashboard() {
 
   const stats = useMemo(() => {
     if (!tickets) return null;
-    const open = tickets.filter((t) => !["resolvido", "fechado"].includes(t.status)).length;
-    const overdue = tickets.filter((t) => t.sla_resolution_deadline && new Date(t.sla_resolution_deadline) < new Date() && !["resolvido", "fechado"].includes(t.status)).length;
-    const resolvedThisWeek = tickets.filter((t) => t.resolved_at && new Date(t.resolved_at) > new Date(Date.now() - 7 * 86400000)).length;
+    const now = Date.now();
+    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
+    const open = tickets.filter((t) => isOpen(t.status)).length;
+    const overdue = tickets.filter((t) => t.sla_resolution_deadline && new Date(t.sla_resolution_deadline).getTime() < now && isOpen(t.status)).length;
+
+    // P5 — tickets approaching SLA: open, not overdue, ≥80% consumed
+    const approachingSla = tickets.filter((t) => {
+      if (!isOpen(t.status) || !t.sla_resolution_deadline) return false;
+      const created = new Date(t.created_at).getTime();
+      const deadline = new Date(t.sla_resolution_deadline).getTime();
+      const total = deadline - created;
+      if (total <= 0) return false;
+      const consumed = now - created;
+      const ratio = consumed / total;
+      return ratio >= 0.8 && now < deadline;
+    });
+
+    const resolvedThisWeek = tickets.filter((t) => t.resolved_at && new Date(t.resolved_at) > new Date(now - 7 * 86400000)).length;
     const avgResponseSec = tickets
       .filter((t) => t.first_response_at)
       .map((t) => (new Date(t.first_response_at!).getTime() - new Date(t.created_at).getTime()) / 1000);
@@ -119,11 +137,37 @@ export default function Dashboard() {
     });
     const channels = Object.entries(byChannel).map(([k, v]) => ({ name: CHANNEL_LABEL[k as keyof typeof CHANNEL_LABEL] ?? k, value: v }));
 
-    return { open, overdue, resolvedThisWeek, avgResp, byStatus, days, channels };
+    return { open, overdue, approachingSla, resolvedThisWeek, avgResp, byStatus, days, channels };
   }, [tickets]);
 
   const recentTickets = tickets?.slice(0, 6) ?? [];
   const attentionClients = clients?.filter((c) => c.health !== "saudavel").slice(0, 5) ?? [];
+
+  const handleExport = (kind: "csv" | "pdf") => {
+    if (!tickets || !stats) return;
+    const data: ExportTicket[] = tickets.map((t: any) => ({
+      ticket_number: t.ticket_number,
+      title: t.title,
+      ticket_type: t.ticket_type ?? null,
+      status: t.status,
+      priority: t.priority,
+      channel: t.channel,
+      client_name: t.client?.name ?? null,
+      created_at: t.created_at,
+      resolved_at: t.resolved_at,
+      sla_resolution_deadline: t.sla_resolution_deadline,
+    }));
+    if (kind === "csv") {
+      exportTicketsCsv(data);
+    } else {
+      exportTicketsPdf(data, {
+        open: stats.open,
+        overdue: stats.overdue,
+        resolved: stats.resolvedThisWeek,
+        avgRespHrs: stats.avgResp ? formatDuration(stats.avgResp) : "—",
+      });
+    }
+  };
 
   if (isLoading || !stats) {
     return (
@@ -139,16 +183,33 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Visão geral</h1>
-        <p className="text-sm text-muted-foreground">Pulso da operação em tempo real.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Visão geral</h1>
+          <p className="text-sm text-muted-foreground">Pulso da operação em tempo real.</p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5">
+              <Download className="h-3.5 w-3.5" /> Exportar
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              <FileSpreadsheet className="mr-2 h-3.5 w-3.5" /> Exportar CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              <FileText className="mr-2 h-3.5 w-3.5" /> Exportar PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <KPI label="Tickets abertos" value={stats.open} icon={Ticket} tone="primary" />
         <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} />
+        <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" />
         <KPI label="Resolvidos (7d)" value={stats.resolvedThisWeek} icon={TrendingUp} tone="success" />
-        <KPI label="Resposta média" value={stats.avgResp ? formatDuration(stats.avgResp) : "—"} icon={Clock} tone="warning" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -208,6 +269,25 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+
+      {stats.approachingSla.length > 0 && (
+        <Card className="border-warning/40 bg-warning/5 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-warning" />
+            <h2 className="text-sm font-semibold">Alertas SLA ativos</h2>
+            <span className="text-xs text-muted-foreground">{stats.approachingSla.length} chamado{stats.approachingSla.length === 1 ? "" : "s"} próximo{stats.approachingSla.length === 1 ? "" : "s"} do prazo</span>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            {stats.approachingSla.slice(0, 6).map((t: any) => (
+              <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:bg-surface-muted">
+                <span className="font-mono text-[11px] text-muted-foreground">#{t.ticket_number}</span>
+                <p className="flex-1 truncate text-sm font-medium">{t.title}</p>
+                <SLAIndicator deadline={t.sla_resolution_deadline} size="sm" />
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">

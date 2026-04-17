@@ -6,6 +6,41 @@ export type TicketChannel = Database["public"]["Enums"]["ticket_channel"];
 export type ClientHealth = Database["public"]["Enums"]["client_health"];
 export type InteractionType = Database["public"]["Enums"]["interaction_type"];
 export type AppRole = Database["public"]["Enums"]["app_role"];
+export type TicketType = Database["public"]["Enums"]["ticket_type"];
+export type InteractionResult = Database["public"]["Enums"]["interaction_result"];
+
+export const TICKET_TYPE_LABEL: Record<TicketType, string> = {
+  duvida_uso: "Dúvida de uso",
+  configuracao: "Configuração",
+  fechamento: "Fechamento",
+  admissao_demissao: "Admissão / demissão",
+  bug_sistema: "Bug / Erro no sistema",
+  produto_rh_digital: "Produto RH Digital",
+  beneficios_vr: "Benefícios VR",
+  upgrade: "Upgrade",
+  downgrade: "Downgrade",
+  financeiro: "Financeiro",
+};
+
+export const TICKET_TYPE_GROUPS: { label: string; hint: string; types: TicketType[] }[] = [
+  { label: "Operacional", hint: "Você resolve", types: ["duvida_uso", "configuracao", "fechamento", "admissao_demissao"] },
+  { label: "Escalonamento", hint: "Você encaminha", types: ["bug_sistema", "produto_rh_digital", "beneficios_vr"] },
+  { label: "Comercial", hint: "Ação específica", types: ["upgrade", "downgrade", "financeiro"] },
+];
+
+export const INTERACTION_RESULT_LABEL: Record<InteractionResult, string> = {
+  resolvido: "Resolvido",
+  parcialmente_resolvido: "Parcialmente resolvido",
+  escalado: "Escalado",
+  aguardando: "Aguardando",
+};
+
+export const INTERACTION_RESULT_TONE: Record<InteractionResult, "success" | "warning" | "info" | "muted"> = {
+  resolvido: "success",
+  parcialmente_resolvido: "warning",
+  escalado: "info",
+  aguardando: "muted",
+};
 
 export const STATUS_LABEL: Record<TicketStatus, string> = {
   aberto: "Aberto",

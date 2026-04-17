@@ -23,9 +23,13 @@ import { cn } from "@/lib/utils";
 import {
   SLA_RESPONSE_HOURS,
   SLA_RESOLUTION_HOURS,
+  TICKET_TYPE_GROUPS,
+  TICKET_TYPE_LABEL,
   type TicketPriority,
   type TicketChannel,
+  type TicketType,
 } from "@/lib/constants";
+import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 
 interface NewTicketDialogProps {
   open: boolean;
@@ -86,6 +90,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     email: "",
     channel: "whatsapp" as TicketChannel,
     priority: "media" as TicketPriority,
+    ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
     opened_at: toLocalInputValue(now),
@@ -107,6 +112,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         email: "",
         channel: "whatsapp",
         priority: "media",
+        ticket_type: "",
         phone: "",
         anydesk: "",
         opened_at: toLocalInputValue(n),
@@ -156,6 +162,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           description: metadataNote || null,
           priority: form.priority,
           channel: form.channel,
+          ticket_type: form.ticket_type as TicketType,
           client_id: form.client_id || null,
           created_by: user.id,
           created_at: opened.toISOString(),
@@ -178,7 +185,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
 
   const requiredOk =
-    form.title.trim() && form.client_id && form.channel && form.priority && form.phone && form.opened_at;
+    form.title.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.phone && form.opened_at;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,6 +222,39 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 className="h-9"
                 maxLength={200}
               />
+            </div>
+
+            {/* Linha 1.5 — Tipo de chamado (full width) */}
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">
+                Tipo de chamado <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.ticket_type || undefined}
+                onValueChange={(v) => setForm({ ...form, ticket_type: v as TicketType })}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione o tipo de chamado" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[360px]">
+                  {TICKET_TYPE_GROUPS.map((group, idx) => (
+                    <div key={group.label}>
+                      {idx > 0 && <SelectSeparator />}
+                      <SelectGroup>
+                        <SelectLabel className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                          <span>{group.label}</span>
+                          <span className="font-normal text-muted-foreground normal-case tracking-normal">{group.hint}</span>
+                        </SelectLabel>
+                        {group.types.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {TICKET_TYPE_LABEL[t]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Linha 2 — Cliente | Atendente */}
