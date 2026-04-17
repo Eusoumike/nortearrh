@@ -85,11 +85,11 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const now = useMemo(() => new Date(), [open]);
-  const defaultSla = useMemo(() => {
-    const d = new Date(now.getTime() + SLA_RESOLUTION_HOURS.media * 3600_000);
-    return d;
-  }, [now]);
+  const openedDefault = useMemo(() => nowBrasilia(), [open]);
+  const slaDefault = useMemo(
+    () => addHoursToBrasiliaInput(openedDefault, SLA_RESOLUTION_HOURS.media),
+    [openedDefault],
+  );
 
   const [form, setForm] = useState({
     title: "",
@@ -103,16 +103,16 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
-    opened_at: toLocalInputValue(now),
-    sla_deadline: toLocalDateValue(defaultSla),
+    opened_at: openedDefault,
+    sla_deadline: slaDefault,
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
 
   // Reset on open
   useEffect(() => {
     if (open) {
-      const n = new Date();
-      const sla = new Date(n.getTime() + SLA_RESOLUTION_HOURS.media * 3600_000);
+      const n = nowBrasilia();
+      const sla = addHoursToBrasiliaInput(n, SLA_RESOLUTION_HOURS.media);
       setForm({
         title: "",
         client_id: "",
@@ -125,8 +125,8 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         ticket_type: "",
         phone: "",
         anydesk: "",
-        opened_at: toLocalInputValue(n),
-        sla_deadline: toLocalDateValue(sla),
+        opened_at: n,
+        sla_deadline: sla,
       });
     }
   }, [open]);
