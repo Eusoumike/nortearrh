@@ -40,7 +40,7 @@ export function TopBar() {
         .from("tickets")
         .select("id, ticket_number, title, sla_resolution_deadline, status")
         .eq("sla_alert_sent", true)
-        .in("status", ["aberto", "em_andamento", "aguardando_cliente"])
+        .in("status", ["novo", "em_atendimento", "aguardando_cliente", "suporte_vera_n1", "abertura_chamado_n2"])
         .order("sla_resolution_deadline", { ascending: true })
         .limit(10);
       if (error) throw error;

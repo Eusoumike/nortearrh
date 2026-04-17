@@ -43,19 +43,50 @@ export const INTERACTION_RESULT_TONE: Record<InteractionResult, "success" | "war
 };
 
 export const STATUS_LABEL: Record<TicketStatus, string> = {
-  aberto: "Aberto",
-  em_andamento: "Em andamento",
+  novo: "Novo",
+  em_atendimento: "Em atendimento",
   aguardando_cliente: "Aguardando cliente",
+  suporte_vera_n1: "Suporte Vera N1",
+  abertura_chamado_n2: "Abertura chamado N2",
   resolvido: "Resolvido",
-  fechado: "Fechado",
+  // 'fechado' é legado: tratado como Resolvido na UI
+  fechado: "Resolvido",
 };
 
-export const STATUS_TONE: Record<TicketStatus, "info" | "warning" | "muted" | "success" | "neutral"> = {
-  aberto: "info",
-  em_andamento: "warning",
+export const STATUS_TONE: Record<TicketStatus, "info" | "warning" | "muted" | "success" | "neutral" | "primary" | "accent"> = {
+  novo: "info",
+  em_atendimento: "warning",
   aguardando_cliente: "muted",
+  suporte_vera_n1: "accent",
+  abertura_chamado_n2: "primary",
   resolvido: "success",
-  fechado: "neutral",
+  fechado: "success",
+};
+
+// Fluxo ordenado (sem 'fechado', que é sinônimo legado de resolvido)
+export const STATUS_FLOW: TicketStatus[] = [
+  "novo",
+  "em_atendimento",
+  "aguardando_cliente",
+  "suporte_vera_n1",
+  "abertura_chamado_n2",
+  "resolvido",
+];
+
+// Etapas que possuem cronômetro próprio (campos total_<x>_seconds)
+export const TIMED_STAGES = [
+  { key: "em_atendimento" as const, label: "Em atendimento", totalCol: "total_em_atendimento_seconds" as const, enteredCol: "entered_em_atendimento_at" as const },
+  { key: "aguardando_cliente" as const, label: "Aguardando cliente", totalCol: "total_aguardando_cliente_seconds" as const, enteredCol: "entered_aguardando_cliente_at" as const },
+  { key: "suporte_vera_n1" as const, label: "Suporte Vera N1", totalCol: "total_vera_n1_seconds" as const, enteredCol: "entered_vera_n1_at" as const },
+  { key: "abertura_chamado_n2" as const, label: "Abertura N2", totalCol: "total_n2_seconds" as const, enteredCol: "entered_n2_at" as const },
+];
+
+// Alvo de SLA por etapa (em horas) — referência
+export const SLA_PER_STAGE_HOURS: Record<typeof TIMED_STAGES[number]["key"], number> = {
+  em_atendimento: 4,
+  aguardando_cliente: 24,
+  suporte_vera_n1: 8,
+  abertura_chamado_n2: 24,
 };
 
 export const PRIORITY_LABEL: Record<TicketPriority, string> = {
