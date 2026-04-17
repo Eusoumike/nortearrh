@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Tickets", url: "/tickets", icon: Ticket },
+  { title: "Chamados", url: "/tickets", icon: Ticket },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Caixa de entrada", url: "/inbox", icon: Inbox },
 ];
@@ -44,8 +44,8 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">Hub</span>
-              <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Customer Success</span>
+              <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">Nortear</span>
+              <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Connect</span>
             </div>
           )}
         </div>
