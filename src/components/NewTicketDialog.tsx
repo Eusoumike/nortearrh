@@ -61,14 +61,23 @@ function maskPhone(v: string) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-function toLocalInputValue(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// Retorna data de Brasília no formato YYYY-MM-DD para inputs <input type="date">
+function nowBrasiliaDate(): string {
+  return nowBrasilia().slice(0, 10);
 }
 
-function toLocalDateValue(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Adiciona N horas a um datetime-local de Brasília e devolve no mesmo formato
+function addHoursToBrasiliaInput(localValue: string, hours: number): string {
+  const iso = brazilInputToISO(localValue);
+  if (!iso) return localValue;
+  const future = new Date(new Date(iso).getTime() + hours * 3600_000);
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(future);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || "00";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
