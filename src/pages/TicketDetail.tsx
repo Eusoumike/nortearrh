@@ -258,7 +258,7 @@ export default function TicketDetail() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{ticket.title}</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            Criado por {(ticket as any).creator?.full_name ?? "—"} {timeAgo(ticket.created_at)}
+            Aberto em {formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)} · por {(ticket as any).creator?.full_name ?? "—"}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -634,10 +634,10 @@ export default function TicketDetail() {
           {/* Datas */}
           <Card className="p-5 space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datas</h3>
-            <Detail label="Criado">{formatDate(ticket.created_at)}</Detail>
-            <Detail label="Atualizado">{formatDate(ticket.updated_at)}</Detail>
-            {ticket.first_response_at && <Detail label="Primeira resposta">{formatDate(ticket.first_response_at)}</Detail>}
-            {ticket.resolved_at && <Detail label="Resolvido em">{formatDate(ticket.resolved_at)}</Detail>}
+            <Detail label="Aberto em">{formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)}</Detail>
+            <Detail label="Atualizado">{formatBrazilDateTime(ticket.updated_at)}</Detail>
+            {ticket.first_response_at && <Detail label="Primeira resposta">{formatBrazilDateTime(ticket.first_response_at)}</Detail>}
+            {ticket.resolved_at && <Detail label="Resolvido em">{formatBrazilDateTime(ticket.resolved_at)}</Detail>}
           </Card>
         </div>
       </div>
