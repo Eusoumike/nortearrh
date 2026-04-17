@@ -242,7 +242,7 @@ export default function TicketDetail() {
               </Select>
             </Field>
             <Field label="Prioridade">
-              <Select value={ticket.priority} onValueChange={(v) => updateField.mutate({ priority: v })}>
+              <Select value={ticket.priority} onValueChange={(v) => updateField.mutate({ priority: v as TicketPriority })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
