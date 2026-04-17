@@ -63,9 +63,11 @@ function toLocalInputValue(d: Date) {
 
 export default function TicketDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, role } = useAuth();
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
+  const canDelete = role === "admin" || role === "manager";
 
   // Tick a cada 30s para timers
   useEffect(() => {
