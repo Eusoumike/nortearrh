@@ -12,11 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge, PriorityBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   STATUS_LABEL,
+  STATUS_FLOW,
   PRIORITY_LABEL,
   CHANNEL_LABEL,
   INTERACTION_LABEL,
@@ -24,6 +25,8 @@ import {
   TICKET_TYPE_GROUPS,
   INTERACTION_RESULT_LABEL,
   INTERACTION_RESULT_TONE,
+  TIMED_STAGES,
+  SLA_PER_STAGE_HOURS,
   type TicketStatus,
   type TicketPriority,
   type TicketType,
@@ -31,7 +34,7 @@ import {
   type InteractionResult,
   type TicketChannel,
 } from "@/lib/constants";
-import { formatDate, timeAgo } from "@/lib/formatters";
+import { formatDate, timeAgo, formatDuration } from "@/lib/formatters";
 
 const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: string }>> = {
   nota: FileText,
@@ -51,13 +54,20 @@ export default function TicketDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick a cada 30s para timers
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(i);
+  }, []);
 
   const { data: ticket, isLoading } = useQuery({
     queryKey: ["ticket", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("*, client:clients(id, name, email, company, health), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
+        .select("*, client:clients(id, name, email, company, phone, health), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -110,10 +120,10 @@ export default function TicketDetail() {
       const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_d, status) => {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success("Status atualizado.");
+      toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -130,7 +140,6 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // New structured interaction (P2)
   const [newInt, setNewInt] = useState({
     type: "ligacao" as InteractionType,
     channel: "telefone" as TicketChannel,
@@ -160,10 +169,18 @@ export default function TicketDetail() {
         author_id: user.id,
       });
       if (error) throw error;
+      return newInt.result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["interactions", id] });
       qc.invalidateQueries({ queryKey: ["ticket", id] });
+      toast.success("Atendimento registrado.");
+
+      // Híbrido auto: se resultado = resolvido, muda status para resolvido
+      if (result === "resolvido" && ticket && !["resolvido", "fechado"].includes(ticket.status)) {
+        updateStatus.mutate("resolvido");
+      }
+
       setNewInt({
         type: "ligacao",
         channel: "telefone",
@@ -174,7 +191,6 @@ export default function TicketDetail() {
         time_spent_minutes: "",
         is_internal: true,
       });
-      toast.success("Atendimento registrado.");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -185,6 +201,24 @@ export default function TicketDetail() {
 
   const isClosed = ["resolvido", "fechado"].includes(ticket.status);
   const interactionFormReady = newInt.problem_description.trim() && newInt.solution_applied.trim();
+
+  // Status efetivo no fluxo (fechado → resolvido)
+  const effectiveStatus: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
+  const flowIndex = STATUS_FLOW.indexOf(effectiveStatus);
+  const prevStatus = flowIndex > 0 ? STATUS_FLOW[flowIndex - 1] : null;
+  const nextStatus = flowIndex >= 0 && flowIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[flowIndex + 1] : null;
+
+  // Calcula tempo por etapa (acumulado + sessão atual se etapa em curso)
+  const stageDurations = TIMED_STAGES.map((stage) => {
+    const total = ((ticket as any)[stage.totalCol] as number) ?? 0;
+    const enteredAt = (ticket as any)[stage.enteredCol] as string | null;
+    const live = enteredAt ? Math.max(0, (now - new Date(enteredAt).getTime()) / 1000) : 0;
+    return {
+      ...stage,
+      seconds: total + live,
+      isActive: ticket.status === stage.key,
+    };
+  });
 
   return (
     <div className="space-y-4 p-6">
@@ -217,9 +251,23 @@ export default function TicketDetail() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Main column */}
-        <div className="lg:col-span-2 space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        {/* COL ESQUERDA — cliente, descrição, atendimentos, histórico */}
+        <div className="space-y-4">
+          {ticket.client && (
+            <Card className="p-5 space-y-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cliente</h3>
+              <Link to={`/clientes/${ticket.client.id}`} className="block hover:underline">
+                <p className="font-medium">{ticket.client.name}</p>
+              </Link>
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                {(ticket.client as any).company && <div><span className="text-[10px] uppercase tracking-wider">Empresa</span><p className="text-foreground">{(ticket.client as any).company}</p></div>}
+                {(ticket.client as any).email && <div><span className="text-[10px] uppercase tracking-wider">Email</span><p className="text-foreground">{(ticket.client as any).email}</p></div>}
+                {(ticket.client as any).phone && <div><span className="text-[10px] uppercase tracking-wider">Telefone</span><p className="text-foreground">{(ticket.client as any).phone}</p></div>}
+              </div>
+            </Card>
+          )}
+
           {ticket.description && (
             <Card className="p-5">
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descrição</h2>
@@ -377,73 +425,12 @@ export default function TicketDetail() {
                     Registrar atendimento
                   </Button>
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  💡 Se o resultado for "Resolvido", o status do chamado vira <strong>Resolvido</strong> automaticamente.
+                </p>
               </TabsContent>
             </Tabs>
           </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <Card className="p-5 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalhes</h3>
-            <Field label="Tipo de chamado">
-              <Select
-                value={(ticket as any).ticket_type ?? ""}
-                onValueChange={(v) => updateField.mutate({ ticket_type: v as TicketType })}
-              >
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Classificar…" /></SelectTrigger>
-                <SelectContent className="max-h-[320px]">
-                  {TICKET_TYPE_GROUPS.map((group, idx) => (
-                    <div key={group.label}>
-                      {idx > 0 && <SelectSeparator />}
-                      <SelectGroup>
-                        <SelectLabel className="text-[10px] uppercase tracking-wider">{group.label}</SelectLabel>
-                        {group.types.map((t) => (
-                          <SelectItem key={t} value={t}>{TICKET_TYPE_LABEL[t]}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Status">
-              <Select value={ticket.status} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Prioridade">
-              <Select value={ticket.priority} onValueChange={(v) => updateField.mutate({ priority: v as TicketPriority })}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Responsável">
-              <Select value={ticket.assigned_to ?? "unassigned"} onValueChange={(v) => updateField.mutate({ assigned_to: v === "unassigned" ? null : v })}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Não atribuído</SelectItem>
-                  {(profiles ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-          </Card>
-
-          {ticket.client && (
-            <Card className="p-5 space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cliente</h3>
-              <Link to={`/clientes/${ticket.client.id}`} className="block hover:underline">
-                <p className="font-medium">{ticket.client.name}</p>
-                {(ticket.client as any).company && <p className="text-xs text-muted-foreground">{(ticket.client as any).company}</p>}
-                {(ticket.client as any).email && <p className="text-xs text-muted-foreground">{(ticket.client as any).email}</p>}
-              </Link>
-            </Card>
-          )}
 
           {ticket.client_id && (
             <Card className="p-5 space-y-3">
@@ -454,7 +441,7 @@ export default function TicketDetail() {
               {!clientHistory || clientHistory.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Primeiro chamado deste cliente.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="grid gap-2 md:grid-cols-2">
                   {clientHistory.map((h: any) => (
                     <Link
                       key={h.id}
@@ -478,7 +465,133 @@ export default function TicketDetail() {
               )}
             </Card>
           )}
+        </div>
 
+        {/* COL DIREITA — status + fluxo + timers + detalhes */}
+        <div className="space-y-4">
+          {/* Status + fluxo */}
+          <Card className="p-5 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status atual</h3>
+            <div className="flex items-center justify-center py-1">
+              <StatusBadge status={ticket.status} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-8 text-xs"
+                disabled={!prevStatus || updateStatus.isPending}
+                onClick={() => prevStatus && updateStatus.mutate(prevStatus)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> {prevStatus ? STATUS_LABEL[prevStatus] : "—"}
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 h-8 text-xs bg-gradient-brand text-primary-foreground hover:opacity-90"
+                disabled={!nextStatus || updateStatus.isPending}
+                onClick={() => nextStatus && updateStatus.mutate(nextStatus)}
+              >
+                {nextStatus ? STATUS_LABEL[nextStatus] : "—"} <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            {!isClosed && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs"
+                disabled={updateStatus.isPending}
+                onClick={() => updateStatus.mutate("resolvido")}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Marcar como Resolvido
+              </Button>
+            )}
+            <div className="space-y-1 pt-1">
+              <p className="text-[11px] text-muted-foreground">Mudar para…</p>
+              <Select value={effectiveStatus} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
+
+          {/* Timers por etapa */}
+          <Card className="p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tempo por etapa</h3>
+            </div>
+            <div className="space-y-2">
+              {stageDurations.map((s) => {
+                const slaSec = SLA_PER_STAGE_HOURS[s.key] * 3600;
+                const overSla = s.seconds > slaSec;
+                return (
+                  <div
+                    key={s.key}
+                    className={`flex items-center justify-between rounded-md border px-3 py-2 ${
+                      s.isActive ? "border-primary/40 bg-primary/5" : "border-border bg-surface"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium">{s.label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {s.isActive ? "⏱ etapa em curso" : s.seconds > 0 ? "Concluída" : "—"}
+                      </p>
+                    </div>
+                    <span className={`font-mono text-xs ${overSla ? "text-danger font-semibold" : s.isActive ? "text-primary font-semibold" : "text-foreground"}`}>
+                      {s.seconds > 0 ? formatDuration(s.seconds) : "—"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Detalhes */}
+          <Card className="p-5 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalhes</h3>
+            <Field label="Tipo de chamado">
+              <Select
+                value={(ticket as any).ticket_type ?? ""}
+                onValueChange={(v) => updateField.mutate({ ticket_type: v as TicketType })}
+              >
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Classificar…" /></SelectTrigger>
+                <SelectContent className="max-h-[320px]">
+                  {TICKET_TYPE_GROUPS.map((group, idx) => (
+                    <div key={group.label}>
+                      {idx > 0 && <SelectSeparator />}
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] uppercase tracking-wider">{group.label}</SelectLabel>
+                        {group.types.map((t) => (
+                          <SelectItem key={t} value={t}>{TICKET_TYPE_LABEL[t]}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Prioridade">
+              <Select value={ticket.priority} onValueChange={(v) => updateField.mutate({ priority: v as TicketPriority })}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Responsável">
+              <Select value={ticket.assigned_to ?? "unassigned"} onValueChange={(v) => updateField.mutate({ assigned_to: v === "unassigned" ? null : v })}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Não atribuído</SelectItem>
+                  {(profiles ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          </Card>
+
+          {/* Datas */}
           <Card className="p-5 space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datas</h3>
             <Detail label="Criado">{formatDate(ticket.created_at)}</Detail>
