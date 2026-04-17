@@ -13,11 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Filter } from "lucide-react";
 import { CHANNEL_LABEL, STATUS_LABEL, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { timeAgo } from "@/lib/formatters";
+import { NewTicketDialog } from "@/components/NewTicketDialog";
 
 export default function Tickets() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [newTicketOpen, setNewTicketOpen] = useState(false);
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["tickets", statusFilter, priorityFilter],
@@ -50,10 +52,11 @@ export default function Tickets() {
           <h1 className="text-2xl font-semibold tracking-tight">Tickets</h1>
           <p className="text-sm text-muted-foreground">{filtered.length} de {tickets?.length ?? 0} tickets</p>
         </div>
-        <Button asChild className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
-          <Link to="/tickets/novo"><Plus className="mr-1.5 h-4 w-4" /> Novo ticket</Link>
+        <Button onClick={() => setNewTicketOpen(true)} className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
+          <Plus className="mr-1.5 h-4 w-4" /> Novo chamado
         </Button>
       </div>
+      <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
 
       <Card className="p-3">
         <div className="flex flex-wrap items-center gap-2">
