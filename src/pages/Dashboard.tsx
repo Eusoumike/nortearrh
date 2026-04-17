@@ -270,10 +270,27 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {stats.approachingSla.length > 0 && (
+        <Card className="border-warning/40 bg-warning/5 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-warning" />
+            <h2 className="text-sm font-semibold">Alertas SLA ativos</h2>
+            <span className="text-xs text-muted-foreground">{stats.approachingSla.length} chamado{stats.approachingSla.length === 1 ? "" : "s"} próximo{stats.approachingSla.length === 1 ? "" : "s"} do prazo</span>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            {stats.approachingSla.slice(0, 6).map((t: any) => (
+              <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:bg-surface-muted">
+                <span className="font-mono text-[11px] text-muted-foreground">#{t.ticket_number}</span>
+                <p className="flex-1 truncate text-sm font-medium">{t.title}</p>
+                <SLAIndicator deadline={t.sla_resolution_deadline} size="sm" />
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Tickets recentes</h2>
+
             <Link to="/tickets" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
               Ver todos <ArrowUpRight className="h-3 w-3" />
             </Link>
