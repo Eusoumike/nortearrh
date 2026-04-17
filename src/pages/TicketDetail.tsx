@@ -521,36 +521,6 @@ export default function TicketDetail() {
             <div className="flex items-center justify-center py-1">
               <StatusBadge status={ticket.status} />
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 h-8 text-xs"
-                disabled={!prevStatus || updateStatus.isPending}
-                onClick={() => prevStatus && updateStatus.mutate(prevStatus)}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> {prevStatus ? STATUS_LABEL[prevStatus] : "—"}
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1 h-8 text-xs bg-gradient-brand text-primary-foreground hover:opacity-90"
-                disabled={!nextStatus || updateStatus.isPending}
-                onClick={() => nextStatus && updateStatus.mutate(nextStatus)}
-              >
-                {nextStatus ? STATUS_LABEL[nextStatus] : "—"} <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            {!isClosed && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs"
-                disabled={updateStatus.isPending}
-                onClick={() => updateStatus.mutate("resolvido")}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" /> Marcar como Resolvido
-              </Button>
-            )}
             <div className="space-y-1 pt-1">
               <p className="text-[11px] text-muted-foreground">Mudar para…</p>
               <Select value={effectiveStatus} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
