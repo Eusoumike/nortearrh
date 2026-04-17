@@ -314,7 +314,8 @@ export default function TicketDetail() {
                   <div className="space-y-3">
                     {interactions.map((it: any) => {
                       const Icon = TYPE_ICON[it.type as InteractionType] ?? FileText;
-                      const hasStructured = it.problem_description || it.solution_applied;
+                      const summaryText = it.summary || it.content;
+                      const hasLegacy = !summaryText && (it.problem_description || it.solution_applied);
                       return (
                         <div key={it.id} className="flex gap-3">
                           <div className="flex flex-col items-center">
@@ -340,7 +341,7 @@ export default function TicketDetail() {
                               )}
                               <span className="text-muted-foreground">· {timeAgo(it.interaction_at ?? it.created_at)}</span>
                             </div>
-                            {hasStructured ? (
+                            {hasLegacy ? (
                               <div className="mt-2 space-y-2 rounded-md border border-border bg-surface-muted/40 p-3">
                                 {it.problem_description && (
                                   <div>
@@ -355,9 +356,9 @@ export default function TicketDetail() {
                                   </div>
                                 )}
                               </div>
-                            ) : (
-                              <p className="mt-1 whitespace-pre-wrap text-sm">{it.summary}</p>
-                            )}
+                            ) : summaryText ? (
+                              <p className="mt-1 whitespace-pre-wrap text-sm">{summaryText}</p>
+                            ) : null}
                           </div>
                         </div>
                       );
