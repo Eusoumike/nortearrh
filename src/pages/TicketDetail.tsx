@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,7 +12,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge, PriorityBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -52,9 +63,11 @@ function toLocalInputValue(d: Date) {
 
 export default function TicketDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, role } = useAuth();
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
+  const canDelete = role === "admin" || role === "manager";
 
   // Tick a cada 30s para timers
   useEffect(() => {
@@ -140,11 +153,24 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteTicket = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("tickets").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-tickets"] });
+      toast.success("Chamado excluído.");
+      navigate("/tickets");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [newInt, setNewInt] = useState({
     type: "ligacao" as InteractionType,
     channel: "telefone" as TicketChannel,
-    problem_description: "",
-    solution_applied: "",
+    summary: "",
     result: "resolvido" as InteractionResult,
     interaction_at: toLocalInputValue(new Date()),
     time_spent_minutes: "" as string,
@@ -154,17 +180,15 @@ export default function TicketDetail() {
   const addInteraction = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const summary = `${newInt.problem_description.slice(0, 80)}${newInt.problem_description.length > 80 ? "…" : ""}`;
       const { error } = await supabase.from("ticket_interactions").insert({
         ticket_id: id!,
         type: newInt.type,
         channel: newInt.channel,
-        problem_description: newInt.problem_description,
-        solution_applied: newInt.solution_applied,
         result: newInt.result,
         interaction_at: new Date(newInt.interaction_at).toISOString(),
         time_spent_minutes: newInt.time_spent_minutes ? parseInt(newInt.time_spent_minutes, 10) : null,
-        summary,
+        summary: newInt.summary,
+        content: newInt.summary,
         is_internal: newInt.is_internal,
         author_id: user.id,
       });
@@ -184,8 +208,7 @@ export default function TicketDetail() {
       setNewInt({
         type: "ligacao",
         channel: "telefone",
-        problem_description: "",
-        solution_applied: "",
+        summary: "",
         result: "resolvido",
         interaction_at: toLocalInputValue(new Date()),
         time_spent_minutes: "",
@@ -200,7 +223,7 @@ export default function TicketDetail() {
   }
 
   const isClosed = ["resolvido", "fechado"].includes(ticket.status);
-  const interactionFormReady = newInt.problem_description.trim() && newInt.solution_applied.trim();
+  const interactionFormReady = newInt.summary.trim().length > 0;
 
   // Status efetivo no fluxo (fechado → resolvido)
   const effectiveStatus: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
@@ -244,7 +267,37 @@ export default function TicketDetail() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <SLAIndicator deadline={ticket.sla_resolution_deadline} resolved={isClosed} label="Resolução" size="lg" />
+          <div className="flex items-center gap-2">
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                    Excluir
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir chamado #{ticket.ticket_number}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação é permanente. Todos os atendimentos e o histórico de status deste chamado também serão removidos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteTicket.mutate()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleteTicket.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <SLAIndicator deadline={ticket.sla_resolution_deadline} resolved={isClosed} label="Resolução" size="lg" />
+          </div>
           {ticket.sla_response_deadline && !ticket.first_response_at && (
             <SLAIndicator deadline={ticket.sla_response_deadline} label="1ª resp." />
           )}
@@ -291,7 +344,8 @@ export default function TicketDetail() {
                   <div className="space-y-3">
                     {interactions.map((it: any) => {
                       const Icon = TYPE_ICON[it.type as InteractionType] ?? FileText;
-                      const hasStructured = it.problem_description || it.solution_applied;
+                      const summaryText = it.summary || it.content;
+                      const hasLegacy = !summaryText && (it.problem_description || it.solution_applied);
                       return (
                         <div key={it.id} className="flex gap-3">
                           <div className="flex flex-col items-center">
@@ -317,7 +371,7 @@ export default function TicketDetail() {
                               )}
                               <span className="text-muted-foreground">· {timeAgo(it.interaction_at ?? it.created_at)}</span>
                             </div>
-                            {hasStructured ? (
+                            {hasLegacy ? (
                               <div className="mt-2 space-y-2 rounded-md border border-border bg-surface-muted/40 p-3">
                                 {it.problem_description && (
                                   <div>
@@ -332,9 +386,9 @@ export default function TicketDetail() {
                                   </div>
                                 )}
                               </div>
-                            ) : (
-                              <p className="mt-1 whitespace-pre-wrap text-sm">{it.summary}</p>
-                            )}
+                            ) : summaryText ? (
+                              <p className="mt-1 whitespace-pre-wrap text-sm">{summaryText}</p>
+                            ) : null}
                           </div>
                         </div>
                       );
@@ -364,21 +418,12 @@ export default function TicketDetail() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Descrição do problema *</p>
+                  <p className="text-[11px] text-muted-foreground">Resumo *</p>
                   <Textarea
-                    rows={3}
-                    value={newInt.problem_description}
-                    onChange={(e) => setNewInt({ ...newInt, problem_description: e.target.value })}
-                    placeholder="O que o cliente relatou — em suas palavras"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Solução aplicada *</p>
-                  <Textarea
-                    rows={3}
-                    value={newInt.solution_applied}
-                    onChange={(e) => setNewInt({ ...newInt, solution_applied: e.target.value })}
-                    placeholder="O que foi feito para resolver — específico e consultável"
+                    rows={5}
+                    value={newInt.summary}
+                    onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })}
+                    placeholder="O que aconteceu neste atendimento — problema relatado e solução aplicada, em poucas linhas"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
