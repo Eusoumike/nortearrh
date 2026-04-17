@@ -562,6 +562,9 @@ export default function TicketDetail() {
             </div>
           </Card>
 
+          {/* Resumo de tarefas */}
+          <TicketTasksSummary ticketId={id!} />
+
           {/* Timers por etapa */}
           <Card className="p-5 space-y-3">
             <div className="flex items-center gap-2">
