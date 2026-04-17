@@ -242,7 +242,12 @@ export type Database = {
           closed_at: string | null
           created_at: string
           created_by: string | null
+          current_stage_started_at: string
           description: string | null
+          entered_aguardando_cliente_at: string | null
+          entered_em_atendimento_at: string | null
+          entered_n2_at: string | null
+          entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
           pipedrive_deal_id: string | null
@@ -258,6 +263,10 @@ export type Database = {
           ticket_type: Database["public"]["Enums"]["ticket_type"] | null
           title: string
           total_active_seconds: number
+          total_aguardando_cliente_seconds: number
+          total_em_atendimento_seconds: number
+          total_n2_seconds: number
+          total_vera_n1_seconds: number
           updated_at: string
         }
         Insert: {
@@ -268,7 +277,12 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           created_by?: string | null
+          current_stage_started_at?: string
           description?: string | null
+          entered_aguardando_cliente_at?: string | null
+          entered_em_atendimento_at?: string | null
+          entered_n2_at?: string | null
+          entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
           pipedrive_deal_id?: string | null
@@ -284,6 +298,10 @@ export type Database = {
           ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title: string
           total_active_seconds?: number
+          total_aguardando_cliente_seconds?: number
+          total_em_atendimento_seconds?: number
+          total_n2_seconds?: number
+          total_vera_n1_seconds?: number
           updated_at?: string
         }
         Update: {
@@ -294,7 +312,12 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           created_by?: string | null
+          current_stage_started_at?: string
           description?: string | null
+          entered_aguardando_cliente_at?: string | null
+          entered_em_atendimento_at?: string | null
+          entered_n2_at?: string | null
+          entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
           pipedrive_deal_id?: string | null
@@ -310,6 +333,10 @@ export type Database = {
           ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title?: string
           total_active_seconds?: number
+          total_aguardando_cliente_seconds?: number
+          total_em_atendimento_seconds?: number
+          total_n2_seconds?: number
+          total_vera_n1_seconds?: number
           updated_at?: string
         }
         Relationships: [
