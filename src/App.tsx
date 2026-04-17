@@ -12,6 +12,7 @@ import NewTicket from "./pages/NewTicket";
 import TicketDetail from "./pages/TicketDetail";
 import MyTasks from "./pages/MyTasks";
 import Implantacao from "./pages/Implantacao";
+import Performance from "./pages/Performance";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
@@ -39,7 +40,7 @@ const App = () => (
             <Route path="/clientes" element={<Clients />} />
             <Route path="/clientes/:id" element={<ClientDetail />} />
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
-            <Route path="/performance" element={<ComingSoon title="Performance" description="Métricas por agente, ranking e tempo de resolução. Onda 2." />} />
+            <Route path="/performance" element={<Performance />} />
             <Route path="/configuracoes" element={<ComingSoon title="Configurações" description="SLA, integrações Pipedrive/WhatsApp, gestão de usuários. Onda 2/3." />} />
           </Route>
           <Route path="*" element={<NotFound />} />
