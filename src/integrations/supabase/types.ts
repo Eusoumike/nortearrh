@@ -14,16 +14,326 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          account_owner: string | null
+          address: string | null
+          company: string | null
+          created_at: string
+          created_by: string | null
+          document: string | null
+          email: string | null
+          health: Database["public"]["Enums"]["client_health"]
+          health_reason: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          pipedrive_person_id: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          account_owner?: string | null
+          address?: string | null
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          health?: Database["public"]["Enums"]["client_health"]
+          health_reason?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          pipedrive_person_id?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          account_owner?: string | null
+          address?: string | null
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          health?: Database["public"]["Enums"]["client_health"]
+          health_reason?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          pipedrive_person_id?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          job_title: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          job_title?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          job_title?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ticket_interactions: {
+        Row: {
+          author_id: string | null
+          content: string | null
+          created_at: string
+          id: string
+          is_internal: boolean
+          metadata: Json | null
+          summary: string
+          ticket_id: string
+          type: Database["public"]["Enums"]["interaction_type"]
+        }
+        Insert: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          metadata?: Json | null
+          summary: string
+          ticket_id: string
+          type?: Database["public"]["Enums"]["interaction_type"]
+        }
+        Update: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          metadata?: Json | null
+          summary?: string
+          ticket_id?: string
+          type?: Database["public"]["Enums"]["interaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_interactions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          duration_seconds: number | null
+          from_status: Database["public"]["Enums"]["ticket_status"] | null
+          id: string
+          ticket_id: string
+          to_status: Database["public"]["Enums"]["ticket_status"]
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          from_status?: Database["public"]["Enums"]["ticket_status"] | null
+          id?: string
+          ticket_id: string
+          to_status: Database["public"]["Enums"]["ticket_status"]
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          from_status?: Database["public"]["Enums"]["ticket_status"] | null
+          id?: string
+          ticket_id?: string
+          to_status?: Database["public"]["Enums"]["ticket_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_status_history_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          channel: Database["public"]["Enums"]["ticket_channel"]
+          client_id: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          first_response_at: string | null
+          id: string
+          pipedrive_deal_id: string | null
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at: string | null
+          sla_resolution_deadline: string | null
+          sla_response_deadline: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          status_changed_at: string
+          tags: string[] | null
+          ticket_number: number
+          title: string
+          total_active_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          channel?: Database["public"]["Enums"]["ticket_channel"]
+          client_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          first_response_at?: string | null
+          id?: string
+          pipedrive_deal_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          sla_resolution_deadline?: string | null
+          sla_response_deadline?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          status_changed_at?: string
+          tags?: string[] | null
+          ticket_number?: number
+          title: string
+          total_active_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          channel?: Database["public"]["Enums"]["ticket_channel"]
+          client_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          first_response_at?: string | null
+          id?: string
+          pipedrive_deal_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          sla_resolution_deadline?: string | null
+          sla_response_deadline?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          status_changed_at?: string
+          tags?: string[] | null
+          ticket_number?: number
+          title?: string
+          total_active_seconds?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "manager" | "agent" | "viewer"
+      client_health: "saudavel" | "em_atencao" | "critico"
+      interaction_type:
+        | "nota"
+        | "email"
+        | "ligacao"
+        | "whatsapp"
+        | "reuniao"
+        | "mudanca_status"
+      ticket_channel:
+        | "email"
+        | "whatsapp"
+        | "telefone"
+        | "chat"
+        | "portal"
+        | "pipedrive"
+        | "outro"
+      ticket_priority: "baixa" | "media" | "alta" | "critica"
+      ticket_status:
+        | "aberto"
+        | "em_andamento"
+        | "aguardando_cliente"
+        | "resolvido"
+        | "fechado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +460,34 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "manager", "agent", "viewer"],
+      client_health: ["saudavel", "em_atencao", "critico"],
+      interaction_type: [
+        "nota",
+        "email",
+        "ligacao",
+        "whatsapp",
+        "reuniao",
+        "mudanca_status",
+      ],
+      ticket_channel: [
+        "email",
+        "whatsapp",
+        "telefone",
+        "chat",
+        "portal",
+        "pipedrive",
+        "outro",
+      ],
+      ticket_priority: ["baixa", "media", "alta", "critica"],
+      ticket_status: [
+        "aberto",
+        "em_andamento",
+        "aguardando_cliente",
+        "resolvido",
+        "fechado",
+      ],
+    },
   },
 } as const
