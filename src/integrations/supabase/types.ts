@@ -119,6 +119,73 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_name: string | null
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          ticket_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_name?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          ticket_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_name?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          ticket_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_interactions: {
         Row: {
           author_id: string | null
@@ -235,10 +302,16 @@ export type Database = {
       }
       tickets: {
         Row: {
+          anydesk_id: string | null
+          anydesk_password: string | null
+          assigned_name: string | null
           assigned_to: string | null
           category: string | null
           channel: Database["public"]["Enums"]["ticket_channel"]
+          client_email: string | null
           client_id: string | null
+          client_name: string | null
+          client_phone: string | null
           closed_at: string | null
           created_at: string
           created_by: string | null
@@ -250,13 +323,18 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
+          opened_at: string
+          organization: string | null
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           resolved_at: string | null
           sla_alert_sent: boolean
+          sla_deadline: string | null
           sla_resolution_deadline: string | null
           sla_response_deadline: string | null
           status: Database["public"]["Enums"]["ticket_status"]
+          status_ativo_desde: string | null
+          status_ativo_key: string | null
           status_changed_at: string
           tags: string[] | null
           ticket_number: number
@@ -270,10 +348,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anydesk_id?: string | null
+          anydesk_password?: string | null
+          assigned_name?: string | null
           assigned_to?: string | null
           category?: string | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
+          client_email?: string | null
           client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           closed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -285,13 +369,18 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          opened_at?: string
+          organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
           sla_alert_sent?: boolean
+          sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
+          status_ativo_desde?: string | null
+          status_ativo_key?: string | null
           status_changed_at?: string
           tags?: string[] | null
           ticket_number?: number
@@ -305,10 +394,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anydesk_id?: string | null
+          anydesk_password?: string | null
+          assigned_name?: string | null
           assigned_to?: string | null
           category?: string | null
           channel?: Database["public"]["Enums"]["ticket_channel"]
+          client_email?: string | null
           client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           closed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -320,13 +415,18 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          opened_at?: string
+          organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
           sla_alert_sent?: boolean
+          sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
+          status_ativo_desde?: string | null
+          status_ativo_key?: string | null
           status_changed_at?: string
           tags?: string[] | null
           ticket_number?: number
@@ -424,7 +524,9 @@ export type Database = {
         | "portal"
         | "pipedrive"
         | "outro"
-      ticket_priority: "baixa" | "media" | "alta" | "critica"
+        | "reuniao"
+        | "anydesk"
+      ticket_priority: "baixa" | "media" | "alta" | "critica" | "urgente"
       ticket_status:
         | "novo"
         | "em_atendimento"
@@ -595,8 +697,10 @@ export const Constants = {
         "portal",
         "pipedrive",
         "outro",
+        "reuniao",
+        "anydesk",
       ],
-      ticket_priority: ["baixa", "media", "alta", "critica"],
+      ticket_priority: ["baixa", "media", "alta", "critica", "urgente"],
       ticket_status: [
         "novo",
         "em_atendimento",
