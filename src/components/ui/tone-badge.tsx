@@ -14,7 +14,7 @@ const toneBadgeVariants = cva(
         danger: "bg-danger/10 text-danger border-danger/20",
         accent: "bg-accent/15 text-accent-foreground border-accent/30 dark:text-accent",
         primary: "bg-primary/10 text-primary border-primary/20",
-      },
+      } as Record<string, string>,
       size: {
         sm: "text-[10px] px-1.5 py-0.5",
         md: "text-xs px-2 py-0.5",

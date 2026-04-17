@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { timeAgo, formatDuration } from "@/lib/formatters";
-import { CHANNEL_LABEL, type TicketStatus } from "@/lib/constants";
+import { CHANNEL_LABEL, STATUS_LABEL, TIMED_STAGES, type TicketStatus } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
 import { exportTicketsCsv, exportTicketsPdf, type ExportTicket } from "@/lib/exporters";
@@ -55,11 +55,13 @@ function KPI({ label, value, hint, trend, icon: Icon, tone = "primary" }: KPIPro
 }
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
-  aberto: "hsl(var(--info))",
-  em_andamento: "hsl(var(--warning))",
+  novo: "hsl(var(--info))",
+  em_atendimento: "hsl(var(--warning))",
   aguardando_cliente: "hsl(var(--muted-foreground))",
+  suporte_vera_n1: "hsl(var(--accent))",
+  abertura_chamado_n2: "hsl(var(--primary))",
   resolvido: "hsl(var(--success))",
-  fechado: "hsl(var(--muted))",
+  fechado: "hsl(var(--success))",
 };
 
 export default function Dashboard() {
@@ -109,11 +111,12 @@ export default function Dashboard() {
       .map((t) => (new Date(t.first_response_at!).getTime() - new Date(t.created_at).getTime()) / 1000);
     const avgResp = avgResponseSec.length ? avgResponseSec.reduce((a, b) => a + b, 0) / avgResponseSec.length : 0;
 
-    // Status distribution
-    const byStatus = (["aberto", "em_andamento", "aguardando_cliente", "resolvido", "fechado"] as TicketStatus[]).map((status) => ({
+    // Status distribution — agrupa 'fechado' em 'resolvido'
+    const statusList: TicketStatus[] = ["novo", "em_atendimento", "aguardando_cliente", "suporte_vera_n1", "abertura_chamado_n2", "resolvido"];
+    const byStatus = statusList.map((status) => ({
       status,
-      label: status,
-      value: tickets.filter((t) => t.status === status).length,
+      label: STATUS_LABEL[status],
+      value: tickets.filter((t) => t.status === status || (status === "resolvido" && t.status === "fechado")).length,
     }));
 
     // Volume últimos 14 dias
@@ -137,7 +140,21 @@ export default function Dashboard() {
     });
     const channels = Object.entries(byChannel).map(([k, v]) => ({ name: CHANNEL_LABEL[k as keyof typeof CHANNEL_LABEL] ?? k, value: v }));
 
-    return { open, overdue, approachingSla, resolvedThisWeek, avgResp, byStatus, days, channels };
+    // Tempo médio por etapa (em segundos) — apenas tickets que passaram pela etapa (total > 0 ou está nela)
+    const stageAverages = TIMED_STAGES.map((stage) => {
+      const seconds: number[] = [];
+      tickets.forEach((t: any) => {
+        const total = t[stage.totalCol] ?? 0;
+        const enteredAt = t[stage.enteredCol];
+        const live = enteredAt ? Math.max(0, (now - new Date(enteredAt).getTime()) / 1000) : 0;
+        const value = total + live;
+        if (value > 0) seconds.push(value);
+      });
+      const avg = seconds.length ? seconds.reduce((a, b) => a + b, 0) / seconds.length : 0;
+      return { key: stage.key, label: stage.label, avg, count: seconds.length };
+    });
+
+    return { open, overdue, approachingSla, resolvedThisWeek, avgResp, byStatus, days, channels, stageAverages };
   }, [tickets]);
 
   const recentTickets = tickets?.slice(0, 6) ?? [];
@@ -210,6 +227,23 @@ export default function Dashboard() {
         <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} />
         <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" />
         <KPI label="Resolvidos (7d)" value={stats.resolvedThisWeek} icon={TrendingUp} tone="success" />
+      </div>
+
+      {/* Tempo médio por etapa */}
+      <div>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tempo médio por etapa</h2>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {stats.stageAverages.map((s) => (
+            <KPI
+              key={s.key}
+              label={s.label}
+              value={s.avg > 0 ? formatDuration(s.avg) : "—"}
+              hint={s.count > 0 ? `${s.count} chamado${s.count === 1 ? "" : "s"}` : "Sem dados ainda"}
+              icon={Clock}
+              tone="primary"
+            />
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

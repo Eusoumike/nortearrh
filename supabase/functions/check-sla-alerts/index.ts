@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     const { data: tickets, error } = await supabase
       .from("tickets")
       .select("id, ticket_number, title, created_at, sla_resolution_deadline, status, sla_alert_sent")
-      .in("status", ["aberto", "em_andamento", "aguardando_cliente"])
+      .in("status", ["novo", "em_atendimento", "aguardando_cliente", "suporte_vera_n1", "abertura_chamado_n2"])
       .eq("sla_alert_sent", false)
       .not("sla_resolution_deadline", "is", null);
 
