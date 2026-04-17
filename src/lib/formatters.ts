@@ -1,6 +1,53 @@
 import { formatDistanceToNow, format, differenceInSeconds } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+/* ============================================================
+ * Fuso horário — REGRA ABSOLUTA
+ * Tudo que é gravado no banco vai em UTC. A conversão para
+ * Brasília (America/Sao_Paulo, GMT-3) acontece APENAS na exibição.
+ * ============================================================ */
+
+/** Retorna horário atual de Brasília no formato `YYYY-MM-DDTHH:mm`
+ *  pronto pra usar como valor inicial de `<input type="datetime-local">`. */
+export function nowBrasilia(): string {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+/** Converte o valor de um `<input type="datetime-local">` (interpretado
+ *  como horário de Brasília) para ISO UTC antes de salvar no banco. */
+export function brazilInputToISO(localValue: string): string | null {
+  if (!localValue) return null;
+  return new Date(localValue + ":00-03:00").toISOString();
+}
+
+/** Formata uma data ISO (UTC) para exibição completa em Brasília:
+ *  `dd/mm/aaaa hh:mm`. */
+export function formatBrazilDateTime(date: string | Date | null | undefined): string {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(new Date(date)).replace(",", "");
+}
+
+/** Formato curto pra timeline: `dd/mm hh:mm`. */
+export function formatBrazilTime(date: string | Date | null | undefined): string {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit", month: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(new Date(date));
+}
+
 export function timeAgo(date: string | Date): string {
   return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ptBR });
 }
