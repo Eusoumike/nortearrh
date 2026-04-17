@@ -41,9 +41,10 @@ export default function NewTicket() {
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const now = new Date();
-      const respDeadline = new Date(now.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
-      const resDeadline = new Date(now.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
+      const openedISO = brazilInputToISO(form.opened_at) ?? new Date().toISOString();
+      const openedDate = new Date(openedISO);
+      const respDeadline = new Date(openedDate.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
+      const resDeadline = new Date(openedDate.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
       const { data, error } = await supabase.from("tickets").insert({
         title: form.title,
         description: form.description || null,
@@ -52,6 +53,7 @@ export default function NewTicket() {
         category: form.category || null,
         client_id: form.client_id || null,
         created_by: user.id,
+        created_at: openedISO,
         sla_response_deadline: respDeadline.toISOString(),
         sla_resolution_deadline: resDeadline.toISOString(),
       }).select().single();
