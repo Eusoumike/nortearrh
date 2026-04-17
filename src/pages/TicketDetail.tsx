@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2, ListChecks } from "lucide-react";
 import { TicketTasks } from "@/components/TicketTasks";
+import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -560,6 +561,9 @@ export default function TicketDetail() {
               </Select>
             </div>
           </Card>
+
+          {/* Resumo de tarefas */}
+          <TicketTasksSummary ticketId={id!} />
 
           {/* Timers por etapa */}
           <Card className="p-5 space-y-3">
