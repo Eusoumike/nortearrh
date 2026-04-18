@@ -201,14 +201,10 @@ export default function TicketDetail() {
       if (error) throw error;
       return newInt.result;
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["interactions", id] });
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       toast.success("Atendimento registrado.");
-
-      if (result === "resolvido" && ticket && !["resolvido", "fechado"].includes(ticket.status)) {
-        updateStatus.mutate("resolvido");
-      }
 
       setNewInt({
         type: "ligacao",
