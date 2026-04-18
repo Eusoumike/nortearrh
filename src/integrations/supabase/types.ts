@@ -521,7 +521,6 @@ export type Database = {
       tickets: {
         Row: {
           anydesk_id: string | null
-          anydesk_password: string | null
           assigned_name: string | null
           assigned_to: string | null
           category: string | null
@@ -567,7 +566,6 @@ export type Database = {
         }
         Insert: {
           anydesk_id?: string | null
-          anydesk_password?: string | null
           assigned_name?: string | null
           assigned_to?: string | null
           category?: string | null
@@ -613,7 +611,6 @@ export type Database = {
         }
         Update: {
           anydesk_id?: string | null
-          anydesk_password?: string | null
           assigned_name?: string | null
           assigned_to?: string | null
           category?: string | null
