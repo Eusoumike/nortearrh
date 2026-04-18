@@ -54,7 +54,6 @@ export default function Tickets() {
 
       if (debouncedQ) {
         const safe = debouncedQ.replace(/[%_,()]/g, " ").trim();
-        const safe = filters.search.replace(/[%_]/g, "");
         query = query.or(
           `title.ilike.%${safe}%,description.ilike.%${safe}%,ticket_number.ilike.%${safe}%`,
         );
