@@ -343,17 +343,15 @@ export default function TicketDetail() {
             )}
           </div>
 
-
-          <Separator />
-
           {/* Atendimentos */}
           <div>
-            <Tabs defaultValue="timeline">
-              <TabsList className="h-9">
-                <TabsTrigger value="timeline" className="text-xs">Histórico</TabsTrigger>
-                <TabsTrigger value="add" className="text-xs">Registrar</TabsTrigger>
-                <TabsTrigger value="tasks" className="text-xs gap-1"><ListChecks className="h-3 w-3" />Tarefas</TabsTrigger>
+            <Tabs defaultValue="add">
+              <TabsList className="h-9 bg-surface-muted">
+                <TabsTrigger value="add" className="gap-1.5 text-xs"><Send className="h-3 w-3" />Registrar</TabsTrigger>
+                <TabsTrigger value="timeline" className="gap-1.5 text-xs"><History className="h-3 w-3" />Histórico {interactions && interactions.length > 0 && <span className="ml-0.5 rounded-full bg-muted px-1.5 text-[10px] font-medium">{interactions.length}</span>}</TabsTrigger>
+                <TabsTrigger value="tasks" className="gap-1.5 text-xs"><ListChecks className="h-3 w-3" />Tarefas</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="timeline" className="m-0 mt-3">
                 {!interactions || interactions.length === 0 ? (
