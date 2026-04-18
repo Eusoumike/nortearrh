@@ -86,6 +86,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   );
 
   const [form, setForm] = useState({
+    ticket_number: "",
     title: "",
     description: "",
     client_id: "" as string,
@@ -103,12 +104,33 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
 
-  // Reset on open
+  // Reset on open + busca próximo número sequencial
   useEffect(() => {
     if (open) {
       const n = nowBrasilia();
       const sla = addHoursToBrasiliaInput(n, SLA_RESOLUTION_HOURS.media);
+
+      // Busca o maior ticket_number numérico para sugerir o próximo
+      (async () => {
+        const { data } = await supabase
+          .from("tickets")
+          .select("ticket_number")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        let maxNum = 0;
+        (data ?? []).forEach((t: any) => {
+          const digits = String(t.ticket_number ?? "").replace(/\D/g, "");
+          if (digits) {
+            const n = parseInt(digits, 10);
+            if (!isNaN(n) && n > maxNum) maxNum = n;
+          }
+        });
+        const next = String(maxNum + 1).padStart(3, "0");
+        setForm((f) => ({ ...f, ticket_number: next }));
+      })();
+
       setForm({
+        ticket_number: "",
         title: "",
         description: "",
         client_id: "",
