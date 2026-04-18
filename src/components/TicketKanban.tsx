@@ -94,7 +94,7 @@ function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
 function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
-    <div className="flex h-full min-w-[260px] flex-1 flex-col">
+    <div className="flex h-full min-w-0 flex-1 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
         <ToneBadge tone={STATUS_TONE[status]} dot>
           {STATUS_LABEL[status]}
@@ -176,8 +176,8 @@ export function TicketKanban({ tickets }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <Card className="overflow-x-auto p-3">
-        <div className="flex min-h-[60vh] gap-3">
+      <Card className="p-3">
+        <div className="flex min-h-[60vh] gap-2">
           {STATUS_FLOW.map((status) => (
             <Column key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
