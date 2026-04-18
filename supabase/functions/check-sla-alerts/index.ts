@@ -3,12 +3,45 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Require either a shared cron secret OR a valid authenticated user JWT
+  const cronSecret = Deno.env.get("SLA_CRON_SECRET");
+  const providedSecret = req.headers.get("x-cron-secret");
+  const authHeader = req.headers.get("Authorization");
+
+  let authorized = false;
+
+  if (cronSecret && providedSecret && providedSecret === cronSecret) {
+    authorized = true;
+  } else if (authHeader?.startsWith("Bearer ")) {
+    try {
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const token = authHeader.replace("Bearer ", "");
+      const { data, error } = await userClient.auth.getClaims(token);
+      if (!error && data?.claims?.sub) {
+        authorized = true;
+      }
+    } catch (_) {
+      // fall through to unauthorized
+    }
+  }
+
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -57,7 +90,7 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("check-sla-alerts error", e);
-    return new Response(JSON.stringify({ error: String(e) }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
