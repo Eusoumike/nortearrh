@@ -400,8 +400,12 @@ export default function TicketDetail() {
                       const Icon = TYPE_ICON[it.type as InteractionType] ?? FileText;
                       const summaryText = it.summary || it.content;
                       const hasLegacy = !summaryText && (it.problem_description || it.solution_applied);
+                      const isAuthor = user?.id === it.author_id;
+                      const canEdit = isAuthor;
+                      const canRemove = isAuthor || role === "admin" || role === "manager";
+                      const isEditing = editingInteractionId === it.id;
                       return (
-                        <li key={it.id} className="relative">
+                        <li key={it.id} className="group relative">
                           <span className="absolute -left-[27px] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-primary">
                             <Icon className="h-2.5 w-2.5" />
                           </span>
@@ -419,15 +423,90 @@ export default function TicketDetail() {
                             {it.time_spent_minutes != null && (
                               <span className="text-muted-foreground">· {it.time_spent_minutes} min</span>
                             )}
-                          </div>
-                          {summaryText && (
-                            <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{summaryText}</p>
-                          )}
-                          {hasLegacy && (
-                            <div className="mt-1 space-y-1 text-sm">
-                              {it.problem_description && <p className="whitespace-pre-wrap"><span className="font-medium">Problema:</span> {it.problem_description}</p>}
-                              {it.solution_applied && <p className="whitespace-pre-wrap text-muted-foreground"><span className="font-medium text-foreground">Solução:</span> {it.solution_applied}</p>}
+                            <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                              {canEdit && !isEditing && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  title="Editar"
+                                  onClick={() => {
+                                    setEditingInteractionId(it.id);
+                                    setEditingText(summaryText ?? "");
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {canRemove && !isEditing && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" title="Excluir">
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Excluir atendimento?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta ação não pode ser desfeita.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteInteraction.mutate(it.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
+                          </div>
+                          {isEditing ? (
+                            <div className="mt-2 space-y-2">
+                              <Textarea
+                                rows={3}
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                className="text-sm"
+                              />
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateInteraction.mutate({ id: it.id, summary: editingText.trim() })}
+                                  disabled={updateInteraction.isPending || !editingText.trim()}
+                                >
+                                  {updateInteraction.isPending && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+                                  Salvar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingInteractionId(null);
+                                    setEditingText("");
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {summaryText && (
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{summaryText}</p>
+                              )}
+                              {hasLegacy && (
+                                <div className="mt-1 space-y-1 text-sm">
+                                  {it.problem_description && <p className="whitespace-pre-wrap"><span className="font-medium">Problema:</span> {it.problem_description}</p>}
+                                  {it.solution_applied && <p className="whitespace-pre-wrap text-muted-foreground"><span className="font-medium text-foreground">Solução:</span> {it.solution_applied}</p>}
+                                </div>
+                              )}
+                            </>
                           )}
                         </li>
                       );
