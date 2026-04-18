@@ -26,16 +26,23 @@ Deno.serve(async (req: Request) => {
 
   try {
     const PIPEDRIVE_API_TOKEN = Deno.env.get("PIPEDRIVE_API_TOKEN");
-    const PIPEDRIVE_DOMAIN = Deno.env.get("PIPEDRIVE_DOMAIN"); // ex: nortear (sem .pipedrive.com)
+    const PIPEDRIVE_DOMAIN_RAW = Deno.env.get("PIPEDRIVE_DOMAIN"); // ex: nortear (sem .pipedrive.com)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!PIPEDRIVE_API_TOKEN) {
       return json({ error: "PIPEDRIVE_API_TOKEN não configurado" }, 500);
     }
-    if (!PIPEDRIVE_DOMAIN) {
+    if (!PIPEDRIVE_DOMAIN_RAW) {
       return json({ error: "PIPEDRIVE_DOMAIN não configurado (use só o subdomínio, ex: 'nortear')" }, 500);
     }
+
+    // Normaliza: aceita "nortear", "nortear.pipedrive.com" ou "https://nortear.pipedrive.com"
+    const PIPEDRIVE_DOMAIN = PIPEDRIVE_DOMAIN_RAW
+      .trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/.*$/, "")
+      .replace(/\.pipedrive\.com$/i, "");
 
     // Validar usuário autenticado pelo Authorization header
     const authHeader = req.headers.get("Authorization");
