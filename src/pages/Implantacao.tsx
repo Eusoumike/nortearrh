@@ -297,6 +297,19 @@ function ImplantacaoKanban({
     onError: (e: any) => toast.error(e.message),
   });
 
+  const removeImpl = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("implantacoes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["implantacoes"] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      toast.success("Implantação removida.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {};
     stages.forEach((s) => (map[s.key] = []));
@@ -325,9 +338,18 @@ function ImplantacaoKanban({
             if (id) moveStage.mutate({ id, etapa: stage.key });
           }}
         >
-          <div className="mb-2 flex items-center justify-between px-1">
-            <ToneBadge tone={stage.tone} size="sm">{stage.label}</ToneBadge>
-            <span className="text-[10px] text-muted-foreground">{grouped[stage.key]?.length ?? 0}</span>
+          <div className="mb-2 flex items-start justify-between gap-2 px-1 min-h-[44px]">
+            <ToneBadge
+              tone={stage.tone}
+              size="sm"
+              className="line-clamp-2 leading-tight"
+              title={stage.label}
+            >
+              {stage.label}
+            </ToneBadge>
+            <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {grouped[stage.key]?.length ?? 0}
+            </span>
           </div>
           <div className="flex flex-1 flex-col gap-2">
             {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
@@ -339,6 +361,11 @@ function ImplantacaoKanban({
                 item={it}
                 count={counts.get(it.id) ?? { done: 0, total: 0 }}
                 onClick={() => onOpenCard(it.id)}
+                onDelete={() => {
+                  if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
+                    removeImpl.mutate(it.id);
+                  }
+                }}
               />
             ))}
           </div>
@@ -349,8 +376,8 @@ function ImplantacaoKanban({
 }
 
 function KanbanCard({
-  item, count, onClick,
-}: { item: any; count: { done: number; total: number }; onClick: () => void }) {
+  item, count, onClick, onDelete,
+}: { item: any; count: { done: number; total: number }; onClick: () => void; onDelete: () => void }) {
   const days = daysSince(item.data_inicio);
   const overdue = days !== null && days > 15;
   const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
@@ -364,12 +391,22 @@ function KanbanCard({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="group cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
+      className="group relative cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
     >
+      <Button
+        size="icon"
+        variant="ghost"
+        aria-label="Excluir implantação"
+        className="absolute right-1 top-1 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+
       <div className="flex items-start gap-2">
         <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/60" />
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="truncate text-sm font-semibold">{item.client_name}</p>
+          <p className="truncate pr-6 text-sm font-semibold">{item.client_name}</p>
 
           <div className="flex items-center gap-2">
             <Avatar className="h-5 w-5">
