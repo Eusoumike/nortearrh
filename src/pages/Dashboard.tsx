@@ -357,19 +357,25 @@ export default function Dashboard() {
             )}
             {recentTickets.map((t: any) => (
               <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-muted">
-                <span className="font-mono text-sm font-semibold text-foreground w-14">#{String(t.ticket_number).padStart(3, "0")}</span>
+                <span className="w-14 shrink-0 font-mono text-sm font-semibold text-foreground">#{String(t.ticket_number).padStart(3, "0")}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{t.title}</p>
                   <p className="truncate text-xs text-muted-foreground" title={formatBrazilDateTime(t.opened_at ?? t.created_at)}>
                     {t.client?.name ?? t.client_name ?? "Sem cliente"} · {timeAgo(t.opened_at ?? t.created_at)}
                   </p>
                 </div>
-                <PriorityBadge priority={t.priority} />
-                <StatusBadge status={t.status} />
-                {!["resolvido", "fechado"].includes(t.status) && t.sla_resolution_deadline && (
-                  <SLAIndicator deadline={t.sla_resolution_deadline} size="sm" />
-                )}
-                {t.assignee && <UserAvatar name={t.assignee.full_name} url={t.assignee.avatar_url} size="sm" />}
+                <div className="flex shrink-0 items-center gap-2">
+                  <PriorityBadge priority={t.priority} />
+                  {!["resolvido", "fechado"].includes(t.status) && (
+                    <>
+                      <StatusBadge status={t.status} />
+                      {t.sla_resolution_deadline && (
+                        <SLAIndicator deadline={t.sla_resolution_deadline} size="sm" />
+                      )}
+                    </>
+                  )}
+                  {t.assignee && <UserAvatar name={t.assignee.full_name} url={t.assignee.avatar_url} size="sm" />}
+                </div>
               </Link>
             ))}
           </div>
