@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge, PriorityBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { Separator } from "@/components/ui/separator";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,10 +23,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, Trash2, Pencil, ListChecks, Building2, History } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, Trash2, Pencil, ListChecks, Building2, History, Send } from "lucide-react";
 import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -125,6 +126,8 @@ export default function TicketDetail() {
       return data;
     },
   });
+
+  const myProfile = profiles?.find((p) => p.id === user?.id);
 
   const updateStatus = useMutation({
     mutationFn: async (status: TicketStatus) => {
@@ -280,18 +283,21 @@ export default function TicketDetail() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* COLUNA ESQUERDA */}
-        <div className="space-y-5 min-w-0">
-          {/* Header compacto */}
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <span className="font-mono text-sm text-muted-foreground">#{ticket.ticket_number}</span>
-              <h1 className="text-2xl font-semibold tracking-tight leading-tight">{ticket.title}</h1>
+        <div className="space-y-6 min-w-0">
+          {/* Header — bloco com fundo sutil */}
+          <div className="rounded-xl border border-border bg-gradient-to-br from-surface to-surface-muted/40 p-5 space-y-3 shadow-sm">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-mono font-medium text-muted-foreground">#{ticket.ticket_number}</span>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">
+                  Aberto {timeAgo(ticket.opened_at ?? ticket.created_at)} por {(ticket as any).creator?.full_name ?? "—"}
+                </span>
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight leading-tight text-foreground">{ticket.title}</h1>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Aberto em {formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)} · por {(ticket as any).creator?.full_name ?? "—"}
-            </p>
             <div className="flex flex-wrap items-center gap-1.5">
               <StatusBadge status={ticket.status} />
               <PriorityBadge priority={ticket.priority} />
@@ -305,15 +311,14 @@ export default function TicketDetail() {
               )}
             </div>
             {ticket.description && (
-              <p className="whitespace-pre-wrap pt-2 text-sm leading-relaxed text-muted-foreground">{ticket.description}</p>
+              <p className="whitespace-pre-wrap border-t border-border/60 pt-3 text-sm leading-relaxed text-muted-foreground">
+                {ticket.description}
+              </p>
             )}
-          </div>
-
-          {/* Cliente — sem card */}
-          {ticket.client && (
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <Link to={`/clientes/${ticket.client.id}`} className="text-sm font-semibold hover:underline">
+            {ticket.client && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3">
+                <Link to={`/clientes/${ticket.client.id}`} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
+                  <UserAvatar name={ticket.client.name} size="sm" />
                   {ticket.client.name}
                 </Link>
                 {clientCompany && (
@@ -322,168 +327,155 @@ export default function TicketDetail() {
                     {clientCompany}
                   </span>
                 )}
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 {clientEmail && (
-                  <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+                  <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
                     <Mail className="h-3 w-3" />
                     {clientEmail}
                   </a>
                 )}
                 {clientPhone && (
-                  <a href={`tel:${clientPhone}`} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+                  <a href={`tel:${clientPhone}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
                     <Phone className="h-3 w-3" />
                     {clientPhone}
                   </a>
                 )}
               </div>
-            </div>
-          )}
-
-          <Separator />
+            )}
+          </div>
 
           {/* Atendimentos */}
           <div>
-            <Tabs defaultValue="timeline">
-              <TabsList className="h-9">
-                <TabsTrigger value="timeline" className="text-xs">Histórico</TabsTrigger>
-                <TabsTrigger value="add" className="text-xs">Registrar</TabsTrigger>
-                <TabsTrigger value="tasks" className="text-xs gap-1"><ListChecks className="h-3 w-3" />Tarefas</TabsTrigger>
+            <Tabs defaultValue="add">
+              <TabsList className="h-9 bg-surface-muted">
+                <TabsTrigger value="add" className="gap-1.5 text-xs"><Send className="h-3 w-3" />Registrar</TabsTrigger>
+                <TabsTrigger value="timeline" className="gap-1.5 text-xs"><History className="h-3 w-3" />Histórico {interactions && interactions.length > 0 && <span className="ml-0.5 rounded-full bg-muted px-1.5 text-[10px] font-medium">{interactions.length}</span>}</TabsTrigger>
+                <TabsTrigger value="tasks" className="gap-1.5 text-xs"><ListChecks className="h-3 w-3" />Tarefas</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="timeline" className="m-0 mt-3">
+
+              <TabsContent value="timeline" className="m-0 mt-4">
                 {!interactions || interactions.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">Nenhum atendimento registrado ainda.</p>
+                  <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-10 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                      <History className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Nenhum atendimento registrado ainda.</p>
+                  </div>
                 ) : (
-                  <ul className="divide-y divide-border">
+                  <ol className="relative space-y-4 border-l border-border pl-5">
                     {interactions.map((it: any) => {
                       const Icon = TYPE_ICON[it.type as InteractionType] ?? FileText;
                       const summaryText = it.summary || it.content;
                       const hasLegacy = !summaryText && (it.problem_description || it.solution_applied);
                       return (
-                        <li key={it.id} className="flex gap-3 py-2.5">
-                          <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                              <span className="font-medium">{INTERACTION_LABEL[it.type as InteractionType]}</span>
-                              {summaryText && <span className="text-foreground">— {summaryText}</span>}
-                              {hasLegacy && it.problem_description && (
-                                <span className="text-foreground">— {it.problem_description}</span>
-                              )}
-                            </div>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
-                              <span>{it.author?.full_name ?? "Sistema"}</span>
-                              <span>·</span>
-                              <span>{timeAgo(it.interaction_at ?? it.created_at)}</span>
-                              {it.result && (
-                                <>
-                                  <span>·</span>
-                                  <ToneBadge tone={INTERACTION_RESULT_TONE[it.result as InteractionResult]} size="sm">
-                                    {INTERACTION_RESULT_LABEL[it.result as InteractionResult]}
-                                  </ToneBadge>
-                                </>
-                              )}
-                              {it.time_spent_minutes != null && (
-                                <>
-                                  <span>·</span>
-                                  <span>{it.time_spent_minutes} min</span>
-                                </>
-                              )}
-                            </div>
-                            {hasLegacy && it.solution_applied && (
-                              <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                                <span className="font-medium text-foreground">Solução:</span> {it.solution_applied}
-                              </p>
+                        <li key={it.id} className="relative">
+                          <span className="absolute -left-[27px] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-primary">
+                            <Icon className="h-2.5 w-2.5" />
+                          </span>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                            <UserAvatar name={it.author?.full_name} url={it.author?.avatar_url} size="xs" />
+                            <span className="font-medium">{it.author?.full_name ?? "Sistema"}</span>
+                            <span className="text-muted-foreground">{INTERACTION_LABEL[it.type as InteractionType].toLowerCase()}</span>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="text-muted-foreground">{timeAgo(it.interaction_at ?? it.created_at)}</span>
+                            {it.result && (
+                              <ToneBadge tone={INTERACTION_RESULT_TONE[it.result as InteractionResult]} size="sm">
+                                {INTERACTION_RESULT_LABEL[it.result as InteractionResult]}
+                              </ToneBadge>
+                            )}
+                            {it.time_spent_minutes != null && (
+                              <span className="text-muted-foreground">· {it.time_spent_minutes} min</span>
                             )}
                           </div>
+                          {summaryText && (
+                            <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{summaryText}</p>
+                          )}
+                          {hasLegacy && (
+                            <div className="mt-1 space-y-1 text-sm">
+                              {it.problem_description && <p className="whitespace-pre-wrap"><span className="font-medium">Problema:</span> {it.problem_description}</p>}
+                              {it.solution_applied && <p className="whitespace-pre-wrap text-muted-foreground"><span className="font-medium text-foreground">Solução:</span> {it.solution_applied}</p>}
+                            </div>
+                          )}
                         </li>
                       );
                     })}
-                  </ul>
+                  </ol>
                 )}
               </TabsContent>
 
-              <TabsContent value="add" className="m-0 mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Tipo *</p>
-                    <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(INTERACTION_LABEL).filter(([k]) => k !== "mudanca_status").map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Canal *</p>
-                    <Select value={newInt.channel} onValueChange={(v) => setNewInt({ ...newInt, channel: v as TicketChannel })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+              <TabsContent value="add" className="m-0 mt-4">
+                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <div className="flex gap-3">
+                    <UserAvatar name={myProfile?.full_name ?? user?.email} url={myProfile?.avatar_url} size="md" />
+                    <div className="flex-1 space-y-3">
+                      <Textarea
+                        rows={3}
+                        value={newInt.summary}
+                        onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })}
+                        placeholder="O que aconteceu neste atendimento? Descreva o problema e a solução…"
+                        className="resize-none border-0 bg-surface-muted/50 px-3 text-sm focus-visible:ring-1"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
+                          <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(INTERACTION_LABEL).filter(([k]) => k !== "mudanca_status").map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={newInt.channel} onValueChange={(v) => setNewInt({ ...newInt, channel: v as TicketChannel })}>
+                          <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={newInt.result} onValueChange={(v) => setNewInt({ ...newInt, result: v as InteractionResult })}>
+                          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(INTERACTION_RESULT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={newInt.time_spent_minutes}
+                          onChange={(e) => setNewInt({ ...newInt, time_spent_minutes: e.target.value })}
+                          placeholder="min"
+                          className="h-8 w-[70px] text-xs"
+                        />
+                        <Input
+                          type="datetime-local"
+                          value={newInt.interaction_at}
+                          onChange={(e) => setNewInt({ ...newInt, interaction_at: e.target.value })}
+                          className="h-8 w-[180px] text-xs"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                        <Select value={newInt.is_internal ? "internal" : "public"} onValueChange={(v) => setNewInt({ ...newInt, is_internal: v === "internal" })}>
+                          <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="internal">🔒 Nota interna</SelectItem>
+                            <SelectItem value="public">👁 Visível ao cliente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          onClick={() => addInteraction.mutate()}
+                          disabled={!interactionFormReady || addInteraction.isPending}
+                          className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
+                        >
+                          {addInteraction.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+                          Registrar
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Resumo *</p>
-                  <Textarea
-                    rows={4}
-                    value={newInt.summary}
-                    onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })}
-                    placeholder="O que aconteceu — problema relatado e solução aplicada"
-                    className="text-sm"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Resultado *</p>
-                    <Select value={newInt.result} onValueChange={(v) => setNewInt({ ...newInt, result: v as InteractionResult })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(INTERACTION_RESULT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Hora *</p>
-                    <Input
-                      type="datetime-local"
-                      value={newInt.interaction_at}
-                      onChange={(e) => setNewInt({ ...newInt, interaction_at: e.target.value })}
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Tempo (min)</p>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={newInt.time_spent_minutes}
-                      onChange={(e) => setNewInt({ ...newInt, time_spent_minutes: e.target.value })}
-                      placeholder="—"
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <Select value={newInt.is_internal ? "internal" : "public"} onValueChange={(v) => setNewInt({ ...newInt, is_internal: v === "internal" })}>
-                    <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="internal">Nota interna</SelectItem>
-                      <SelectItem value="public">Visível ao cliente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" onClick={() => addInteraction.mutate()} disabled={!interactionFormReady || addInteraction.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
-                    {addInteraction.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                    Registrar
-                  </Button>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  💡 Se o resultado for "Resolvido", o status vira <strong>Resolvido</strong> automaticamente.
+                <p className="mt-2 px-1 text-[11px] text-muted-foreground">
+                  💡 Se o resultado for "Resolvido", o status do chamado vira <strong>Resolvido</strong> automaticamente.
                 </p>
               </TabsContent>
 
-              <TabsContent value="tasks" className="m-0 mt-3">
+              <TabsContent value="tasks" className="m-0 mt-4">
                 <TicketTasks ticketId={id!} />
               </TabsContent>
             </Tabs>
@@ -491,38 +483,35 @@ export default function TicketDetail() {
 
           {/* Histórico do cliente — linha compacta */}
           {ticket.client_id && clientHistory && clientHistory.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <History className="h-3 w-3" />
-                  Histórico do cliente
-                </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                  {clientHistory.map((h: any) => (
-                    <Link
-                      key={h.id}
-                      to={`/tickets/${h.id}`}
-                      className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-                    >
-                      <span className="font-mono text-[11px]">#{h.ticket_number}</span>
-                      <span className="max-w-[200px] truncate">{h.title}</span>
-                      <span className="text-[10px]">· {timeAgo(h.created_at)}</span>
-                    </Link>
-                  ))}
-                </div>
+            <div className="rounded-lg border border-border bg-surface-muted/30 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <History className="h-3 w-3" />
+                Outros chamados deste cliente
               </div>
-            </>
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs">
+                {clientHistory.map((h: any) => (
+                  <Link
+                    key={h.id}
+                    to={`/tickets/${h.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-surface px-2 py-1 text-muted-foreground transition-colors hover:bg-card hover:text-foreground hover:shadow-sm"
+                  >
+                    <span className="font-mono text-[11px] text-primary">#{h.ticket_number}</span>
+                    <span className="max-w-[180px] truncate">{h.title}</span>
+                    <span className="text-[10px]">· {timeAgo(h.created_at)}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
         {/* COLUNA DIREITA */}
-        <aside className="space-y-5">
+        <aside className="space-y-4">
           {/* Status */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
             <Select value={effectiveStatus} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
               </SelectContent>
@@ -531,32 +520,37 @@ export default function TicketDetail() {
 
           <TicketTasksSummary ticketId={id!} />
 
-          {/* Tempo por etapa */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tempo por etapa</p>
-            <ul className="divide-y divide-border rounded-md border border-border">
+          {/* Tempo por etapa — com barra de progresso */}
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tempo por etapa</p>
+            <div className="space-y-2.5">
               {stageDurations.map((s) => {
                 const slaSec = SLA_PER_STAGE_HOURS[s.key] * 3600;
                 const overSla = s.seconds > slaSec;
+                const pct = Math.min(100, (s.seconds / slaSec) * 100);
+                const barColor = overSla ? "bg-danger" : s.isActive ? "bg-primary" : s.seconds > 0 ? "bg-success" : "bg-muted";
                 return (
-                  <li
-                    key={s.key}
-                    className={`flex items-center justify-between px-2.5 py-1.5 text-xs ${s.isActive ? "bg-primary/5" : ""}`}
-                  >
-                    <span className={`truncate ${s.isActive ? "font-medium text-primary" : ""}`}>
-                      {s.label}
-                    </span>
-                    <span className={`font-mono ${overSla ? "text-danger font-semibold" : s.isActive ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                      {s.seconds > 0 ? formatDuration(s.seconds) : "—"}
-                    </span>
-                  </li>
+                  <div key={s.key} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`flex items-center gap-1.5 truncate ${s.isActive ? "font-medium text-primary" : ""}`}>
+                        {s.isActive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />}
+                        {s.label}
+                      </span>
+                      <span className={`font-mono text-[11px] ${overSla ? "text-danger font-semibold" : s.isActive ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                        {s.seconds > 0 ? formatDuration(s.seconds) : "—"}
+                      </span>
+                    </div>
+                    <div className="h-1 overflow-hidden rounded-full bg-muted">
+                      <div className={`h-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           </div>
 
           {/* Detalhes */}
-          <div className="space-y-2">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Detalhes</p>
             <InlineField label="Tipo">
               <Select
@@ -587,19 +581,23 @@ export default function TicketDetail() {
                 </SelectContent>
               </Select>
             </InlineField>
-            <InlineField label="Responsável">
-              <Select value={ticket.assigned_to ?? "unassigned"} onValueChange={(v) => updateField.mutate({ assigned_to: v === "unassigned" ? null : v })}>
-                <SelectTrigger className="h-7 text-xs border-0 px-1.5 hover:bg-surface-muted"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Não atribuído</SelectItem>
-                  {(profiles ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </InlineField>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">Responsável</span>
+              <div className="flex min-w-0 max-w-[65%] items-center gap-1.5">
+                {ticket.assignee && <UserAvatar name={(ticket as any).assignee.full_name} url={(ticket as any).assignee.avatar_url} size="xs" />}
+                <Select value={ticket.assigned_to ?? "unassigned"} onValueChange={(v) => updateField.mutate({ assigned_to: v === "unassigned" ? null : v })}>
+                  <SelectTrigger className="h-7 text-xs border-0 px-1.5 hover:bg-surface-muted"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Não atribuído</SelectItem>
+                    {(profiles ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           {/* Datas — rodapé pequeno */}
-          <div className="space-y-1 pt-2 text-[11px] text-muted-foreground">
+          <div className="space-y-1 px-1 text-[11px] text-muted-foreground">
             <div className="flex justify-between">
               <span>Aberto</span>
               <span className="font-mono">{formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)}</span>
