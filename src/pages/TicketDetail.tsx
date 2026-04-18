@@ -403,87 +403,79 @@ export default function TicketDetail() {
                 )}
               </TabsContent>
 
-              <TabsContent value="add" className="m-0 mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Tipo *</p>
-                    <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(INTERACTION_LABEL).filter(([k]) => k !== "mudanca_status").map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Canal *</p>
-                    <Select value={newInt.channel} onValueChange={(v) => setNewInt({ ...newInt, channel: v as TicketChannel })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+              <TabsContent value="add" className="m-0 mt-4">
+                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <div className="flex gap-3">
+                    <UserAvatar name={myProfile?.full_name ?? user?.email} url={myProfile?.avatar_url} size="md" />
+                    <div className="flex-1 space-y-3">
+                      <Textarea
+                        rows={3}
+                        value={newInt.summary}
+                        onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })}
+                        placeholder="O que aconteceu neste atendimento? Descreva o problema e a solução…"
+                        className="resize-none border-0 bg-surface-muted/50 px-3 text-sm focus-visible:ring-1"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
+                          <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(INTERACTION_LABEL).filter(([k]) => k !== "mudanca_status").map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={newInt.channel} onValueChange={(v) => setNewInt({ ...newInt, channel: v as TicketChannel })}>
+                          <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={newInt.result} onValueChange={(v) => setNewInt({ ...newInt, result: v as InteractionResult })}>
+                          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(INTERACTION_RESULT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={newInt.time_spent_minutes}
+                          onChange={(e) => setNewInt({ ...newInt, time_spent_minutes: e.target.value })}
+                          placeholder="min"
+                          className="h-8 w-[70px] text-xs"
+                        />
+                        <Input
+                          type="datetime-local"
+                          value={newInt.interaction_at}
+                          onChange={(e) => setNewInt({ ...newInt, interaction_at: e.target.value })}
+                          className="h-8 w-[180px] text-xs"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                        <Select value={newInt.is_internal ? "internal" : "public"} onValueChange={(v) => setNewInt({ ...newInt, is_internal: v === "internal" })}>
+                          <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="internal">🔒 Nota interna</SelectItem>
+                            <SelectItem value="public">👁 Visível ao cliente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          onClick={() => addInteraction.mutate()}
+                          disabled={!interactionFormReady || addInteraction.isPending}
+                          className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
+                        >
+                          {addInteraction.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+                          Registrar
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Resumo *</p>
-                  <Textarea
-                    rows={4}
-                    value={newInt.summary}
-                    onChange={(e) => setNewInt({ ...newInt, summary: e.target.value })}
-                    placeholder="O que aconteceu — problema relatado e solução aplicada"
-                    className="text-sm"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Resultado *</p>
-                    <Select value={newInt.result} onValueChange={(v) => setNewInt({ ...newInt, result: v as InteractionResult })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(INTERACTION_RESULT_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Hora *</p>
-                    <Input
-                      type="datetime-local"
-                      value={newInt.interaction_at}
-                      onChange={(e) => setNewInt({ ...newInt, interaction_at: e.target.value })}
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Tempo (min)</p>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={newInt.time_spent_minutes}
-                      onChange={(e) => setNewInt({ ...newInt, time_spent_minutes: e.target.value })}
-                      placeholder="—"
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <Select value={newInt.is_internal ? "internal" : "public"} onValueChange={(v) => setNewInt({ ...newInt, is_internal: v === "internal" })}>
-                    <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="internal">Nota interna</SelectItem>
-                      <SelectItem value="public">Visível ao cliente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" onClick={() => addInteraction.mutate()} disabled={!interactionFormReady || addInteraction.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
-                    {addInteraction.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                    Registrar
-                  </Button>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  💡 Se o resultado for "Resolvido", o status vira <strong>Resolvido</strong> automaticamente.
+                <p className="mt-2 px-1 text-[11px] text-muted-foreground">
+                  💡 Se o resultado for "Resolvido", o status do chamado vira <strong>Resolvido</strong> automaticamente.
                 </p>
               </TabsContent>
 
-              <TabsContent value="tasks" className="m-0 mt-3">
+              <TabsContent value="tasks" className="m-0 mt-4">
                 <TicketTasks ticketId={id!} />
               </TabsContent>
             </Tabs>
