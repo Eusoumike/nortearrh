@@ -626,6 +626,8 @@ export default function TicketDetail() {
           </Card>
         </div>
       </div>
+
+      <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 }
