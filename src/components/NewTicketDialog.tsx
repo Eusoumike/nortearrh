@@ -180,7 +180,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           created_at: openedISO,
           sla_response_deadline: respDeadline.toISOString(),
           sla_resolution_deadline: resDeadline.toISOString(),
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
