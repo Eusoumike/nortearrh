@@ -140,7 +140,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
         anydesk_id: form.anydesk_id.trim() || null,
       };
 
-      const { error } = await supabase.from("tickets").update(patch).eq("id", ticket.id);
+      const { error } = await supabase.from("tickets").update(patch as any).eq("id", ticket.id);
       if (error) throw error;
     },
     onSuccess: () => {
