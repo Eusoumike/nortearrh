@@ -483,38 +483,35 @@ export default function TicketDetail() {
 
           {/* Histórico do cliente — linha compacta */}
           {ticket.client_id && clientHistory && clientHistory.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <History className="h-3 w-3" />
-                  Histórico do cliente
-                </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                  {clientHistory.map((h: any) => (
-                    <Link
-                      key={h.id}
-                      to={`/tickets/${h.id}`}
-                      className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-                    >
-                      <span className="font-mono text-[11px]">#{h.ticket_number}</span>
-                      <span className="max-w-[200px] truncate">{h.title}</span>
-                      <span className="text-[10px]">· {timeAgo(h.created_at)}</span>
-                    </Link>
-                  ))}
-                </div>
+            <div className="rounded-lg border border-border bg-surface-muted/30 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <History className="h-3 w-3" />
+                Outros chamados deste cliente
               </div>
-            </>
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs">
+                {clientHistory.map((h: any) => (
+                  <Link
+                    key={h.id}
+                    to={`/tickets/${h.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-surface px-2 py-1 text-muted-foreground transition-colors hover:bg-card hover:text-foreground hover:shadow-sm"
+                  >
+                    <span className="font-mono text-[11px] text-primary">#{h.ticket_number}</span>
+                    <span className="max-w-[180px] truncate">{h.title}</span>
+                    <span className="text-[10px]">· {timeAgo(h.created_at)}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
         {/* COLUNA DIREITA */}
-        <aside className="space-y-5">
+        <aside className="space-y-4">
           {/* Status */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
             <Select value={effectiveStatus} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
               </SelectContent>
@@ -523,32 +520,37 @@ export default function TicketDetail() {
 
           <TicketTasksSummary ticketId={id!} />
 
-          {/* Tempo por etapa */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tempo por etapa</p>
-            <ul className="divide-y divide-border rounded-md border border-border">
+          {/* Tempo por etapa — com barra de progresso */}
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tempo por etapa</p>
+            <div className="space-y-2.5">
               {stageDurations.map((s) => {
                 const slaSec = SLA_PER_STAGE_HOURS[s.key] * 3600;
                 const overSla = s.seconds > slaSec;
+                const pct = Math.min(100, (s.seconds / slaSec) * 100);
+                const barColor = overSla ? "bg-danger" : s.isActive ? "bg-primary" : s.seconds > 0 ? "bg-success" : "bg-muted";
                 return (
-                  <li
-                    key={s.key}
-                    className={`flex items-center justify-between px-2.5 py-1.5 text-xs ${s.isActive ? "bg-primary/5" : ""}`}
-                  >
-                    <span className={`truncate ${s.isActive ? "font-medium text-primary" : ""}`}>
-                      {s.label}
-                    </span>
-                    <span className={`font-mono ${overSla ? "text-danger font-semibold" : s.isActive ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                      {s.seconds > 0 ? formatDuration(s.seconds) : "—"}
-                    </span>
-                  </li>
+                  <div key={s.key} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`flex items-center gap-1.5 truncate ${s.isActive ? "font-medium text-primary" : ""}`}>
+                        {s.isActive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />}
+                        {s.label}
+                      </span>
+                      <span className={`font-mono text-[11px] ${overSla ? "text-danger font-semibold" : s.isActive ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                        {s.seconds > 0 ? formatDuration(s.seconds) : "—"}
+                      </span>
+                    </div>
+                    <div className="h-1 overflow-hidden rounded-full bg-muted">
+                      <div className={`h-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           </div>
 
           {/* Detalhes */}
-          <div className="space-y-2">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Detalhes</p>
             <InlineField label="Tipo">
               <Select
@@ -579,19 +581,23 @@ export default function TicketDetail() {
                 </SelectContent>
               </Select>
             </InlineField>
-            <InlineField label="Responsável">
-              <Select value={ticket.assigned_to ?? "unassigned"} onValueChange={(v) => updateField.mutate({ assigned_to: v === "unassigned" ? null : v })}>
-                <SelectTrigger className="h-7 text-xs border-0 px-1.5 hover:bg-surface-muted"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Não atribuído</SelectItem>
-                  {(profiles ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </InlineField>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">Responsável</span>
+              <div className="flex min-w-0 max-w-[65%] items-center gap-1.5">
+                {ticket.assignee && <UserAvatar name={(ticket as any).assignee.full_name} url={(ticket as any).assignee.avatar_url} size="xs" />}
+                <Select value={ticket.assigned_to ?? "unassigned"} onValueChange={(v) => updateField.mutate({ assigned_to: v === "unassigned" ? null : v })}>
+                  <SelectTrigger className="h-7 text-xs border-0 px-1.5 hover:bg-surface-muted"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Não atribuído</SelectItem>
+                    {(profiles ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           {/* Datas — rodapé pequeno */}
-          <div className="space-y-1 pt-2 text-[11px] text-muted-foreground">
+          <div className="space-y-1 px-1 text-[11px] text-muted-foreground">
             <div className="flex justify-between">
               <span>Aberto</span>
               <span className="font-mono">{formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)}</span>
