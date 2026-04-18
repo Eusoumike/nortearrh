@@ -86,6 +86,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   );
 
   const [form, setForm] = useState({
+    ticket_number: "",
     title: "",
     description: "",
     client_id: "" as string,
@@ -103,12 +104,33 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
 
-  // Reset on open
+  // Reset on open + busca próximo número sequencial
   useEffect(() => {
     if (open) {
       const n = nowBrasilia();
       const sla = addHoursToBrasiliaInput(n, SLA_RESOLUTION_HOURS.media);
+
+      // Busca o maior ticket_number numérico para sugerir o próximo
+      (async () => {
+        const { data } = await supabase
+          .from("tickets")
+          .select("ticket_number")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        let maxNum = 0;
+        (data ?? []).forEach((t: any) => {
+          const digits = String(t.ticket_number ?? "").replace(/\D/g, "");
+          if (digits) {
+            const n = parseInt(digits, 10);
+            if (!isNaN(n) && n > maxNum) maxNum = n;
+          }
+        });
+        const next = String(maxNum + 1).padStart(3, "0");
+        setForm((f) => ({ ...f, ticket_number: next }));
+      })();
+
       setForm({
+        ticket_number: "",
         title: "",
         description: "",
         client_id: "",
@@ -174,6 +196,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       const { data, error } = await supabase
         .from("tickets")
         .insert({
+          ticket_number: form.ticket_number.trim() || undefined,
           title: form.title.trim(),
           description: form.description.trim() || null,
           priority: form.priority,
@@ -232,8 +255,23 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
         <form onSubmit={handleSubmit} className="px-5 py-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+            {/* Número do chamado */}
+            <div className="space-y-1">
+              <Label htmlFor="ticket_number" className="text-xs">
+                Número do chamado
+              </Label>
+              <Input
+                id="ticket_number"
+                value={form.ticket_number}
+                onChange={(e) => setForm({ ...form, ticket_number: e.target.value })}
+                placeholder="Ex: 031, VR-2024-001"
+                className="h-9 font-mono"
+                maxLength={50}
+              />
+            </div>
+
             {/* Título */}
-            <div className="col-span-2 space-y-1">
+            <div className="space-y-1">
               <Label htmlFor="title" className="text-xs">
                 Título <span className="text-destructive">*</span>
               </Label>
