@@ -56,7 +56,7 @@ export default function NewTicket() {
         created_at: openedISO,
         sla_response_deadline: respDeadline.toISOString(),
         sla_resolution_deadline: resDeadline.toISOString(),
-      }).select().single();
+      } as any).select().single();
       if (error) throw error;
       return data;
     },

@@ -451,7 +451,7 @@ export type Database = {
           status_ativo_key: string | null
           status_changed_at: string
           tags: string[] | null
-          ticket_number: number
+          ticket_number: string
           ticket_type: Database["public"]["Enums"]["ticket_type"] | null
           title: string
           total_active_seconds: number
@@ -497,7 +497,7 @@ export type Database = {
           status_ativo_key?: string | null
           status_changed_at?: string
           tags?: string[] | null
-          ticket_number?: number
+          ticket_number: string
           ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title: string
           total_active_seconds?: number
@@ -543,7 +543,7 @@ export type Database = {
           status_ativo_key?: string | null
           status_changed_at?: string
           tags?: string[] | null
-          ticket_number?: number
+          ticket_number?: string
           ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title?: string
           total_active_seconds?: number

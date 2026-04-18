@@ -23,9 +23,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2, ListChecks } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, History, ChevronLeft, ChevronRight, CheckCircle2, Clock, Trash2, Pencil, ListChecks } from "lucide-react";
 import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
+import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -64,6 +65,7 @@ export default function TicketDetail() {
   const { user, role } = useAuth();
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
+  const [editOpen, setEditOpen] = useState(false);
   const canDelete = role === "admin" || role === "manager";
 
   // Tick a cada 30s para timers
@@ -265,6 +267,10 @@ export default function TicketDetail() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-4 w-4" />
+              Editar
+            </Button>
             {canDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -620,6 +626,8 @@ export default function TicketDetail() {
           </Card>
         </div>
       </div>
+
+      <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 }
