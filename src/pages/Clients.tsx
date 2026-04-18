@@ -11,14 +11,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { HealthBadge } from "@/components/badges";
-import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw } from "lucide-react";
+import { EditClientDialog } from "@/components/EditClientDialog";
+import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 
 export default function Clients() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [editClient, setEditClient] = useState<any | null>(null);
+  const [deleteClient, setDeleteClient] = useState<any | null>(null);
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -59,6 +72,21 @@ export default function Clients() {
       toast.success("Cliente criado.");
       setOpen(false);
       setForm({ name: "", company: "", email: "", phone: "", health: "saudavel", health_reason: "", notes: "" });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-clients"] });
+      qc.invalidateQueries({ queryKey: ["clients-min"] });
+      toast.success("Cliente excluído.");
+      setDeleteClient(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -120,7 +148,7 @@ export default function Clients() {
                   <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Saúde</Label>
+                  <Label>Status</Label>
                   <Select value={form.health} onValueChange={(v) => setForm({ ...form, health: v as ClientHealth })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -139,7 +167,7 @@ export default function Clients() {
               </div>
               {form.health !== "saudavel" && (
                 <div className="space-y-1.5">
-                  <Label>Motivo da atenção</Label>
+                  <Label>Motivo</Label>
                   <Input value={form.health_reason} onChange={(e) => setForm({ ...form, health_reason: e.target.value })} placeholder="Ex.: contrato em renovação" />
                 </div>
               )}
@@ -182,8 +210,9 @@ export default function Clients() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((c) => (
-            <Link key={c.id} to={`/clientes/${c.id}`}>
-              <Card className="group relative h-full p-4 transition-all hover:border-primary/40 hover:shadow-md">
+            <Card key={c.id} className="group relative h-full p-4 transition-all hover:border-primary/40 hover:shadow-md">
+              <Link to={`/clientes/${c.id}`} className="absolute inset-0 z-0" aria-label={`Abrir ${c.name}`} />
+              <div className="relative z-10 pointer-events-none">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{c.name}</p>
@@ -198,11 +227,72 @@ export default function Clients() {
                 {c.health_reason && (
                   <p className="mt-2 line-clamp-2 border-t border-border pt-2 text-xs italic text-muted-foreground">"{c.health_reason}"</p>
                 )}
-              </Card>
-            </Link>
+              </div>
+              <div className="absolute right-2 top-2 z-20 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 bg-background/80 backdrop-blur hover:bg-background"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEditClient(c);
+                  }}
+                  title="Editar"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 bg-background/80 text-destructive backdrop-blur hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteClient(c);
+                  }}
+                  title="Excluir"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </Card>
           ))}
         </div>
       )}
+
+      {editClient && (
+        <EditClientDialog
+          client={editClient}
+          open={!!editClient}
+          onOpenChange={(o) => !o && setEditClient(null)}
+        />
+      )}
+
+      <AlertDialog open={!!deleteClient} onOpenChange={(o) => !o && setDeleteClient(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O cliente <strong>{deleteClient?.name}</strong> será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteClient) remove.mutate(deleteClient.id);
+              }}
+              disabled={remove.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {remove.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

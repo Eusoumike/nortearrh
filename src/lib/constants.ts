@@ -122,9 +122,9 @@ export const CHANNEL_LABEL: Record<TicketChannel, string> = {
 export const ACTIVE_CHANNELS: TicketChannel[] = ["whatsapp", "telefone", "reuniao", "anydesk", "email"];
 
 export const HEALTH_LABEL: Record<ClientHealth, string> = {
-  saudavel: "Saudável",
-  em_atencao: "Em atenção",
-  critico: "Crítico",
+  saudavel: "Ativo",
+  em_atencao: "Em risco",
+  critico: "Inativo",
 };
 
 export const HEALTH_TONE: Record<ClientHealth, "success" | "warning" | "danger"> = {

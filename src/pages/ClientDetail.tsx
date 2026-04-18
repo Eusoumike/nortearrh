@@ -9,15 +9,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HealthBadge, StatusBadge, PriorityBadge } from "@/components/badges";
-import { ArrowLeft, Mail, Phone, Building2, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, Loader2, Pencil } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 import { timeAgo } from "@/lib/formatters";
+import { EditClientDialog } from "@/components/EditClientDialog";
 
 export default function ClientDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
@@ -85,7 +87,12 @@ export default function ClientDetail() {
           </div>
           {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
         </div>
+        <Button variant="outline" onClick={() => setEditOpen(true)}>
+          <Pencil className="mr-1.5 h-4 w-4" /> Editar cliente
+        </Button>
       </div>
+
+      <EditClientDialog client={client} open={editOpen} onOpenChange={setEditOpen} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">

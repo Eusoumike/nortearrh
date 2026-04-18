@@ -18,7 +18,10 @@ export type Database = {
         Row: {
           account_owner: string | null
           address: string | null
+          billing_email: string | null
+          cnpj: string | null
           company: string | null
+          contact_name: string | null
           created_at: string
           created_by: string | null
           document: string | null
@@ -32,11 +35,15 @@ export type Database = {
           pipedrive_person_id: string | null
           tags: string[] | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           account_owner?: string | null
           address?: string | null
+          billing_email?: string | null
+          cnpj?: string | null
           company?: string | null
+          contact_name?: string | null
           created_at?: string
           created_by?: string | null
           document?: string | null
@@ -50,11 +57,15 @@ export type Database = {
           pipedrive_person_id?: string | null
           tags?: string[] | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           account_owner?: string | null
           address?: string | null
+          billing_email?: string | null
+          cnpj?: string | null
           company?: string | null
+          contact_name?: string | null
           created_at?: string
           created_by?: string | null
           document?: string | null
@@ -68,6 +79,7 @@ export type Database = {
           pipedrive_person_id?: string | null
           tags?: string[] | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
