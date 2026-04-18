@@ -357,7 +357,9 @@ export default function Dashboard() {
             )}
             {recentTickets.map((t: any) => (
               <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-surface-muted">
-                <span className="w-14 shrink-0 font-mono text-sm font-semibold text-foreground">#{String(t.ticket_number).padStart(3, "0")}</span>
+                <span className="shrink-0 rounded-md border border-border bg-surface-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">
+                  #{String(t.ticket_number).padStart(3, "0")}
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{t.title}</p>
                   <p className="truncate text-xs text-muted-foreground" title={formatBrazilDateTime(t.opened_at ?? t.created_at)}>
