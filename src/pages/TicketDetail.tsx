@@ -219,6 +219,38 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [editingInteractionId, setEditingInteractionId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+
+  const updateInteraction = useMutation({
+    mutationFn: async ({ id: intId, summary }: { id: string; summary: string }) => {
+      const { error } = await supabase
+        .from("ticket_interactions")
+        .update({ summary, content: summary })
+        .eq("id", intId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["interactions", id] });
+      toast.success("Atendimento atualizado.");
+      setEditingInteractionId(null);
+      setEditingText("");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteInteraction = useMutation({
+    mutationFn: async (intId: string) => {
+      const { error } = await supabase.from("ticket_interactions").delete().eq("id", intId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["interactions", id] });
+      toast.success("Atendimento removido.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading || !ticket) {
     return <div className="space-y-3 p-6"><Skeleton className="h-6 w-32" /><Skeleton className="h-32" /><Skeleton className="h-64" /></div>;
   }
