@@ -23,7 +23,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, Trash2, Pencil, ListChecks, Building2, History, Send } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
@@ -56,7 +61,7 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   email: Mail,
   ligacao: Phone,
   whatsapp: MessageSquare,
-  reuniao: Calendar,
+  reuniao: CalendarIcon,
   mudanca_status: FileText,
 };
 
@@ -411,13 +416,6 @@ export default function TicketDetail() {
                       <div className="truncate font-medium text-foreground">{myProfile?.full_name ?? user?.email}</div>
                       <div className="text-[10px] text-muted-foreground">Registrando atendimento agora</div>
                     </div>
-                    <Select value={newInt.is_internal ? "internal" : "public"} onValueChange={(v) => setNewInt({ ...newInt, is_internal: v === "internal" })}>
-                      <SelectTrigger className="h-7 w-auto gap-1.5 border-0 bg-transparent text-xs hover:bg-surface"><SelectValue /></SelectTrigger>
-                      <SelectContent align="end">
-                        <SelectItem value="internal">🔒 Nota interna</SelectItem>
-                        <SelectItem value="public">👁 Visível ao cliente</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <Textarea
@@ -442,12 +440,57 @@ export default function TicketDetail() {
                           {Object.entries(CHANNEL_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      <Input
-                        type="datetime-local"
-                        value={newInt.interaction_at}
-                        onChange={(e) => setNewInt({ ...newInt, interaction_at: e.target.value })}
-                        className="h-8 w-[180px] border-border/60 bg-card text-xs"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "h-8 justify-start gap-1.5 border-border/60 bg-card px-2.5 text-xs font-normal",
+                              !newInt.interaction_at && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="h-3.5 w-3.5 opacity-70" />
+                            {newInt.interaction_at
+                              ? format(new Date(newInt.interaction_at), "dd MMM yyyy 'às' HH:mm", { locale: ptBR })
+                              : "Escolher data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            locale={ptBR}
+                            selected={newInt.interaction_at ? new Date(newInt.interaction_at) : undefined}
+                            onSelect={(d) => {
+                              if (!d) return;
+                              const current = newInt.interaction_at ? new Date(newInt.interaction_at) : new Date();
+                              d.setHours(current.getHours(), current.getMinutes(), 0, 0);
+                              const yyyy = d.getFullYear();
+                              const mm = String(d.getMonth() + 1).padStart(2, "0");
+                              const dd = String(d.getDate()).padStart(2, "0");
+                              const hh = String(d.getHours()).padStart(2, "0");
+                              const mi = String(d.getMinutes()).padStart(2, "0");
+                              setNewInt({ ...newInt, interaction_at: `${yyyy}-${mm}-${dd}T${hh}:${mi}` });
+                            }}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                          <div className="flex items-center gap-2 border-t border-border p-3">
+                            <span className="text-xs text-muted-foreground">Horário</span>
+                            <Input
+                              type="time"
+                              value={newInt.interaction_at ? newInt.interaction_at.slice(11, 16) : "00:00"}
+                              onChange={(e) => {
+                                const time = e.target.value;
+                                const datePart = newInt.interaction_at ? newInt.interaction_at.slice(0, 10) : nowBrasilia().slice(0, 10);
+                                setNewInt({ ...newInt, interaction_at: `${datePart}T${time}` });
+                              }}
+                              className="h-8 w-[110px] text-xs"
+                            />
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <Button
                       size="sm"
