@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      checklist_items: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          etapa: Database["public"]["Enums"]["implantacao_etapa"]
+          id: string
+          implantacao_id: string
+          label: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          etapa: Database["public"]["Enums"]["implantacao_etapa"]
+          id?: string
+          implantacao_id: string
+          label: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          etapa?: Database["public"]["Enums"]["implantacao_etapa"]
+          id?: string
+          implantacao_id?: string
+          label?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_implantacao_id_fkey"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           account_owner: string | null
@@ -98,50 +139,101 @@ export type Database = {
           },
         ]
       }
+      implantacao_stage_configs: {
+        Row: {
+          created_at: string
+          hidden: boolean
+          id: string
+          is_custom: boolean
+          label: string
+          ordem: number
+          stage_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          is_custom?: boolean
+          label: string
+          ordem?: number
+          stage_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          is_custom?: boolean
+          label?: string
+          ordem?: number
+          stage_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       implantacoes: {
         Row: {
           client_id: string | null
           client_name: string
+          cnpj: string | null
+          contato_cliente: string | null
           created_at: string
           created_by: string | null
           data_go_live: string | null
           data_inicio: string | null
+          email_cliente: string | null
           etapa: Database["public"]["Enums"]["implantacao_etapa"]
           id: string
           observacoes: string | null
           ordem: number
           produto: string | null
+          responsavel_email: string | null
           responsavel_id: string | null
+          telefone_cliente: string | null
           updated_at: string
         }
         Insert: {
           client_id?: string | null
           client_name: string
+          cnpj?: string | null
+          contato_cliente?: string | null
           created_at?: string
           created_by?: string | null
           data_go_live?: string | null
           data_inicio?: string | null
+          email_cliente?: string | null
           etapa?: Database["public"]["Enums"]["implantacao_etapa"]
           id?: string
           observacoes?: string | null
           ordem?: number
           produto?: string | null
+          responsavel_email?: string | null
           responsavel_id?: string | null
+          telefone_cliente?: string | null
           updated_at?: string
         }
         Update: {
           client_id?: string | null
           client_name?: string
+          cnpj?: string | null
+          contato_cliente?: string | null
           created_at?: string
           created_by?: string | null
           data_go_live?: string | null
           data_inicio?: string | null
+          email_cliente?: string | null
           etapa?: Database["public"]["Enums"]["implantacao_etapa"]
           id?: string
           observacoes?: string | null
           ordem?: number
           produto?: string | null
+          responsavel_email?: string | null
           responsavel_id?: string | null
+          telefone_cliente?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -632,10 +724,10 @@ export type Database = {
       client_health: "saudavel" | "em_atencao" | "critico"
       implantacao_etapa:
         | "novo_cliente"
-        | "kickoff"
-        | "configuracao"
-        | "treinamento"
-        | "go_live"
+        | "boas_vindas"
+        | "treinamento_1"
+        | "treinamento_2"
+        | "treinamento_3"
         | "finalizado"
       interaction_result:
         | "resolvido"
@@ -810,10 +902,10 @@ export const Constants = {
       client_health: ["saudavel", "em_atencao", "critico"],
       implantacao_etapa: [
         "novo_cliente",
-        "kickoff",
-        "configuracao",
-        "treinamento",
-        "go_live",
+        "boas_vindas",
+        "treinamento_1",
+        "treinamento_2",
+        "treinamento_3",
         "finalizado",
       ],
       interaction_result: [
