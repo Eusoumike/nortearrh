@@ -6,10 +6,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToneBadge } from "@/components/ui/tone-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ListChecks, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ListChecks, Search, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatBrazilDateTime } from "@/lib/formatters";
@@ -45,6 +50,13 @@ export default function MyTasks() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<TaskFilter>("abertas");
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    priority: "media",
+    due_date: "",
+  });
 
   // Busca todas as tarefas (criadas ou atribuídas ao usuário) + ticket relacionado
   const { data: tasks, isLoading } = useQuery({
@@ -72,6 +84,30 @@ export default function MyTasks() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-tasks", user?.id] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Não autenticado");
+      if (!form.title.trim()) throw new Error("Título obrigatório");
+      const { error } = await supabase.from("tasks").insert({
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        priority: form.priority,
+        due_date: form.due_date || null,
+        status: "pendente",
+        assigned_to: user.id,
+        created_by: user.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-tasks", user?.id] });
+      toast.success("Tarefa criada.");
+      setOpen(false);
+      setForm({ title: "", description: "", priority: "media", due_date: "" });
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -118,14 +154,81 @@ export default function MyTasks() {
             Tarefas atribuídas a você ou criadas por você, em todos os chamados.
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar tarefa, chamado, #número…"
-            className="h-9 pl-8 text-sm"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar tarefa, chamado, #número…"
+              className="h-9 pl-8 text-sm"
+            />
+          </div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
+                <Plus className="mr-1.5 h-4 w-4" /> Nova tarefa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>Nova tarefa</DialogTitle></DialogHeader>
+              <form
+                className="space-y-3"
+                onSubmit={(e) => { e.preventDefault(); create.mutate(); }}
+              >
+                <div className="space-y-1.5">
+                  <Label>Título *</Label>
+                  <Input
+                    required
+                    autoFocus
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    placeholder="Ex.: Ligar para o cliente"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Descrição</Label>
+                  <Textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Prioridade</Label>
+                    <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baixa">Baixa</SelectItem>
+                        <SelectItem value="media">Média</SelectItem>
+                        <SelectItem value="alta">Alta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Vencimento</Label>
+                    <Input
+                      type="date"
+                      value={form.due_date}
+                      onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button
+                    type="submit"
+                    disabled={create.isPending || !form.title.trim()}
+                    className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+                  >
+                    {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Criar tarefa
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
