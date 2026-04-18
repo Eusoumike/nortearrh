@@ -176,11 +176,13 @@ export function TicketKanban({ tickets }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <Card className="p-3">
-        <div className="flex min-h-[60vh] gap-2">
-          {STATUS_FLOW.map((status) => (
-            <Column key={status} status={status} tickets={grouped[status]} now={now} />
-          ))}
+      <Card className="p-2 md:p-3">
+        <div className="overflow-x-auto">
+          <div className="flex min-h-[60vh] gap-2" style={{ minWidth: `${STATUS_FLOW.length * 240}px` }}>
+            {STATUS_FLOW.map((status) => (
+              <Column key={status} status={status} tickets={grouped[status]} now={now} />
+            ))}
+          </div>
         </div>
       </Card>
       <DragOverlay>

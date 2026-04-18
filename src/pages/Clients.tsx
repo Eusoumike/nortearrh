@@ -109,15 +109,17 @@ export default function Clients() {
   });
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} clientes</p>
+    <div className="space-y-4 p-4 md:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Clientes</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} clientes</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
+            className="h-9"
             onClick={() => syncPipedrive.mutate()}
             disabled={syncPipedrive.isPending}
             title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
@@ -127,12 +129,13 @@ export default function Clients() {
             ) : (
               <RefreshCw className="mr-1.5 h-4 w-4" />
             )}
-            Sincronizar Pipedrive
+            <span className="hidden sm:inline">Sincronizar Pipedrive</span>
+            <span className="sm:hidden">Sync</span>
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
-                <Plus className="mr-1.5 h-4 w-4" /> Novo cliente
+              <Button size="sm" className="h-9 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
+                <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Novo cliente</span><span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="max-w-lg">

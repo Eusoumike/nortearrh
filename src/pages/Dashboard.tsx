@@ -219,15 +219,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Visão geral</h1>
-          <p className="text-sm text-muted-foreground">Pulso da operação em tempo real.</p>
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Visão geral</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">Pulso da operação em tempo real.</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1.5">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 self-start sm:self-auto">
               <Download className="h-3.5 w-3.5" /> Exportar
             </Button>
           </DropdownMenuTrigger>
