@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -37,21 +38,20 @@ interface NewTicketDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Canais reduzidos conforme especificação do modal
 const CHANNEL_OPTIONS: { value: TicketChannel; label: string }[] = [
   { value: "whatsapp", label: "WhatsApp" },
   { value: "email", label: "Email" },
   { value: "telefone", label: "Telefone" },
 ];
 
-// Prioridades reduzidas (sem "crítica" no modal rápido)
 const PRIORITY_OPTIONS: { value: TicketPriority; label: string }[] = [
   { value: "baixa", label: "Baixa" },
   { value: "media", label: "Média" },
   { value: "alta", label: "Alta" },
 ];
 
-// Máscara (11) 99999-9999
+const UNASSIGNED = "unassigned";
+
 function maskPhone(v: string) {
   const digits = v.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 2) return digits.length ? `(${digits}` : "";
@@ -61,12 +61,6 @@ function maskPhone(v: string) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-// Retorna data de Brasília no formato YYYY-MM-DD para inputs <input type="date">
-function nowBrasiliaDate(): string {
-  return nowBrasilia().slice(0, 10);
-}
-
-// Adiciona N horas a um datetime-local de Brasília e devolve no mesmo formato
 function addHoursToBrasiliaInput(localValue: string, hours: number): string {
   const iso = brazilInputToISO(localValue);
   if (!iso) return localValue;
@@ -93,11 +87,12 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
   const [form, setForm] = useState({
     title: "",
+    description: "",
     client_id: "" as string,
-    client_search: "",
-    assignee: "Nortear",
+    assigned_to: UNASSIGNED as string,
     organization: "",
     email: "",
+    category: "",
     channel: "whatsapp" as TicketChannel,
     priority: "media" as TicketPriority,
     ticket_type: "" as TicketType | "",
@@ -115,11 +110,12 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       const sla = addHoursToBrasiliaInput(n, SLA_RESOLUTION_HOURS.media);
       setForm({
         title: "",
+        description: "",
         client_id: "",
-        client_search: "",
-        assignee: "Nortear",
+        assigned_to: UNASSIGNED,
         organization: "",
         email: "",
+        category: "",
         channel: "whatsapp",
         priority: "media",
         ticket_type: "",
@@ -144,7 +140,21 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     enabled: open,
   });
 
+  const { data: profiles } = useQuery({
+    queryKey: ["profiles-min"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
   const selectedClient = clients?.find((c) => c.id === form.client_id);
+  const selectedAssignee = profiles?.find((p) => p.id === form.assigned_to);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -152,32 +162,34 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       const openedISO = brazilInputToISO(form.opened_at) ?? new Date().toISOString();
       const openedDate = new Date(openedISO);
       const respDeadline = new Date(openedDate.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
-      // SLA: input <date> é dia em Brasília → 23:59:59 BRT
       const resDeadline = form.sla_deadline
         ? new Date(`${form.sla_deadline}T23:59:59-03:00`)
         : new Date(openedDate.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
 
-      const metadataNote = [
-        form.anydesk ? `AnyDesk: ${form.anydesk}` : null,
-        form.phone ? `Telefone: ${form.phone}` : null,
-        form.email && !selectedClient?.email ? `Email: ${form.email}` : null,
-        form.organization && !selectedClient?.company ? `Organização: ${form.organization}` : null,
-        form.assignee ? `Responsável: ${form.assignee}` : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      const assignedTo = form.assigned_to === UNASSIGNED ? null : form.assigned_to;
+      const assignedName = assignedTo
+        ? profiles?.find((p) => p.id === assignedTo)?.full_name ?? null
+        : null;
 
       const { data, error } = await supabase
         .from("tickets")
         .insert({
-          title: form.title,
-          description: metadataNote || null,
+          title: form.title.trim(),
+          description: form.description.trim() || null,
           priority: form.priority,
           channel: form.channel,
           ticket_type: form.ticket_type as TicketType,
+          category: form.category.trim() || null,
           client_id: form.client_id || null,
+          client_phone: form.phone || null,
+          client_email: form.email.trim() || null,
+          organization: form.organization.trim() || null,
+          anydesk_id: form.anydesk.trim() || null,
+          assigned_to: assignedTo,
+          assigned_name: assignedName,
           created_by: user.id,
           created_at: openedISO,
+          opened_at: openedISO,
           sla_response_deadline: respDeadline.toISOString(),
           sla_resolution_deadline: resDeadline.toISOString(),
         } as any)
@@ -197,7 +209,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
 
   const requiredOk =
-    form.title.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.phone && form.opened_at;
+    form.title.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.opened_at;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,7 +222,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
         <DialogHeader className="border-b border-border px-5 py-3">
           <DialogTitle className="text-base">Novo Chamado</DialogTitle>
           <DialogDescription className="text-xs">
@@ -218,9 +230,9 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4">
+        <form onSubmit={handleSubmit} className="px-5 py-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-            {/* Linha 1 — Título */}
+            {/* Título */}
             <div className="col-span-2 space-y-1">
               <Label htmlFor="title" className="text-xs">
                 Título <span className="text-destructive">*</span>
@@ -230,13 +242,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 required
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Descreva o chamado"
+                placeholder="Resumo do chamado"
                 className="h-9"
                 maxLength={200}
               />
             </div>
 
-            {/* Linha 1.5 — Tipo de chamado (full width) */}
+            {/* Tipo de chamado */}
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">
                 Tipo de chamado <span className="text-destructive">*</span>
@@ -269,7 +281,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               </Select>
             </div>
 
-            {/* Linha 2 — Cliente | Atendente */}
+            {/* Cliente | Atendente */}
             <div className="space-y-1">
               <Label className="text-xs">
                 Cliente <span className="text-destructive">*</span>
@@ -306,7 +318,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                               setForm((prev) => ({
                                 ...prev,
                                 client_id: c.id,
-                                client_search: c.name,
                                 organization: c.company ?? prev.organization,
                                 email: c.email ?? prev.email,
                                 phone: c.phone ? maskPhone(c.phone) : prev.phone,
@@ -338,20 +349,24 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
             <div className="space-y-1">
               <Label className="text-xs">Atendente Responsável</Label>
               <Select
-                value={form.assignee}
-                onValueChange={(v) => setForm({ ...form, assignee: v })}
+                value={form.assigned_to}
+                onValueChange={(v) => setForm({ ...form, assigned_to: v })}
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Nortear">Nortear</SelectItem>
-                  <SelectItem value="Não atribuído">Não atribuído</SelectItem>
+                  <SelectItem value={UNASSIGNED}>Não atribuído</SelectItem>
+                  {(profiles ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name ?? "—"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Linha 3 — Organização | Email */}
+            {/* Organização | Email */}
             <div className="space-y-1">
               <Label htmlFor="org" className="text-xs">Organização</Label>
               <Input
@@ -376,7 +391,31 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               />
             </div>
 
-            {/* Linha 4 — Canal | Prioridade */}
+            {/* Telefone | Categoria */}
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs">Telefone</Label>
+              <Input
+                id="phone"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: maskPhone(e.target.value) })}
+                placeholder="(11) 99999-9999"
+                className="h-9"
+                inputMode="tel"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="category" className="text-xs">Categoria</Label>
+              <Input
+                id="category"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex: Folha, Benefícios…"
+                className="h-9"
+                maxLength={100}
+              />
+            </div>
+
+            {/* Canal | Prioridade */}
             <div className="space-y-1">
               <Label className="text-xs">
                 Canal <span className="text-destructive">*</span>
@@ -418,21 +457,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               </Select>
             </div>
 
-            {/* Linha 5 — Telefone | AnyDesk */}
-            <div className="space-y-1">
-              <Label htmlFor="phone" className="text-xs">
-                Telefone <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="phone"
-                required
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: maskPhone(e.target.value) })}
-                placeholder="(11) 99999-9999"
-                className="h-9"
-                inputMode="tel"
-              />
-            </div>
+            {/* AnyDesk (linha sozinha, depois data abertura/sla) */}
             <div className="space-y-1">
               <Label htmlFor="anydesk" className="text-xs">AnyDesk do Cliente</Label>
               <Input
@@ -444,8 +469,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 maxLength={50}
               />
             </div>
-
-            {/* Linha 6 — Data Abertura | Prazo SLA */}
             <div className="space-y-1">
               <Label htmlFor="opened" className="text-xs">
                 Data de Abertura <span className="text-destructive">*</span>
@@ -459,6 +482,8 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 className="h-9"
               />
             </div>
+
+            {/* Prazo SLA (full row pra alinhar) */}
             <div className="space-y-1">
               <Label htmlFor="sla" className="text-xs">Prazo SLA</Label>
               <Input
@@ -467,6 +492,20 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 value={form.sla_deadline}
                 onChange={(e) => setForm({ ...form, sla_deadline: e.target.value })}
                 className="h-9"
+              />
+            </div>
+            <div />
+
+            {/* Descrição (opcional, full width) */}
+            <div className="col-span-2 space-y-1">
+              <Label htmlFor="description" className="text-xs">Descrição do problema</Label>
+              <Textarea
+                id="description"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Detalhes adicionais — o que o cliente relatou, contexto, prints, etc. (opcional)"
+                rows={4}
+                maxLength={2000}
               />
             </div>
           </div>
