@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -55,6 +55,7 @@ function timeOnCurrentStage(t: KanbanTicket, now: number): number {
 
 function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
+  const navigate = useNavigate();
   const elapsed = timeOnCurrentStage(t, now);
 
   return (
@@ -62,19 +63,23 @@ function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`group cursor-grab active:cursor-grabbing rounded-md border border-border bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md ${
+      onClick={() => navigate(`/tickets/${t.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate(`/tickets/${t.id}`);
+        }
+      }}
+      className={`group cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         isDragging ? "opacity-40" : ""
       }`}
     >
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <Link
-          to={`/tickets/${t.id}`}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="font-mono text-[10px] text-muted-foreground hover:text-primary hover:underline"
-        >
+        <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary">
           #{t.ticket_number}
-        </Link>
+        </span>
         <PriorityBadge priority={t.priority} />
       </div>
       <p className="line-clamp-2 text-xs font-medium leading-snug">{t.title}</p>
