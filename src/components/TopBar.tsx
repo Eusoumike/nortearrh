@@ -129,8 +129,8 @@ export function TopBar() {
             </div>
           </PopoverContent>
         </Popover>
-        <Button size="sm" className="ml-2 h-8 gap-1.5 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90" onClick={() => setNewTicketOpen(true)}>
-          <Plus className="h-3.5 w-3.5" /> Novo chamado
+        <Button size="sm" className="ml-1 h-8 gap-1.5 bg-gradient-brand px-2 text-primary-foreground shadow-sm hover:opacity-90 sm:ml-2 sm:px-3" onClick={() => setNewTicketOpen(true)}>
+          <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Novo chamado</span>
         </Button>
       </div>
       <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />

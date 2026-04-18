@@ -192,22 +192,24 @@ export default function Implantacao() {
   const visibleStages = stages.filter((s) => !s.hidden);
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Implantação</h1>
-          <p className="text-sm text-muted-foreground">
+    <div className="space-y-4 p-4 md:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Implantação</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">
             Onboarding de novos clientes com checklist e mensagens prontas para WhatsApp.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setOpenCustomize(true)}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9" onClick={() => setOpenCustomize(true)}>
             <Settings2 className="h-4 w-4" />
-            Personalizar etapas
+            <span className="hidden sm:inline">Personalizar etapas</span>
+            <span className="sm:hidden">Etapas</span>
           </Button>
-          <Button onClick={() => setOpenNew(true)} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+          <Button size="sm" onClick={() => setOpenNew(true)} className="h-9 bg-gradient-brand text-primary-foreground hover:opacity-90">
             <Plus className="h-4 w-4" />
-            Novo Cliente
+            <span className="hidden sm:inline">Novo Cliente</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </div>
@@ -326,7 +328,11 @@ function ImplantacaoKanban({
   }
 
   return (
-    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+    <div className="-mx-4 overflow-x-auto pb-2 md:mx-0">
+      <div
+        className="grid gap-3 px-4 md:px-0"
+        style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(260px, 1fr))` }}
+      >
       {stages.map((stage) => (
         <div
           key={stage.key}
@@ -371,6 +377,7 @@ function ImplantacaoKanban({
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }
