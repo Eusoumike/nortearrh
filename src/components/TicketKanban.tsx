@@ -22,7 +22,7 @@ import { formatDuration } from "@/lib/formatters";
 
 interface KanbanTicket {
   id: string;
-  ticket_number: number;
+  ticket_number: string;
   title: string;
   status: TicketStatus;
   priority: any;

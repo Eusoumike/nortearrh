@@ -54,10 +54,9 @@ export default function Tickets() {
 
       if (debouncedQ) {
         const safe = debouncedQ.replace(/[%_,()]/g, " ").trim();
-        const asNumber = parseInt(safe, 10);
-        const orParts = [`title.ilike.%${safe}%`, `description.ilike.%${safe}%`];
-        if (!isNaN(asNumber)) orParts.push(`ticket_number.eq.${asNumber}`);
-        query = query.or(orParts.join(","));
+        query = query.or(
+          `title.ilike.%${safe}%,description.ilike.%${safe}%,ticket_number.ilike.%${safe}%`,
+        );
       }
 
       const { data, error } = await query;
@@ -154,7 +153,7 @@ export default function Tickets() {
                   to={`/tickets/${t.id}`}
                   className="grid grid-cols-[60px_1fr_160px_120px_140px_120px_36px] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-muted"
                 >
-                  <span className="font-mono text-sm font-semibold text-foreground">#{String(t.ticket_number).padStart(3, "0")}</span>
+                  <span className="font-mono text-sm font-semibold text-foreground">#{t.ticket_number}</span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">{t.title}</p>
                     <p className="truncate text-xs text-muted-foreground">
