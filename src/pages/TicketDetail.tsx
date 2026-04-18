@@ -127,6 +127,8 @@ export default function TicketDetail() {
     },
   });
 
+  const myProfile = profiles?.find((p) => p.id === user?.id);
+
   const updateStatus = useMutation({
     mutationFn: async (status: TicketStatus) => {
       const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
