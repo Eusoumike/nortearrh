@@ -255,8 +255,23 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
         <form onSubmit={handleSubmit} className="px-5 py-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+            {/* Número do chamado */}
+            <div className="space-y-1">
+              <Label htmlFor="ticket_number" className="text-xs">
+                Número do chamado
+              </Label>
+              <Input
+                id="ticket_number"
+                value={form.ticket_number}
+                onChange={(e) => setForm({ ...form, ticket_number: e.target.value })}
+                placeholder="Ex: 031, VR-2024-001"
+                className="h-9 font-mono"
+                maxLength={50}
+              />
+            </div>
+
             {/* Título */}
-            <div className="col-span-2 space-y-1">
+            <div className="space-y-1">
               <Label htmlFor="title" className="text-xs">
                 Título <span className="text-destructive">*</span>
               </Label>
