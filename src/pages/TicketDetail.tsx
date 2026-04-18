@@ -283,18 +283,21 @@ export default function TicketDetail() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* COLUNA ESQUERDA */}
-        <div className="space-y-5 min-w-0">
-          {/* Header compacto */}
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <span className="font-mono text-sm text-muted-foreground">#{ticket.ticket_number}</span>
-              <h1 className="text-2xl font-semibold tracking-tight leading-tight">{ticket.title}</h1>
+        <div className="space-y-6 min-w-0">
+          {/* Header — bloco com fundo sutil */}
+          <div className="rounded-xl border border-border bg-gradient-to-br from-surface to-surface-muted/40 p-5 space-y-3 shadow-sm">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-mono font-medium text-muted-foreground">#{ticket.ticket_number}</span>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">
+                  Aberto {timeAgo(ticket.opened_at ?? ticket.created_at)} por {(ticket as any).creator?.full_name ?? "—"}
+                </span>
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight leading-tight text-foreground">{ticket.title}</h1>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Aberto em {formatBrazilDateTime(ticket.opened_at ?? ticket.created_at)} · por {(ticket as any).creator?.full_name ?? "—"}
-            </p>
             <div className="flex flex-wrap items-center gap-1.5">
               <StatusBadge status={ticket.status} />
               <PriorityBadge priority={ticket.priority} />
@@ -308,15 +311,14 @@ export default function TicketDetail() {
               )}
             </div>
             {ticket.description && (
-              <p className="whitespace-pre-wrap pt-2 text-sm leading-relaxed text-muted-foreground">{ticket.description}</p>
+              <p className="whitespace-pre-wrap border-t border-border/60 pt-3 text-sm leading-relaxed text-muted-foreground">
+                {ticket.description}
+              </p>
             )}
-          </div>
-
-          {/* Cliente — sem card */}
-          {ticket.client && (
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <Link to={`/clientes/${ticket.client.id}`} className="text-sm font-semibold hover:underline">
+            {ticket.client && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3">
+                <Link to={`/clientes/${ticket.client.id}`} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
+                  <UserAvatar name={ticket.client.name} size="sm" />
                   {ticket.client.name}
                 </Link>
                 {clientCompany && (
@@ -325,23 +327,22 @@ export default function TicketDetail() {
                     {clientCompany}
                   </span>
                 )}
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 {clientEmail && (
-                  <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+                  <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
                     <Mail className="h-3 w-3" />
                     {clientEmail}
                   </a>
                 )}
                 {clientPhone && (
-                  <a href={`tel:${clientPhone}`} className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
+                  <a href={`tel:${clientPhone}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
                     <Phone className="h-3 w-3" />
                     {clientPhone}
                   </a>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
 
           <Separator />
 
