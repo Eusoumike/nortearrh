@@ -180,7 +180,7 @@ export default function MyTasks() {
                           to={`/tickets/${t.ticket.id}`}
                           className="font-mono text-primary hover:underline"
                         >
-                          #{String(t.ticket.ticket_number).padStart(3, "0")} · {t.ticket.title}
+                          #{t.ticket.ticket_number} · {t.ticket.title}
                         </Link>
                       )}
                       {t.due_date && (

@@ -4,7 +4,7 @@ import autoTable from "jspdf-autotable";
 import { STATUS_LABEL, PRIORITY_LABEL, TICKET_TYPE_LABEL, CHANNEL_LABEL, type TicketType } from "@/lib/constants";
 
 export interface ExportTicket {
-  ticket_number: number;
+  ticket_number: string;
   title: string;
   ticket_type: TicketType | null;
   status: keyof typeof STATUS_LABEL;
