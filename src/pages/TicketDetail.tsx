@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, Trash2, Pencil, ListChecks, Building2, History, Send, User as UserIcon } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar, Trash2, Pencil, ListChecks, Building2, History, Send } from "lucide-react";
 import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
