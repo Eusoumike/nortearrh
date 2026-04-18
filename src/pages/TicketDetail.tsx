@@ -353,55 +353,53 @@ export default function TicketDetail() {
               </TabsList>
 
 
-              <TabsContent value="timeline" className="m-0 mt-3">
+              <TabsContent value="timeline" className="m-0 mt-4">
                 {!interactions || interactions.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">Nenhum atendimento registrado ainda.</p>
+                  <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-10 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                      <History className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Nenhum atendimento registrado ainda.</p>
+                  </div>
                 ) : (
-                  <ul className="divide-y divide-border">
+                  <ol className="relative space-y-4 border-l border-border pl-5">
                     {interactions.map((it: any) => {
                       const Icon = TYPE_ICON[it.type as InteractionType] ?? FileText;
                       const summaryText = it.summary || it.content;
                       const hasLegacy = !summaryText && (it.problem_description || it.solution_applied);
                       return (
-                        <li key={it.id} className="flex gap-3 py-2.5">
-                          <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                              <span className="font-medium">{INTERACTION_LABEL[it.type as InteractionType]}</span>
-                              {summaryText && <span className="text-foreground">— {summaryText}</span>}
-                              {hasLegacy && it.problem_description && (
-                                <span className="text-foreground">— {it.problem_description}</span>
-                              )}
-                            </div>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
-                              <span>{it.author?.full_name ?? "Sistema"}</span>
-                              <span>·</span>
-                              <span>{timeAgo(it.interaction_at ?? it.created_at)}</span>
-                              {it.result && (
-                                <>
-                                  <span>·</span>
-                                  <ToneBadge tone={INTERACTION_RESULT_TONE[it.result as InteractionResult]} size="sm">
-                                    {INTERACTION_RESULT_LABEL[it.result as InteractionResult]}
-                                  </ToneBadge>
-                                </>
-                              )}
-                              {it.time_spent_minutes != null && (
-                                <>
-                                  <span>·</span>
-                                  <span>{it.time_spent_minutes} min</span>
-                                </>
-                              )}
-                            </div>
-                            {hasLegacy && it.solution_applied && (
-                              <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                                <span className="font-medium text-foreground">Solução:</span> {it.solution_applied}
-                              </p>
+                        <li key={it.id} className="relative">
+                          <span className="absolute -left-[27px] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-primary">
+                            <Icon className="h-2.5 w-2.5" />
+                          </span>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                            <UserAvatar name={it.author?.full_name} url={it.author?.avatar_url} size="xs" />
+                            <span className="font-medium">{it.author?.full_name ?? "Sistema"}</span>
+                            <span className="text-muted-foreground">{INTERACTION_LABEL[it.type as InteractionType].toLowerCase()}</span>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="text-muted-foreground">{timeAgo(it.interaction_at ?? it.created_at)}</span>
+                            {it.result && (
+                              <ToneBadge tone={INTERACTION_RESULT_TONE[it.result as InteractionResult]} size="sm">
+                                {INTERACTION_RESULT_LABEL[it.result as InteractionResult]}
+                              </ToneBadge>
+                            )}
+                            {it.time_spent_minutes != null && (
+                              <span className="text-muted-foreground">· {it.time_spent_minutes} min</span>
                             )}
                           </div>
+                          {summaryText && (
+                            <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{summaryText}</p>
+                          )}
+                          {hasLegacy && (
+                            <div className="mt-1 space-y-1 text-sm">
+                              {it.problem_description && <p className="whitespace-pre-wrap"><span className="font-medium">Problema:</span> {it.problem_description}</p>}
+                              {it.solution_applied && <p className="whitespace-pre-wrap text-muted-foreground"><span className="font-medium text-foreground">Solução:</span> {it.solution_applied}</p>}
+                            </div>
+                          )}
                         </li>
                       );
                     })}
-                  </ul>
+                  </ol>
                 )}
               </TabsContent>
 
