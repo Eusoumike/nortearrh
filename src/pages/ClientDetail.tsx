@@ -9,11 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HealthBadge, StatusBadge, PriorityBadge } from "@/components/badges";
-import { ArrowLeft, Mail, Phone, Building2, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, Loader2, Pencil } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 import { timeAgo } from "@/lib/formatters";
+import { EditClientDialog } from "@/components/EditClientDialog";
 
 export default function ClientDetail() {
   const { id } = useParams();
