@@ -7,32 +7,189 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { ToneBadge } from "@/components/ui/tone-badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Calendar, GripVertical, Copy, MessageSquare, Trash2, Pencil, Send } from "lucide-react";
-import { formatBrazilDateTime } from "@/lib/formatters";
+import {
+  Plus, Loader2, GripVertical, Copy, Trash2, Send, Settings2, Search, X, Eye, EyeOff,
+} from "lucide-react";
+import { initials } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 
-type Etapa = "novo_cliente" | "kickoff" | "configuracao" | "treinamento" | "go_live" | "finalizado";
+// ============================================================
+// TIPOS, CONSTANTES E TEMPLATES
+// ============================================================
 
-const ETAPAS: { key: Etapa; label: string; tone: "muted" | "info" | "warning" | "primary" | "success" | "neutral" }[] = [
-  { key: "novo_cliente", label: "Novo cliente", tone: "muted" },
-  { key: "kickoff", label: "Kickoff", tone: "info" },
-  { key: "configuracao", label: "Configuração", tone: "warning" },
-  { key: "treinamento", label: "Treinamento", tone: "primary" },
-  { key: "go_live", label: "Go-live", tone: "success" },
-  { key: "finalizado", label: "Finalizado", tone: "neutral" },
+type StageKey =
+  | "novo_cliente" | "boas_vindas" | "treinamento_1"
+  | "treinamento_2" | "treinamento_3" | "finalizado";
+
+const DEFAULT_STAGES: { key: StageKey; label: string; tone: "muted" | "info" | "primary" | "warning" | "success" | "neutral" }[] = [
+  { key: "novo_cliente",   label: "Novo Cliente",                       tone: "muted" },
+  { key: "boas_vindas",    label: "E-mail de Boas-vindas",              tone: "info" },
+  { key: "treinamento_1",  label: "Treinamento 1 — Parametrização",     tone: "primary" },
+  { key: "treinamento_2",  label: "Treinamento 2 — Menus",              tone: "warning" },
+  { key: "treinamento_3",  label: "Treinamento 3 — Fechamento",         tone: "accent" as any },
+  { key: "finalizado",     label: "Finalizado",                         tone: "success" },
 ];
+const DEFAULT_STAGE_KEYS = new Set<string>(DEFAULT_STAGES.map((s) => s.key));
+
+const PRODUTOS: { value: string; label: string }[] = [
+  { value: "vr_rh_digital", label: "VR + RH Digital" },
+  { value: "rh_digital",    label: "RH Digital" },
+  { value: "vr_beneficios", label: "VR Benefícios" },
+];
+const PRODUTO_LABEL: Record<string, string> = Object.fromEntries(PRODUTOS.map((p) => [p.value, p.label]));
+
+const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
+  novo_cliente: ["Cadastrar dados do cliente", "Validar contrato assinado", "Definir responsável interno"],
+  boas_vindas: ["Enviar e-mail de boas-vindas", "Enviar mensagem de WhatsApp", "Coletar dados de acesso"],
+  treinamento_1: ["Agendar Treinamento 1 — Parametrização", "Realizar treinamento", "Validar parametrização"],
+  treinamento_2: ["Agendar Treinamento 2 — Menus", "Realizar treinamento", "Confirmar entendimento dos menus"],
+  treinamento_3: ["Agendar Treinamento 3 — Fechamento", "Realizar treinamento", "Acompanhar primeiro fechamento"],
+  finalizado: ["Confirmar funcionamento pleno", "Enviar mensagem de parabéns", "Transferir para pós-venda"],
+};
+
+const MESSAGE_TEMPLATES = [
+  {
+    key: "boas_vindas",
+    title: "Boas-vindas",
+    body: `Olá, {nome}! 🎉 Seja bem-vindo(a) à Nortear!
+
+Estamos muito felizes em tê-lo(a) como cliente. Sua implantação já está em andamento e em breve entraremos em contato para agendar nosso primeiro treinamento.
+
+Qualquer dúvida, estou à disposição!
+
+Abraço,
+Maykon — Nortear`,
+  },
+  {
+    key: "agendamento",
+    title: "Agendamento de treinamento",
+    body: `Oi, {nome}! Tudo bem?
+
+Passando para confirmar nosso treinamento. Por favor, acesse o link abaixo para escolher o melhor horário:
+
+vempraponto.pipedrive.com/scheduler/qlapKRSp/treinamento-1-parametrizacao
+
+Qualquer dúvida é só chamar! 👍`,
+  },
+  {
+    key: "lembrete_fechamento",
+    title: "Lembrete de fechamento (dia 15)",
+    body: `Oi, {nome}! 👋
+
+Estamos na metade do mês — hora de adiantar o fechamento de ponto.
+
+Acesse: Minha equipe > Ocorrências e verifique:
+1. Falta não justificada
+2. Pontos ímpares
+3. Pontos menores que o previsto
+
+Qualquer dúvida, me chama aqui! 🙋`,
+  },
+  {
+    key: "parabens",
+    title: "Parabéns pela conclusão",
+    body: `{nome}, parabéns! 🎊
+
+Sua implantação foi concluída com sucesso! O Pontomais já está funcionando plenamente.
+
+Lembre-se: estou sempre disponível para suporte. Qualquer dúvida, é só abrir um chamado ou me chamar aqui.
+
+Obrigado pela confiança! 💚`,
+  },
+];
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function daysSince(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T12:00:00-03:00");
+  if (Number.isNaN(d.getTime())) return null;
+  const ms = Date.now() - d.getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
+function onlyDigits(s: string | null | undefined): string {
+  return (s ?? "").replace(/\D/g, "");
+}
+
+function useStages(userId: string | null) {
+  const { data: configs } = useQuery({
+    queryKey: ["impl-stage-configs", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("implantacao_stage_configs")
+        .select("*")
+        .eq("user_id", userId)
+        .order("ordem", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  return useMemo(() => {
+    const cfgByKey = new Map<string, any>();
+    (configs ?? []).forEach((c: any) => cfgByKey.set(c.stage_key, c));
+
+    const merged: { key: string; label: string; tone: any; hidden: boolean; isCustom: boolean; ordem: number }[] = [];
+
+    DEFAULT_STAGES.forEach((s, idx) => {
+      const c = cfgByKey.get(s.key);
+      merged.push({
+        key: s.key,
+        label: c?.label ?? s.label,
+        tone: s.tone,
+        hidden: c?.hidden ?? false,
+        isCustom: false,
+        ordem: c?.ordem ?? idx,
+      });
+    });
+
+    (configs ?? []).filter((c: any) => c.is_custom).forEach((c: any) => {
+      merged.push({
+        key: c.stage_key,
+        label: c.label,
+        tone: "neutral",
+        hidden: c.hidden,
+        isCustom: true,
+        ordem: c.ordem ?? 999,
+      });
+    });
+
+    merged.sort((a, b) => a.ordem - b.ordem);
+    return merged;
+  }, [configs]);
+}
+
+// ============================================================
+// PÁGINA PRINCIPAL
+// ============================================================
 
 export default function Implantacao() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"kanban" | "mensagens">("kanban");
   const [openNew, setOpenNew] = useState(false);
+  const [openCustomize, setOpenCustomize] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const stages = useStages(user?.id ?? null);
+  const visibleStages = stages.filter((s) => !s.hidden);
 
   return (
     <div className="space-y-4 p-6">
@@ -40,262 +197,370 @@ export default function Implantacao() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Implantação</h1>
           <p className="text-sm text-muted-foreground">
-            Acompanhe os clientes em implantação pelas 6 etapas e envie mensagens prontas via WhatsApp.
+            Onboarding de novos clientes com checklist e mensagens prontas para WhatsApp.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {tab === "kanban" && (
-            <Button onClick={() => setOpenNew(true)} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
-              <Plus className="h-4 w-4" />
-              Nova implantação
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => setOpenCustomize(true)}>
+            <Settings2 className="h-4 w-4" />
+            Personalizar etapas
+          </Button>
+          <Button onClick={() => setOpenNew(true)} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+            <Plus className="h-4 w-4" />
+            Novo Cliente
+          </Button>
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-        <TabsList>
-          <TabsTrigger value="kanban">Kanban</TabsTrigger>
-          <TabsTrigger value="mensagens"><MessageSquare className="mr-1 h-3.5 w-3.5" />Mensagens</TabsTrigger>
-        </TabsList>
+      <ImplantacaoKanban
+        stages={visibleStages}
+        onOpenCard={(id) => setEditingId(id)}
+      />
 
-        <TabsContent value="kanban" className="mt-4">
-          <ImplantacaoKanban />
-        </TabsContent>
-        <TabsContent value="mensagens" className="mt-4">
-          <MensagensTemplates />
-        </TabsContent>
-      </Tabs>
+      <NewImplantacaoDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        userId={user?.id ?? null}
+        qc={qc}
+        firstStageKey={visibleStages[0]?.key ?? "novo_cliente"}
+      />
 
-      <NewImplantacaoDialog open={openNew} onOpenChange={setOpenNew} userId={user?.id ?? null} qc={qc} />
+      <EditImplantacaoDialog
+        implantacaoId={editingId}
+        onClose={() => setEditingId(null)}
+        stages={visibleStages}
+      />
+
+      <CustomizeStagesDialog
+        open={openCustomize}
+        onOpenChange={setOpenCustomize}
+        userId={user?.id ?? null}
+        stages={stages}
+      />
     </div>
   );
 }
 
-function ImplantacaoKanban() {
+// ============================================================
+// KANBAN
+// ============================================================
+
+function ImplantacaoKanban({
+  stages,
+  onOpenCard,
+}: {
+  stages: { key: string; label: string; tone: any }[];
+  onOpenCard: (id: string) => void;
+}) {
   const qc = useQueryClient();
-  const [editing, setEditing] = useState<any | null>(null);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["implantacoes"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("implantacoes")
-        .select("*, responsavel:profiles!responsavel_id(full_name, avatar_url), client:clients!client_id(phone, email)")
+        .select("*, responsavel:profiles!responsavel_id(full_name, avatar_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
   });
 
-  const moveEtapa = useMutation({
-    mutationFn: async ({ id, etapa }: { id: string; etapa: Etapa }) => {
-      const { error } = await supabase.from("implantacoes").update({ etapa }).eq("id", id);
+  const { data: checklist } = useQuery({
+    queryKey: ["checklist-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("checklist_items")
+        .select("implantacao_id, concluido");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const counts = useMemo(() => {
+    const m = new Map<string, { done: number; total: number }>();
+    (checklist ?? []).forEach((c: any) => {
+      const cur = m.get(c.implantacao_id) ?? { done: 0, total: 0 };
+      cur.total += 1;
+      if (c.concluido) cur.done += 1;
+      m.set(c.implantacao_id, cur);
+    });
+    return m;
+  }, [checklist]);
+
+  const moveStage = useMutation({
+    mutationFn: async ({ id, etapa }: { id: string; etapa: string }) => {
+      const { error } = await supabase.from("implantacoes").update({ etapa: etapa as any }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["implantacoes"] }),
     onError: (e: any) => toast.error(e.message),
   });
 
-  const removeImpl = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("implantacoes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["implantacoes"] });
-      toast.success("Implantação removida.");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
   const grouped = useMemo(() => {
-    const map: Record<Etapa, any[]> = {
-      novo_cliente: [], kickoff: [], configuracao: [], treinamento: [], go_live: [], finalizado: [],
-    };
-    (items ?? []).forEach((i: any) => map[i.etapa as Etapa]?.push(i));
+    const map: Record<string, any[]> = {};
+    stages.forEach((s) => (map[s.key] = []));
+    (items ?? []).forEach((i: any) => {
+      if (map[i.etapa]) map[i.etapa].push(i);
+      // se a etapa estiver oculta, mostra na primeira coluna como fallback
+      else if (stages[0]) map[stages[0].key].push(i);
+    });
     return map;
-  }, [items]);
-
-  const handleDrop = (e: React.DragEvent, etapa: Etapa) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData("text/plain");
-    if (id) moveEtapa.mutate({ id, etapa });
-  };
+  }, [items, stages]);
 
   if (isLoading) {
     return <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>;
   }
 
   return (
-    <>
-      <div className="grid gap-3 lg:grid-cols-6">
-        {ETAPAS.map((stage) => (
-          <div
-            key={stage.key}
-            className="flex min-h-[400px] flex-col rounded-lg border border-border bg-surface-muted/30 p-2"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, stage.key)}
-          >
-            <div className="mb-2 flex items-center justify-between px-1">
-              <ToneBadge tone={stage.tone} size="sm">{stage.label}</ToneBadge>
-              <span className="text-[10px] text-muted-foreground">{grouped[stage.key].length}</span>
-            </div>
-            <div className="flex flex-1 flex-col gap-2">
-              {grouped[stage.key].length === 0 && (
-                <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">vazio</p>
-              )}
-              {grouped[stage.key].map((it: any) => (
-                <ImplantacaoCard
-                  key={it.id}
-                  item={it}
-                  onEdit={() => setEditing(it)}
-                  onDelete={() => removeImpl.mutate(it.id)}
-                />
-              ))}
-            </div>
+    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+      {stages.map((stage) => (
+        <div
+          key={stage.key}
+          className="flex min-h-[400px] flex-col rounded-lg border border-border bg-surface-muted/30 p-2"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData("text/plain");
+            if (id) moveStage.mutate({ id, etapa: stage.key });
+          }}
+        >
+          <div className="mb-2 flex items-center justify-between px-1">
+            <ToneBadge tone={stage.tone} size="sm">{stage.label}</ToneBadge>
+            <span className="text-[10px] text-muted-foreground">{grouped[stage.key]?.length ?? 0}</span>
           </div>
-        ))}
-      </div>
-      <EditImplantacaoDialog item={editing} onClose={() => setEditing(null)} qc={qc} />
-    </>
+          <div className="flex flex-1 flex-col gap-2">
+            {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
+              <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">vazio</p>
+            )}
+            {(grouped[stage.key] ?? []).map((it: any) => (
+              <KanbanCard
+                key={it.id}
+                item={it}
+                count={counts.get(it.id) ?? { done: 0, total: 0 }}
+                onClick={() => onOpenCard(it.id)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
-function ImplantacaoCard({ item, onEdit, onDelete }: { item: any; onEdit: () => void; onDelete: () => void }) {
+function KanbanCard({
+  item, count, onClick,
+}: { item: any; count: { done: number; total: number }; onClick: () => void }) {
+  const days = daysSince(item.data_inicio);
+  const overdue = days !== null && days > 15;
+  const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
+  const respName = item.responsavel?.full_name ?? "—";
+
   return (
     <div
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/plain", item.id)}
-      onClick={onEdit}
-      className="group cursor-grab rounded-md border border-border bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md hover:border-primary/40 active:cursor-grabbing"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
+      className="group cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
     >
       <div className="flex items-start gap-2">
-        <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{item.client_name}</p>
-          {item.produto && <p className="truncate text-[11px] text-muted-foreground">{item.produto}</p>}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
-            {item.data_go_live && (
-              <span className="inline-flex items-center gap-0.5">
-                <Calendar className="h-3 w-3" />
-                {formatBrazilDateTime(item.data_go_live + "T12:00:00-03:00").split(" ")[0]}
-              </span>
-            )}
-            {item.responsavel?.full_name && (
-              <span className="truncate">· {item.responsavel.full_name}</span>
-            )}
+        <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/60" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="truncate text-sm font-semibold">{item.client_name}</p>
+
+          <div className="flex items-center gap-2">
+            <Avatar className="h-5 w-5">
+              <AvatarFallback className="bg-gradient-brand text-[9px] text-primary-foreground">
+                {initials(respName)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate text-[11px] text-muted-foreground">{respName}</span>
           </div>
-        </div>
-        <div className="flex flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 text-muted-foreground hover:text-primary"
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 text-muted-foreground hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+
+          <div className="space-y-1">
+            <Progress value={pct} className="h-1.5" />
+            <p className="text-[10px] text-muted-foreground">
+              {count.done}/{count.total} — {pct}%
+            </p>
+          </div>
+
+          {days !== null && (
+            <p className={cn("text-[10px]", overdue ? "font-medium text-warning" : "text-muted-foreground")}>
+              {days} {days === 1 ? "dia" : "dias"} em andamento
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
+// ============================================================
+// MODAL: NOVA IMPLANTAÇÃO
+// ============================================================
+
 function NewImplantacaoDialog({
-  open, onOpenChange, userId, qc,
-}: { open: boolean; onOpenChange: (v: boolean) => void; userId: string | null; qc: any }) {
+  open, onOpenChange, userId, qc, firstStageKey,
+}: { open: boolean; onOpenChange: (v: boolean) => void; userId: string | null; qc: any; firstStageKey: string }) {
   const [form, setForm] = useState({
     client_id: "",
     client_name: "",
+    cnpj: "",
     produto: "",
-    etapa: "novo_cliente" as Etapa,
+    contato_cliente: "",
+    telefone_cliente: "",
+    email_cliente: "",
     data_inicio: "",
     data_go_live: "",
+    responsavel_id: "",
     observacoes: "",
   });
+  const [clientSearch, setClientSearch] = useState("");
 
   const { data: clients } = useQuery({
     queryKey: ["clients-min"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, name, company").order("name");
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, company, cnpj, email, phone, whatsapp, contact_name")
+        .order("name");
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: open,
   });
 
+  const { data: profiles } = useQuery({
+    queryKey: ["profiles-min"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, full_name, email").order("full_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: open,
+  });
+
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return [];
+    return (clients ?? []).filter((c: any) =>
+      [c.name, c.company, c.cnpj].filter(Boolean).some((v: string) => v.toLowerCase().includes(q))
+    ).slice(0, 8);
+  }, [clients, clientSearch]);
+
   const create = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error("Não autenticado");
-      const { error } = await supabase.from("implantacoes").insert({
+      const { data: created, error } = await supabase.from("implantacoes").insert({
         client_id: form.client_id || null,
         client_name: form.client_name.trim(),
+        cnpj: form.cnpj || null,
         produto: form.produto || null,
-        etapa: form.etapa,
+        contato_cliente: form.contato_cliente || null,
+        telefone_cliente: form.telefone_cliente || null,
+        email_cliente: form.email_cliente || null,
+        etapa: firstStageKey as any,
         data_inicio: form.data_inicio || null,
         data_go_live: form.data_go_live || null,
+        responsavel_id: form.responsavel_id || null,
         observacoes: form.observacoes || null,
         created_by: userId,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Pré-popula checklist com itens-padrão por etapa
+      const seedRows: any[] = [];
+      (Object.keys(DEFAULT_CHECKLIST) as StageKey[]).forEach((etapa) => {
+        DEFAULT_CHECKLIST[etapa].forEach((label, idx) => {
+          seedRows.push({ implantacao_id: created!.id, etapa, label, ordem: idx });
+        });
+      });
+      if (seedRows.length) {
+        await supabase.from("checklist_items").insert(seedRows);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["implantacoes"] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
       toast.success("Implantação criada.");
       onOpenChange(false);
-      setForm({ client_id: "", client_name: "", produto: "", etapa: "novo_cliente", data_inicio: "", data_go_live: "", observacoes: "" });
+      setForm({
+        client_id: "", client_name: "", cnpj: "", produto: "", contato_cliente: "",
+        telefone_cliente: "", email_cliente: "", data_inicio: "", data_go_live: "",
+        responsavel_id: "", observacoes: "",
+      });
+      setClientSearch("");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
+  const pickClient = (c: any) => {
+    setForm({
+      ...form,
+      client_id: c.id,
+      client_name: c.company || c.name || "",
+      cnpj: c.cnpj || "",
+      email_cliente: c.email || "",
+      telefone_cliente: c.whatsapp || c.phone || "",
+      contato_cliente: c.contact_name || "",
+    });
+    setClientSearch("");
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Nova implantação</DialogTitle>
-          <DialogDescription>Comece o acompanhamento de uma nova implantação.</DialogDescription>
+          <DialogDescription>Comece um novo onboarding. Você poderá editar checklist e enviar mensagens depois.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.client_name.trim()) return toast.error("Informe o cliente."); create.mutate(); }} className="space-y-3">
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (!form.client_name.trim()) return toast.error("Informe a empresa."); create.mutate(); }}
+          className="space-y-3"
+        >
+          {/* Busca da carteira */}
           <div className="space-y-1">
-            <Label className="text-xs">Cliente cadastrado</Label>
-            <Select
-              value={form.client_id || "none"}
-              onValueChange={(v) => {
-                const c = clients?.find((c) => c.id === v);
-                setForm({ ...form, client_id: v === "none" ? "" : v, client_name: c?.name ?? form.client_name });
-              }}
-            >
-              <SelectTrigger className="h-9"><SelectValue placeholder="Selecione…" /></SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="none">— Não vincular —</SelectItem>
-                {(clients ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} {c.company && <span className="text-muted-foreground">· {c.company}</span>}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">Buscar cliente da carteira</Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                placeholder="Digite o nome, razão social ou CNPJ…"
+                className="h-9 pl-8"
+              />
+              {clientSearch && filteredClients.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-lg">
+                  {filteredClients.map((c: any) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => pickClient(c)}
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                    >
+                      <span className="truncate">
+                        <strong>{c.company || c.name}</strong>
+                        {c.cnpj && <span className="ml-1 text-xs text-muted-foreground">· {c.cnpj}</span>}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {form.client_id && (
+              <p className="text-[11px] text-success">✓ Cliente vinculado da carteira.</p>
+            )}
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="client_name" className="text-xs">Nome do cliente *</Label>
-            <Input
-              id="client_name"
-              required
-              value={form.client_name}
-              onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-              placeholder="Razão social ou nome fantasia"
-              className="h-9"
-            />
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldText label="Razão Social / Empresa *" value={form.client_name} onChange={(v) => setForm({ ...form, client_name: v })} required />
+            <FieldText label="CNPJ" value={form.cnpj} onChange={(v) => setForm({ ...form, cnpj: v })} />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Produto</Label>
@@ -303,36 +568,41 @@ function NewImplantacaoDialog({
                 <SelectTrigger className="h-9"><SelectValue placeholder="Produto…" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">—</SelectItem>
-                  <SelectItem value="VR Benefícios">VR Benefícios</SelectItem>
-                  <SelectItem value="RH Digital Pontomais">RH Digital Pontomais</SelectItem>
-                  <SelectItem value="VR + Pontomais">VR + Pontomais</SelectItem>
+                  {PRODUTOS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Etapa inicial</Label>
-              <Select value={form.etapa} onValueChange={(v) => setForm({ ...form, etapa: v as Etapa })}>
-                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ETAPAS.map((e) => <SelectItem key={e.key} value={e.key}>{e.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            <FieldText label="Contato no cliente" value={form.contato_cliente} onChange={(v) => setForm({ ...form, contato_cliente: v })} />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Início</Label>
-              <Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} className="h-9" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Previsão de go-live</Label>
-              <Input type="date" value={form.data_go_live} onChange={(e) => setForm({ ...form, data_go_live: e.target.value })} className="h-9" />
-            </div>
+            <FieldText label="Telefone / WhatsApp" value={form.telefone_cliente} onChange={(v) => setForm({ ...form, telefone_cliente: v })} placeholder="(11) 91234-5678" />
+            <FieldText label="E-mail do cliente" value={form.email_cliente} onChange={(v) => setForm({ ...form, email_cliente: v })} type="email" />
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldText label="Data de início" value={form.data_inicio} onChange={(v) => setForm({ ...form, data_inicio: v })} type="date" />
+            <FieldText label="Previsão de conclusão" value={form.data_go_live} onChange={(v) => setForm({ ...form, data_go_live: v })} type="date" />
+          </div>
+
           <div className="space-y-1">
-            <Label className="text-xs">Observações</Label>
-            <Textarea rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} placeholder="Contexto, particularidades, contatos…" />
+            <Label className="text-xs">Responsável interno</Label>
+            <Select value={form.responsavel_id || "none"} onValueChange={(v) => setForm({ ...form, responsavel_id: v === "none" ? "" : v })}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="none">— Não atribuído —</SelectItem>
+                {(profiles ?? []).map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Observações internas</Label>
+            <Textarea rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} placeholder="Não é visível ao cliente" />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={create.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
@@ -346,152 +616,151 @@ function NewImplantacaoDialog({
   );
 }
 
-function MensagensTemplates() {
-  const [selectedImplId, setSelectedImplId] = useState<string>("none");
-
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ["message-templates"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("message_templates")
-        .select("*")
-        .order("title");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: implantacoes } = useQuery({
-    queryKey: ["implantacoes-min"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("implantacoes")
-        .select("id, client_name, produto, data_go_live, client:clients!client_id(phone, name), responsavel:profiles!responsavel_id(full_name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const selected = useMemo(
-    () => implantacoes?.find((i: any) => i.id === selectedImplId),
-    [implantacoes, selectedImplId],
-  );
-
-  const renderBody = (body: string) => {
-    if (!selected) return body;
-    const goLiveStr = selected.data_go_live
-      ? formatBrazilDateTime(selected.data_go_live + "T12:00:00-03:00").split(" ")[0]
-      : "";
-    const data: Record<string, string> = {
-      // mapeamento amplo: cobre variáveis dos templates do briefing e variantes
-      nome: selected.client_name ?? "",
-      cliente: selected.client_name ?? "",
-      produto: selected.produto ?? "",
-      atendente: (selected as any).responsavel?.full_name ?? "",
-      responsavel: (selected as any).responsavel?.full_name ?? "",
-      data: goLiveStr,
-      datas: goLiveStr,
-      data_go_live: goLiveStr,
-      hora: "____",
-      link: "____",
-    };
-    return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => data[k] ?? `{{${k}}}`);
-  };
-
-  const phoneDigits = (selected as any)?.client?.phone?.replace(/\D/g, "") ?? "";
-
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Mensagem copiada.");
-  };
-
-  const sendWhats = (text: string) => {
-    if (!phoneDigits) {
-      toast.error("Implantação selecionada não tem cliente vinculado com telefone.");
-      return;
-    }
-    const number = phoneDigits.startsWith("55") ? phoneDigits : `55${phoneDigits}`;
-    window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank");
-  };
-
-  if (isLoading) return <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>;
-
+function FieldText({
+  label, value, onChange, type = "text", placeholder, required,
+}: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; required?: boolean }) {
   return (
-    <div className="space-y-4">
-      <Card className="p-4 space-y-2">
-        <Label className="text-xs">Implantação para personalizar mensagens</Label>
-        <Select value={selectedImplId} onValueChange={setSelectedImplId}>
-          <SelectTrigger className="h-9">
-            <SelectValue placeholder="Selecione uma implantação para preencher as variáveis…" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— Mostrar template bruto —</SelectItem>
-            {(implantacoes ?? []).map((i: any) => (
-              <SelectItem key={i.id} value={i.id}>
-                {i.client_name}{i.produto ? ` · ${i.produto}` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {selected && !phoneDigits && (
-          <p className="text-[11px] text-warning">
-            ⚠ Cliente vinculado não possui telefone — botão WhatsApp ficará desativado.
-          </p>
-        )}
-      </Card>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {(templates ?? []).map((t: any) => {
-          const finalBody = renderBody(t.body);
-          return (
-            <Card key={t.id} className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-semibold">{t.title}</h3>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.channel}</p>
-                </div>
-                <div className="flex gap-1.5">
-                  <Button size="sm" variant="outline" onClick={() => copy(finalBody)} className="h-8">
-                    <Copy className="h-3.5 w-3.5" />
-                    Copiar
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => sendWhats(finalBody)}
-                    disabled={!selected || !phoneDigits}
-                    className="h-8 bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    WhatsApp
-                  </Button>
-                </div>
-              </div>
-              <p className="whitespace-pre-wrap rounded-md border border-border bg-surface-muted/40 p-3 text-sm">
-                {finalBody}
-              </p>
-              {t.variables?.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {t.variables.map((v: string) => (
-                    <ToneBadge key={v} tone="muted" size="sm">{`{{${v}}}`}</ToneBadge>
-                  ))}
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required={required} className="h-9" />
     </div>
   );
 }
 
+// ============================================================
+// MODAL: EDITAR (3 abas)
+// ============================================================
+
 function EditImplantacaoDialog({
-  item, onClose, qc,
-}: { item: any | null; onClose: () => void; qc: any }) {
-  const [form, setForm] = useState({
-    client_name: "", produto: "", etapa: "novo_cliente" as Etapa,
-    data_inicio: "", data_go_live: "", observacoes: "", responsavel_id: "",
+  implantacaoId, onClose, stages,
+}: { implantacaoId: string | null; onClose: () => void; stages: { key: string; label: string; tone: any }[] }) {
+  const qc = useQueryClient();
+  const [tab, setTab] = useState("dados");
+
+  const { data: item } = useQuery({
+    queryKey: ["implantacao", implantacaoId],
+    queryFn: async () => {
+      if (!implantacaoId) return null;
+      const { data, error } = await supabase
+        .from("implantacoes")
+        .select("*, responsavel:profiles!responsavel_id(full_name, avatar_url)")
+        .eq("id", implantacaoId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!implantacaoId,
   });
+
+  const { data: checklist } = useQuery({
+    queryKey: ["checklist", implantacaoId],
+    queryFn: async () => {
+      if (!implantacaoId) return [];
+      const { data, error } = await supabase
+        .from("checklist_items")
+        .select("*")
+        .eq("implantacao_id", implantacaoId)
+        .order("ordem", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!implantacaoId,
+  });
+
+  const totals = useMemo(() => {
+    const total = (checklist ?? []).length;
+    const done = (checklist ?? []).filter((c: any) => c.concluido).length;
+    return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
+  }, [checklist]);
+
+  const stageLabel = stages.find((s) => s.key === item?.etapa)?.label ?? item?.etapa;
+
+  return (
+    <Dialog open={!!implantacaoId} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl">
+        {item && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-xl">{item.client_name}</DialogTitle>
+              <DialogDescription>
+                Etapa atual: <span className="font-medium text-foreground">{stageLabel}</span>
+                {item.produto && <> · {PRODUTO_LABEL[item.produto] ?? item.produto}</>}
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Cabeçalho com progresso e datas */}
+            <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium">Progresso do checklist</span>
+                <span className="text-muted-foreground">{totals.done}/{totals.total} — {totals.pct}%</span>
+              </div>
+              <Progress value={totals.pct} className="h-2" />
+              <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-[11px] text-muted-foreground">
+                <span>Início: <span className="text-foreground">{item.data_inicio ?? "—"}</span></span>
+                <span>Previsão: <span className="text-foreground">{item.data_go_live ?? "—"}</span></span>
+              </div>
+            </div>
+
+            <Tabs value={tab} onValueChange={setTab}>
+              <TabsList className="w-full">
+                <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+                <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+                <TabsTrigger value="mensagens" className="flex-1">Mensagens</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dados" className="mt-3">
+                <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} />
+              </TabsContent>
+
+              <TabsContent value="checklist" className="mt-3">
+                <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} />
+              </TabsContent>
+
+              <TabsContent value="mensagens" className="mt-3">
+                <MensagensTab item={item} />
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// -------- ABA DADOS --------
+
+function DadosTab({
+  item, qc, stages, onClose,
+}: { item: any; qc: any; stages: { key: string; label: string }[]; onClose: () => void }) {
+  const [form, setForm] = useState({
+    client_name: item.client_name ?? "",
+    cnpj: item.cnpj ?? "",
+    produto: item.produto ?? "",
+    contato_cliente: item.contato_cliente ?? "",
+    telefone_cliente: item.telefone_cliente ?? "",
+    email_cliente: item.email_cliente ?? "",
+    etapa: item.etapa,
+    data_inicio: item.data_inicio ?? "",
+    data_go_live: item.data_go_live ?? "",
+    responsavel_id: item.responsavel_id ?? "",
+    observacoes: item.observacoes ?? "",
+  });
+
+  useEffect(() => {
+    setForm({
+      client_name: item.client_name ?? "",
+      cnpj: item.cnpj ?? "",
+      produto: item.produto ?? "",
+      contato_cliente: item.contato_cliente ?? "",
+      telefone_cliente: item.telefone_cliente ?? "",
+      email_cliente: item.email_cliente ?? "",
+      etapa: item.etapa,
+      data_inicio: item.data_inicio ?? "",
+      data_go_live: item.data_go_live ?? "",
+      responsavel_id: item.responsavel_id ?? "",
+      observacoes: item.observacoes ?? "",
+    });
+  }, [item.id]);
 
   const { data: profiles } = useQuery({
     queryKey: ["profiles-min"],
@@ -500,116 +769,428 @@ function EditImplantacaoDialog({
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!item,
   });
-
-  // Sincroniza form ao abrir
-  useEffect(() => {
-    if (item) {
-      setForm({
-        client_name: item.client_name ?? "",
-        produto: item.produto ?? "",
-        etapa: item.etapa,
-        data_inicio: item.data_inicio ?? "",
-        data_go_live: item.data_go_live ?? "",
-        observacoes: item.observacoes ?? "",
-        responsavel_id: item.responsavel_id ?? "",
-      });
-    }
-  }, [item]);
 
   const update = useMutation({
     mutationFn: async () => {
-      if (!item) return;
       const { error } = await supabase.from("implantacoes").update({
         client_name: form.client_name.trim(),
+        cnpj: form.cnpj || null,
         produto: form.produto || null,
-        etapa: form.etapa,
+        contato_cliente: form.contato_cliente || null,
+        telefone_cliente: form.telefone_cliente || null,
+        email_cliente: form.email_cliente || null,
+        etapa: form.etapa as any,
         data_inicio: form.data_inicio || null,
         data_go_live: form.data_go_live || null,
-        observacoes: form.observacoes || null,
         responsavel_id: form.responsavel_id || null,
+        observacoes: form.observacoes || null,
       }).eq("id", item.id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["implantacoes"] });
-      qc.invalidateQueries({ queryKey: ["implantacoes-min"] });
-      toast.success("Implantação atualizada.");
+      qc.invalidateQueries({ queryKey: ["implantacao", item.id] });
+      toast.success("Atualizado.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("implantacoes").delete().eq("id", item.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["implantacoes"] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      toast.success("Implantação removida.");
       onClose();
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   return (
-    <Dialog open={!!item} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
+    <form onSubmit={(e) => { e.preventDefault(); update.mutate(); }} className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+      <div className="grid grid-cols-2 gap-3">
+        <FieldText label="Razão Social / Empresa *" value={form.client_name} onChange={(v) => setForm({ ...form, client_name: v })} required />
+        <FieldText label="CNPJ" value={form.cnpj} onChange={(v) => setForm({ ...form, cnpj: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Produto</Label>
+          <Select value={form.produto || "none"} onValueChange={(v) => setForm({ ...form, produto: v === "none" ? "" : v })}>
+            <SelectTrigger className="h-9"><SelectValue placeholder="Produto…" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">—</SelectItem>
+              {PRODUTOS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Etapa</Label>
+          <Select value={form.etapa} onValueChange={(v) => setForm({ ...form, etapa: v })}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {stages.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <FieldText label="Contato no cliente" value={form.contato_cliente} onChange={(v) => setForm({ ...form, contato_cliente: v })} />
+        <FieldText label="Telefone / WhatsApp" value={form.telefone_cliente} onChange={(v) => setForm({ ...form, telefone_cliente: v })} />
+      </div>
+      <FieldText label="E-mail do cliente" value={form.email_cliente} onChange={(v) => setForm({ ...form, email_cliente: v })} type="email" />
+      <div className="grid grid-cols-2 gap-3">
+        <FieldText label="Data de início" value={form.data_inicio} onChange={(v) => setForm({ ...form, data_inicio: v })} type="date" />
+        <FieldText label="Previsão de conclusão" value={form.data_go_live} onChange={(v) => setForm({ ...form, data_go_live: v })} type="date" />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Responsável interno</Label>
+        <Select value={form.responsavel_id || "none"} onValueChange={(v) => setForm({ ...form, responsavel_id: v === "none" ? "" : v })}>
+          <SelectTrigger className="h-9"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+          <SelectContent className="max-h-[260px]">
+            <SelectItem value="none">— Não atribuído —</SelectItem>
+            {(profiles ?? []).map((p: any) => (
+              <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Observações internas</Label>
+        <Textarea rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+      </div>
+
+      <div className="flex items-center justify-between pt-2">
+        <Button type="button" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => {
+          if (confirm("Excluir esta implantação? Os itens de checklist serão removidos.")) remove.mutate();
+        }}>
+          <Trash2 className="h-4 w-4" /> Excluir
+        </Button>
+        <Button type="submit" disabled={update.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+          {update.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Salvar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// -------- ABA CHECKLIST --------
+
+function ChecklistTab({
+  item, stages, items, qc,
+}: { item: any; stages: { key: string; label: string }[]; items: any[]; qc: any }) {
+  const [newLabel, setNewLabel] = useState("");
+  const stageItems = items.filter((i) => i.etapa === item.etapa);
+  const stageLabel = stages.find((s) => s.key === item.etapa)?.label ?? item.etapa;
+  const done = stageItems.filter((i) => i.concluido).length;
+  const total = stageItems.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  const toggle = useMutation({
+    mutationFn: async ({ id, concluido }: { id: string; concluido: boolean }) => {
+      const { error } = await supabase.from("checklist_items").update({ concluido }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const addItem = useMutation({
+    mutationFn: async (label: string) => {
+      const { error } = await supabase.from("checklist_items").insert({
+        implantacao_id: item.id,
+        etapa: item.etapa,
+        label,
+        ordem: total,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      setNewLabel("");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("checklist_items").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+      <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-medium">Etapa: {stageLabel}</span>
+          <span className="text-muted-foreground">{done}/{total} — {pct}%</span>
+        </div>
+        <Progress value={pct} className="h-2" />
+      </div>
+
+      <div className="space-y-1.5">
+        {stageItems.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border bg-surface-muted/30 p-4 text-center text-sm text-muted-foreground">
+            Nenhum item de checklist para esta etapa. Adicione abaixo.
+          </p>
+        ) : (
+          stageItems.map((it) => (
+            <div key={it.id} className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+              <Checkbox
+                checked={it.concluido}
+                onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v })}
+              />
+              <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
+                {it.label}
+              </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                onClick={() => removeItem.mutate(it.id)}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <form
+        onSubmit={(e) => { e.preventDefault(); if (newLabel.trim()) addItem.mutate(newLabel.trim()); }}
+        className="flex gap-2"
+      >
+        <Input
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          placeholder="Novo item de checklist…"
+          className="h-9"
+        />
+        <Button type="submit" disabled={!newLabel.trim() || addItem.isPending} className="h-9">
+          <Plus className="h-4 w-4" /> Adicionar
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+// -------- ABA MENSAGENS --------
+
+function MensagensTab({ item }: { item: any }) {
+  const [tplKey, setTplKey] = useState(MESSAGE_TEMPLATES[0].key);
+  const tpl = MESSAGE_TEMPLATES.find((t) => t.key === tplKey)!;
+
+  const nome = item.contato_cliente || item.client_name || "";
+  const finalText = tpl.body.replace(/\{nome\}/g, nome);
+
+  const phoneDigits = onlyDigits(item.telefone_cliente);
+  const hasPhone = phoneDigits.length >= 8;
+  const waNumber = phoneDigits.startsWith("55") ? phoneDigits : `55${phoneDigits}`;
+
+  const copy = () => {
+    navigator.clipboard.writeText(finalText);
+    toast.success("Mensagem copiada.");
+  };
+
+  const openWhats = () => {
+    if (!hasPhone) return;
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(finalText)}`, "_blank");
+  };
+
+  return (
+    <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+      <div className="space-y-1">
+        <Label className="text-xs">Template</Label>
+        <Select value={tplKey} onValueChange={setTplKey}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {MESSAGE_TEMPLATES.map((t) => <SelectItem key={t.key} value={t.key}>{t.title}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Preview</Label>
+        <pre className="whitespace-pre-wrap rounded-md border border-border bg-info/5 p-3 font-mono text-[13px] leading-relaxed">
+          {finalText}
+        </pre>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={copy}>
+          <Copy className="h-4 w-4" /> Copiar mensagem
+        </Button>
+        {hasPhone ? (
+          <Button onClick={openWhats} className="bg-success text-success-foreground hover:bg-success/90">
+            <Send className="h-4 w-4" /> Abrir no WhatsApp
+          </Button>
+        ) : (
+          <p className="text-[11px] text-warning">
+            Cadastre o telefone na aba Dados para habilitar o envio.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MODAL: PERSONALIZAR ETAPAS
+// ============================================================
+
+function CustomizeStagesDialog({
+  open, onOpenChange, userId, stages,
+}: {
+  open: boolean; onOpenChange: (v: boolean) => void; userId: string | null;
+  stages: { key: string; label: string; hidden: boolean; isCustom: boolean; ordem: number }[];
+}) {
+  const qc = useQueryClient();
+  const [drafts, setDrafts] = useState<{ key: string; label: string; hidden: boolean; isCustom: boolean; ordem: number }[]>([]);
+  const [newLabel, setNewLabel] = useState("");
+
+  useEffect(() => {
+    if (open) setDrafts(stages.map((s) => ({ ...s })));
+  }, [open, stages]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error("Não autenticado");
+      // Upsert por (user_id, stage_key)
+      const rows = drafts.map((d) => ({
+        user_id: userId,
+        stage_key: d.key,
+        label: d.label,
+        hidden: d.hidden,
+        is_custom: d.isCustom,
+        ordem: d.ordem,
+      }));
+      const { error } = await supabase
+        .from("implantacao_stage_configs")
+        .upsert(rows, { onConflict: "user_id,stage_key" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-stage-configs", userId] });
+      toast.success("Etapas atualizadas.");
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeCustom = useMutation({
+    mutationFn: async (stageKey: string) => {
+      if (!userId) throw new Error("Não autenticado");
+      const { error } = await supabase
+        .from("implantacao_stage_configs")
+        .delete()
+        .eq("user_id", userId)
+        .eq("stage_key", stageKey);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-stage-configs", userId] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const addCustom = () => {
+    if (!newLabel.trim()) return;
+    const key = `custom_${Date.now()}`;
+    setDrafts([...drafts, {
+      key, label: newLabel.trim(), hidden: false, isCustom: true, ordem: drafts.length,
+    }]);
+    setNewLabel("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Editar implantação</DialogTitle>
-          <DialogDescription>Atualize os detalhes do acompanhamento.</DialogDescription>
+          <DialogTitle>Personalizar etapas</DialogTitle>
+          <DialogDescription>Renomeie, oculte ou crie etapas customizadas. Suas configurações são individuais.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); if (!form.client_name.trim()) return toast.error("Informe o cliente."); update.mutate(); }} className="space-y-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Cliente *</Label>
-            <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} className="h-9" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Produto</Label>
-              <Select value={form.produto || "none"} onValueChange={(v) => setForm({ ...form, produto: v === "none" ? "" : v })}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Produto…" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  <SelectItem value="VR Benefícios">VR Benefícios</SelectItem>
-                  <SelectItem value="RH Digital Pontomais">RH Digital Pontomais</SelectItem>
-                  <SelectItem value="VR + Pontomais">VR + Pontomais</SelectItem>
-                </SelectContent>
-              </Select>
+
+        <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+          {drafts.map((d, idx) => (
+            <div key={d.key} className="flex items-center gap-2 rounded-md border border-border bg-card p-2">
+              <Input
+                value={d.label}
+                onChange={(e) => {
+                  const next = [...drafts];
+                  next[idx] = { ...d, label: e.target.value };
+                  setDrafts(next);
+                }}
+                className="h-8"
+              />
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Switch
+                  checked={!d.hidden}
+                  onCheckedChange={(v) => {
+                    const next = [...drafts];
+                    next[idx] = { ...d, hidden: !v };
+                    setDrafts(next);
+                  }}
+                />
+                {d.hidden ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
+              </div>
+              {d.isCustom ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    setDrafts(drafts.filter((x) => x.key !== d.key));
+                    if (!d.key.startsWith("custom_")) {
+                      // se já estava persistida, apaga no banco
+                      removeCustom.mutate(d.key);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              ) : (
+                <ToneBadge tone="muted" size="sm">padrão</ToneBadge>
+              )}
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Etapa</Label>
-              <Select value={form.etapa} onValueChange={(v) => setForm({ ...form, etapa: v as Etapa })}>
-                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ETAPAS.map((e) => <SelectItem key={e.key} value={e.key}>{e.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Responsável</Label>
-            <Select value={form.responsavel_id || "none"} onValueChange={(v) => setForm({ ...form, responsavel_id: v === "none" ? "" : v })}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Selecione…" /></SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="none">— Não atribuído —</SelectItem>
-                {(profiles ?? []).map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Início</Label>
-              <Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} className="h-9" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Go-live</Label>
-              <Input type="date" value={form.data_go_live} onChange={(e) => setForm({ ...form, data_go_live: e.target.value })} className="h-9" />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Observações</Label>
-            <Textarea rows={4} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={update.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
-              {update.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
+          ))}
+        </div>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); addCustom(); }}
+          className="flex gap-2 border-t border-border pt-3"
+        >
+          <Input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Nome da nova etapa…"
+            className="h-9"
+          />
+          <Button type="submit" variant="outline" disabled={!newLabel.trim()}>
+            <Plus className="h-4 w-4" /> Nova etapa
+          </Button>
         </form>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+            {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
