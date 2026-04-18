@@ -19,6 +19,7 @@ import { EditClientDialog } from "@/components/EditClientDialog";
 export default function ClientDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
@@ -86,7 +87,12 @@ export default function ClientDetail() {
           </div>
           {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
         </div>
+        <Button variant="outline" onClick={() => setEditOpen(true)}>
+          <Pencil className="mr-1.5 h-4 w-4" /> Editar cliente
+        </Button>
       </div>
+
+      <EditClientDialog client={client} open={editOpen} onOpenChange={setEditOpen} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
