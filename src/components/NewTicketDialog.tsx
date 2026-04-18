@@ -196,6 +196,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       const { data, error } = await supabase
         .from("tickets")
         .insert({
+          ticket_number: form.ticket_number.trim() || undefined,
           title: form.title.trim(),
           description: form.description.trim() || null,
           priority: form.priority,
