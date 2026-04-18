@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge, PriorityBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { Separator } from "@/components/ui/separator";
+
 import {
   AlertDialog,
   AlertDialogAction,
