@@ -61,7 +61,7 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   email: Mail,
   ligacao: Phone,
   whatsapp: MessageSquare,
-  reuniao: Calendar,
+  reuniao: CalendarIcon,
   mudanca_status: FileText,
 };
 
