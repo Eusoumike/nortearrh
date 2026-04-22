@@ -52,7 +52,7 @@ export default function Auth() {
       else toast.error(error.message);
       return;
     }
-    toast.success("Conta criada! Você já pode usar o Hub.");
+    toast.success("Conta criada! Aguarde um administrador liberar seu acesso aos dados.");
     navigate("/", { replace: true });
   };
 
@@ -147,7 +147,7 @@ export default function Auth() {
                   Criar minha conta
                 </Button>
                 <p className="text-center text-[11px] text-muted-foreground">
-                  O primeiro usuário do workspace recebe acesso de administrador.
+                  O primeiro usuário do workspace recebe acesso de administrador. Demais contas começam como visualizador e precisam ser promovidas por um admin antes de acessar tickets, clientes e interações.
                 </p>
               </form>
             </TabsContent>
