@@ -302,7 +302,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="flex h-full flex-col p-5">
           <h2 className="mb-4 text-sm font-semibold">Distribuição por status</h2>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
