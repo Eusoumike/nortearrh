@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
+import { ToneBadge } from "@/components/ui/tone-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -29,6 +32,7 @@ import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 
 export default function Clients() {
   const [q, setQ] = useState("");
+  const [origin, setOrigin] = useState<"all" | "imported" | "manual">("all");
   const [open, setOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
@@ -44,9 +48,12 @@ export default function Clients() {
     },
   });
 
-  const filtered = (clients ?? []).filter((c) =>
-    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = (clients ?? []).filter((c) => {
+    const matchesText = !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase());
+    const isImported = !!c.pipedrive_person_id;
+    const matchesOrigin = origin === "all" || (origin === "imported" ? isImported : !isImported);
+    return matchesText && matchesOrigin;
+  });
 
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
@@ -192,9 +199,21 @@ export default function Clients() {
       </div>
 
       <Card className="p-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, empresa ou e-mail…" className="h-9 pl-8" />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, empresa ou e-mail…" className="h-9 pl-8" />
+          </div>
+          <ToggleGroup
+            type="single"
+            value={origin}
+            onValueChange={(v) => v && setOrigin(v as typeof origin)}
+            className="justify-start"
+          >
+            <ToggleGroupItem value="all" size="sm" className="h-9 px-3 text-xs">Todos</ToggleGroupItem>
+            <ToggleGroupItem value="imported" size="sm" className="h-9 px-3 text-xs">Importados</ToggleGroupItem>
+            <ToggleGroupItem value="manual" size="sm" className="h-9 px-3 text-xs">Manuais</ToggleGroupItem>
+          </ToggleGroup>
         </div>
       </Card>
 
@@ -221,7 +240,14 @@ export default function Clients() {
                     <p className="truncate font-medium">{c.name}</p>
                     {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
                   </div>
-                  <HealthBadge health={c.health} />
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <HealthBadge health={c.health} />
+                    {c.pipedrive_person_id && (
+                      <ToneBadge tone="warning" size="sm">
+                        Pipedrive
+                      </ToneBadge>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {c.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
