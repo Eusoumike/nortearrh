@@ -36,27 +36,27 @@ function KPI({ label, value, hint, trend, icon: Icon, tone = "primary", to }: KP
     ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
     : "";
   const card = (
-    <Card className={`group relative overflow-hidden p-5 transition-all ${interactive}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-          <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-foreground">{value}</p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-        </div>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${toneStyles}`}>
+    <Card className={`group relative flex h-full min-h-[140px] flex-col overflow-hidden p-5 transition-all ${interactive}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${toneStyles}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      {trend !== undefined && (
-        <div className="mt-3 flex items-center gap-1 text-xs">
-          <TrendingUp className={`h-3 w-3 ${trend >= 0 ? "text-success" : "text-danger rotate-180"}`} />
-          <span className={trend >= 0 ? "text-success" : "text-danger"}>{Math.abs(trend)}%</span>
-          <span className="text-muted-foreground">vs. semana anterior</span>
-        </div>
-      )}
+      <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-foreground">{value}</p>
+      <div className="mt-auto pt-2">
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        {trend !== undefined && (
+          <div className="mt-1 flex items-center gap-1 text-xs">
+            <TrendingUp className={`h-3 w-3 ${trend >= 0 ? "text-success" : "text-danger rotate-180"}`} />
+            <span className={trend >= 0 ? "text-success" : "text-danger"}>{Math.abs(trend)}%</span>
+            <span className="text-muted-foreground">vs. semana anterior</span>
+          </div>
+        )}
+      </div>
     </Card>
   );
-  return to ? <Link to={to} className="block">{card}</Link> : card;
+  return to ? <Link to={to} className="block h-full">{card}</Link> : card;
 }
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
