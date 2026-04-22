@@ -33,7 +33,8 @@ import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useEffect, useState } from "react";
+import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   STATUS_LABEL,
@@ -251,6 +252,14 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const lastInteractionAt = useMemo(() => {
+    if (!interactions || interactions.length === 0) return null;
+    return interactions
+      .map((i: any) => i.interaction_at as string)
+      .sort()
+      .at(-1) ?? null;
+  }, [interactions]);
+
   if (isLoading || !ticket) {
     return <div className="space-y-3 p-6"><Skeleton className="h-6 w-32" /><Skeleton className="h-32" /><Skeleton className="h-64" /></div>;
   }
@@ -343,6 +352,11 @@ export default function TicketDetail() {
                 <SLAIndicator deadline={ticket.sla_response_deadline} label="1ª resp." size="sm" />
               )}
             </div>
+            <AutoCloseWarning
+              status={ticket.status}
+              enteredAt={(ticket as any).entered_aguardando_cliente_at}
+              lastInteractionAt={lastInteractionAt}
+            />
             {ticket.description && (
               <p className="whitespace-pre-wrap border-t border-border/60 pt-3 text-sm leading-relaxed text-muted-foreground">
                 {ticket.description}
