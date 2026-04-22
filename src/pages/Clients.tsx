@@ -31,6 +31,7 @@ import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 
 export default function Clients() {
   const [q, setQ] = useState("");
+  const [origin, setOrigin] = useState<"all" | "imported" | "manual">("all");
   const [open, setOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
