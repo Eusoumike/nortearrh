@@ -272,8 +272,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="flex h-full flex-col p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold">Volume de tickets</h2>
