@@ -337,6 +337,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          created_at: string
+          id: string
+          pipedrive_api_token: string | null
+          pipedrive_connected_at: string | null
+          pipedrive_user_name: string | null
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pipedrive_api_token?: string | null
+          pipedrive_connected_at?: string | null
+          pipedrive_user_name?: string | null
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pipedrive_api_token?: string | null
+          pipedrive_connected_at?: string | null
+          pipedrive_user_name?: string | null
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_name: string | null
@@ -699,11 +732,46 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          created_at: string
+          theme: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          theme?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          theme?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_remove_user_access: {
+        Args: { _target_user: string }
+        Returns: undefined
+      }
+      admin_set_user_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _target_user: string
+        }
+        Returns: undefined
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
