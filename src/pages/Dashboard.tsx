@@ -280,7 +280,7 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground">Últimos 14 dias</p>
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats.days}>
                 <defs>
