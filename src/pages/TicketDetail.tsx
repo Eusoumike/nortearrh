@@ -33,7 +33,8 @@ import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useEffect, useState } from "react";
+import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   STATUS_LABEL,
