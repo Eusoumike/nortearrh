@@ -19,6 +19,7 @@ import {
 import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES } from "@/lib/constants";
 import { ToneBadge } from "@/components/ui/tone-badge";
 import { formatDuration } from "@/lib/formatters";
+import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 
 interface KanbanTicket {
   id: string;
@@ -87,6 +88,11 @@ function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
         <span className="truncate">{t.client?.name ?? "Sem cliente"}</span>
         <span className="font-mono shrink-0">{formatDuration(elapsed)}</span>
       </div>
+      <AutoCloseWarning
+        status={t.status}
+        enteredAt={t.entered_aguardando_cliente_at}
+        variant="card"
+      />
     </div>
   );
 }
