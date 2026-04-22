@@ -47,9 +47,12 @@ export default function Clients() {
     },
   });
 
-  const filtered = (clients ?? []).filter((c) =>
-    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = (clients ?? []).filter((c) => {
+    const matchesText = !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase());
+    const isImported = !!c.pipedrive_person_id;
+    const matchesOrigin = origin === "all" || (origin === "imported" ? isImported : !isImported);
+    return matchesText && matchesOrigin;
+  });
 
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
