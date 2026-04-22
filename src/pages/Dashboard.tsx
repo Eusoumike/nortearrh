@@ -22,17 +22,21 @@ interface KPIProps {
   trend?: number;
   icon: React.ComponentType<{ className?: string }>;
   tone?: "primary" | "warning" | "danger" | "success";
+  to?: string;
 }
 
-function KPI({ label, value, hint, trend, icon: Icon, tone = "primary" }: KPIProps) {
+function KPI({ label, value, hint, trend, icon: Icon, tone = "primary", to }: KPIProps) {
   const toneStyles = {
     primary: "bg-primary/10 text-primary",
     warning: "bg-warning/15 text-warning dark:text-warning",
     danger: "bg-danger/10 text-danger",
     success: "bg-success/10 text-success",
   }[tone];
-  return (
-    <Card className="group relative overflow-hidden p-5 transition-shadow hover:shadow-md">
+  const interactive = to
+    ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+    : "";
+  const card = (
+    <Card className={`group relative overflow-hidden p-5 transition-all ${interactive}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -52,6 +56,7 @@ function KPI({ label, value, hint, trend, icon: Icon, tone = "primary" }: KPIPro
       )}
     </Card>
   );
+  return to ? <Link to={to} className="block">{card}</Link> : card;
 }
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
