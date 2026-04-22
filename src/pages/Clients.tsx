@@ -226,10 +226,9 @@ export default function Clients() {
                         const ageMs = Date.now() - new Date(c.created_at).getTime();
                         if (ageMs < 0 || ageMs >= 48 * 60 * 60 * 1000) return null;
                         return (
-                          <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-orange-500/30 bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-400">
-                            <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                          <ToneBadge tone="warning" size="sm" dot className="shrink-0">
                             Novo
-                          </span>
+                          </ToneBadge>
                         );
                       })()}
                     </div>
