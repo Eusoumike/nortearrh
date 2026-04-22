@@ -32,6 +32,10 @@ const insightItems = [
   { title: "Performance", url: "/performance", icon: BarChart3 },
 ];
 
+const settingsItems = [
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const { user, role } = useAuth();
