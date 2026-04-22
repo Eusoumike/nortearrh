@@ -16,6 +16,7 @@ import Performance from "./pages/Performance";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient({
@@ -41,7 +42,7 @@ const App = () => (
             <Route path="/clientes/:id" element={<ClientDetail />} />
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
             <Route path="/performance" element={<Performance />} />
-            <Route path="/configuracoes" element={<ComingSoon title="Configurações" description="SLA, integrações Pipedrive/WhatsApp, gestão de usuários. Onda 2/3." />} />
+            <Route path="/configuracoes" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
