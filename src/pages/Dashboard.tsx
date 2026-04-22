@@ -247,7 +247,7 @@ export default function Dashboard() {
         </DropdownMenu>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPI label="Tickets abertos" value={stats.open} icon={Ticket} tone="primary" to="/tickets?open=1" />
         <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} to="/tickets?sla=overdue" />
         <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" to="/tickets?sla=approaching" />
@@ -257,7 +257,7 @@ export default function Dashboard() {
       {/* Tempo médio por etapa */}
       <div>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tempo médio por etapa</h2>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.stageAverages.map((s) => (
             <KPI
               key={s.key}
