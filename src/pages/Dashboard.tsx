@@ -349,8 +349,8 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="flex h-full min-h-[360px] flex-col p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold">Tickets recentes</h2>
             <Link to="/tickets" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
