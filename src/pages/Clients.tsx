@@ -239,7 +239,17 @@ export default function Clients() {
                     <p className="truncate font-medium">{c.name}</p>
                     {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
                   </div>
-                  <HealthBadge health={c.health} />
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <HealthBadge health={c.health} />
+                    {c.pipedrive_person_id && (
+                      <Badge
+                        variant="outline"
+                        className="border-amber-300 bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-300"
+                      >
+                        Pipedrive
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {c.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
