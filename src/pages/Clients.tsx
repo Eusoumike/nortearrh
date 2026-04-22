@@ -242,12 +242,9 @@ export default function Clients() {
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
                     {c.pipedrive_person_id && (
-                      <Badge
-                        variant="outline"
-                        className="border-amber-300 bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-300"
-                      >
+                      <ToneBadge tone="warning" size="sm">
                         Pipedrive
-                      </Badge>
+                      </ToneBadge>
                     )}
                   </div>
                 </div>
