@@ -1,22 +1,63 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search, Filter, X } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { TicketKanban } from "@/components/TicketKanban";
 
 export default function Tickets() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
+  const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
+
+  // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d
+  const openOnly = searchParams.get("open") === "1";
+  const slaMode = searchParams.get("sla"); // "overdue" | "approaching"
+  const resolvedWindow = searchParams.get("resolved"); // "7d"
+
+  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow;
+
+  // Sincroniza select com URL quando muda externamente
+  useEffect(() => {
+    const s = searchParams.get("status") ?? "all";
+    const p = searchParams.get("priority") ?? "all";
+    setStatusFilter(s);
+    setPriorityFilter(p);
+  }, [searchParams]);
+
+  const updateStatus = (v: string) => {
+    setStatusFilter(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("status");
+    else next.set("status", v);
+    setSearchParams(next, { replace: true });
+  };
+
+  const updatePriority = (v: string) => {
+    setPriorityFilter(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("priority");
+    else next.set("priority", v);
+    setSearchParams(next, { replace: true });
+  };
+
+  const clearSpecialFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("open");
+    next.delete("sla");
+    next.delete("resolved");
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
