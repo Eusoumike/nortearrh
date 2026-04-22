@@ -394,7 +394,7 @@ export default function Settings() {
                 <span>
                   {pipedriveStatus.ok
                     ? `Conectado como ${pipedriveStatus.name}`
-                    : `Token inválido — ${pipedriveStatus.msg}`}
+                    : `Token inválido — ${(pipedriveStatus as { ok: false; msg: string }).msg}`}
                 </span>
               </div>
             )}
