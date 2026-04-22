@@ -36,27 +36,27 @@ function KPI({ label, value, hint, trend, icon: Icon, tone = "primary", to }: KP
     ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
     : "";
   const card = (
-    <Card className={`group relative overflow-hidden p-5 transition-all ${interactive}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-          <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-foreground">{value}</p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-        </div>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${toneStyles}`}>
+    <Card className={`group relative flex h-full min-h-[140px] flex-col overflow-hidden p-5 transition-all ${interactive}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${toneStyles}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      {trend !== undefined && (
-        <div className="mt-3 flex items-center gap-1 text-xs">
-          <TrendingUp className={`h-3 w-3 ${trend >= 0 ? "text-success" : "text-danger rotate-180"}`} />
-          <span className={trend >= 0 ? "text-success" : "text-danger"}>{Math.abs(trend)}%</span>
-          <span className="text-muted-foreground">vs. semana anterior</span>
-        </div>
-      )}
+      <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-foreground">{value}</p>
+      <div className="mt-auto pt-2">
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        {trend !== undefined && (
+          <div className="mt-1 flex items-center gap-1 text-xs">
+            <TrendingUp className={`h-3 w-3 ${trend >= 0 ? "text-success" : "text-danger rotate-180"}`} />
+            <span className={trend >= 0 ? "text-success" : "text-danger"}>{Math.abs(trend)}%</span>
+            <span className="text-muted-foreground">vs. semana anterior</span>
+          </div>
+        )}
+      </div>
     </Card>
   );
-  return to ? <Link to={to} className="block">{card}</Link> : card;
+  return to ? <Link to={to} className="block h-full">{card}</Link> : card;
 }
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
@@ -247,7 +247,7 @@ export default function Dashboard() {
         </DropdownMenu>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPI label="Tickets abertos" value={stats.open} icon={Ticket} tone="primary" to="/tickets?open=1" />
         <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} to="/tickets?sla=overdue" />
         <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" to="/tickets?sla=approaching" />
@@ -257,7 +257,7 @@ export default function Dashboard() {
       {/* Tempo médio por etapa */}
       <div>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tempo médio por etapa</h2>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.stageAverages.map((s) => (
             <KPI
               key={s.key}
@@ -272,15 +272,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="flex h-full flex-col p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold">Volume de tickets</h2>
               <p className="text-xs text-muted-foreground">Últimos 14 dias</p>
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats.days}>
                 <defs>
@@ -302,7 +302,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="flex h-full flex-col p-5">
           <h2 className="mb-4 text-sm font-semibold">Distribuição por status</h2>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -349,8 +349,8 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="flex h-full min-h-[360px] flex-col p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold">Tickets recentes</h2>
             <Link to="/tickets" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
@@ -389,7 +389,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="flex h-full min-h-[360px] flex-col p-5">
           <h2 className="mb-4 text-sm font-semibold">Clientes em atenção</h2>
           {attentionClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
