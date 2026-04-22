@@ -275,6 +275,14 @@ export default function TicketDetail() {
   const clientEmail = (ticket.client as any)?.email;
   const clientPhone = (ticket.client as any)?.phone;
 
+  const lastInteractionAt = useMemo(() => {
+    if (!interactions || interactions.length === 0) return null;
+    return interactions
+      .map((i: any) => i.interaction_at as string)
+      .sort()
+      .at(-1) ?? null;
+  }, [interactions]);
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
@@ -344,6 +352,11 @@ export default function TicketDetail() {
                 <SLAIndicator deadline={ticket.sla_response_deadline} label="1ª resp." size="sm" />
               )}
             </div>
+            <AutoCloseWarning
+              status={ticket.status}
+              enteredAt={(ticket as any).entered_aguardando_cliente_at}
+              lastInteractionAt={lastInteractionAt}
+            />
             {ticket.description && (
               <p className="whitespace-pre-wrap border-t border-border/60 pt-3 text-sm leading-relaxed text-muted-foreground">
                 {ticket.description}
