@@ -219,15 +219,20 @@ export default function Clients() {
               <div className="relative z-10 pointer-events-none">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{c.name}</p>
                     <div className="flex items-center gap-1.5">
-                      {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
-                      {c.pipedrive_person_id && c.created_at && (Date.now() - new Date(c.created_at).getTime()) < 48 * 60 * 60 * 1000 && (
-                        <ToneBadge tone="accent" size="sm" dot className="shrink-0">
-                          Novo
-                        </ToneBadge>
-                      )}
+                      <p className="truncate font-medium">{c.name}</p>
+                      {(() => {
+                        if (!c.pipedrive_person_id || !c.created_at) return null;
+                        const ageMs = Date.now() - new Date(c.created_at).getTime();
+                        if (ageMs < 0 || ageMs >= 48 * 60 * 60 * 1000) return null;
+                        return (
+                          <ToneBadge tone="warning" size="sm" dot className="shrink-0">
+                            Novo
+                          </ToneBadge>
+                        );
+                      })()}
                     </div>
+                    {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
