@@ -248,10 +248,10 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <KPI label="Tickets abertos" value={stats.open} icon={Ticket} tone="primary" />
-        <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} />
-        <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" />
-        <KPI label="Resolvidos (7d)" value={stats.resolvedThisWeek} icon={TrendingUp} tone="success" />
+        <KPI label="Tickets abertos" value={stats.open} icon={Ticket} tone="primary" to="/tickets?open=1" />
+        <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} to="/tickets?sla=overdue" />
+        <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" to="/tickets?sla=approaching" />
+        <KPI label="Resolvidos (7d)" value={stats.resolvedThisWeek} icon={TrendingUp} tone="success" to="/tickets?resolved=7d" />
       </div>
 
       {/* Tempo médio por etapa */}
@@ -266,6 +266,7 @@ export default function Dashboard() {
               hint={s.count > 0 ? `${s.count} chamado${s.count === 1 ? "" : "s"}` : "Sem dados ainda"}
               icon={Clock}
               tone="primary"
+              to={`/tickets?status=${s.key}`}
             />
           ))}
         </div>
