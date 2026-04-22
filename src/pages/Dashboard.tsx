@@ -389,7 +389,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="flex h-full min-h-[360px] flex-col p-5">
           <h2 className="mb-4 text-sm font-semibold">Clientes em atenção</h2>
           {attentionClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
