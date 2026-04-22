@@ -30,7 +30,6 @@ import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 
 export default function Clients() {
   const [q, setQ] = useState("");
-  const [origin, setOrigin] = useState<"all" | "imported" | "manual">("all");
   const [open, setOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
@@ -46,12 +45,9 @@ export default function Clients() {
     },
   });
 
-  const filtered = (clients ?? []).filter((c) => {
-    const matchesText = !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase());
-    const isImported = !!c.pipedrive_person_id;
-    const matchesOrigin = origin === "all" || (origin === "imported" ? isImported : !isImported);
-    return matchesText && matchesOrigin;
-  });
+  const filtered = (clients ?? []).filter((c) =>
+    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
+  );
 
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
