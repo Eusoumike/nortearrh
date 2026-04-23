@@ -139,6 +139,85 @@ export type Database = {
           },
         ]
       }
+      implantacao_eventos: {
+        Row: {
+          autor_id: string | null
+          autor_nome: string | null
+          created_at: string
+          descricao: string
+          id: string
+          implantacao_id: string
+          metadata: Json
+          tipo: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_nome?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          implantacao_id: string
+          metadata?: Json
+          tipo: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_nome?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          implantacao_id?: string
+          metadata?: Json
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacao_eventos_implantacao_id_fkey"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      implantacao_pendencias: {
+        Row: {
+          conteudo: string
+          created_at: string
+          etapa: Database["public"]["Enums"]["implantacao_etapa"]
+          id: string
+          implantacao_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          conteudo?: string
+          created_at?: string
+          etapa: Database["public"]["Enums"]["implantacao_etapa"]
+          id?: string
+          implantacao_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          etapa?: Database["public"]["Enums"]["implantacao_etapa"]
+          id?: string
+          implantacao_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacao_pendencias_implantacao_id_fkey"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       implantacao_stage_configs: {
         Row: {
           created_at: string
@@ -187,6 +266,9 @@ export type Database = {
           data_inicio: string | null
           email_cliente: string | null
           etapa: Database["public"]["Enums"]["implantacao_etapa"]
+          gravacao_t1: string | null
+          gravacao_t2: string | null
+          gravacao_t3: string | null
           id: string
           observacoes: string | null
           ordem: number
@@ -194,6 +276,9 @@ export type Database = {
           responsavel_email: string | null
           responsavel_id: string | null
           telefone_cliente: string | null
+          transcricao_t1: string | null
+          transcricao_t2: string | null
+          transcricao_t3: string | null
           updated_at: string
         }
         Insert: {
@@ -207,6 +292,9 @@ export type Database = {
           data_inicio?: string | null
           email_cliente?: string | null
           etapa?: Database["public"]["Enums"]["implantacao_etapa"]
+          gravacao_t1?: string | null
+          gravacao_t2?: string | null
+          gravacao_t3?: string | null
           id?: string
           observacoes?: string | null
           ordem?: number
@@ -214,6 +302,9 @@ export type Database = {
           responsavel_email?: string | null
           responsavel_id?: string | null
           telefone_cliente?: string | null
+          transcricao_t1?: string | null
+          transcricao_t2?: string | null
+          transcricao_t3?: string | null
           updated_at?: string
         }
         Update: {
@@ -227,6 +318,9 @@ export type Database = {
           data_inicio?: string | null
           email_cliente?: string | null
           etapa?: Database["public"]["Enums"]["implantacao_etapa"]
+          gravacao_t1?: string | null
+          gravacao_t2?: string | null
+          gravacao_t3?: string | null
           id?: string
           observacoes?: string | null
           ordem?: number
@@ -234,6 +328,9 @@ export type Database = {
           responsavel_email?: string | null
           responsavel_id?: string | null
           telefone_cliente?: string | null
+          transcricao_t1?: string | null
+          transcricao_t2?: string | null
+          transcricao_t3?: string | null
           updated_at?: string
         }
         Relationships: [
