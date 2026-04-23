@@ -1216,6 +1216,33 @@ function ChecklistTab({
   const total = stageItems.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
 
+  // Auto-seed: se a etapa é padrão e ainda não tem nenhum item, popula com o checklist sugerido.
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    setSeeded(false);
+  }, [item.id, item.etapa]);
+  useEffect(() => {
+    if (seeded) return;
+    if (!items) return; // espera dados carregarem
+    if (stageItems.length > 0) return;
+    const defaults = DEFAULT_CHECKLIST[item.etapa as StageKey];
+    if (!defaults || defaults.length === 0) return;
+    setSeeded(true);
+    (async () => {
+      const rows = defaults.map((label, idx) => ({
+        implantacao_id: item.id,
+        etapa: item.etapa,
+        label,
+        ordem: idx,
+      }));
+      const { error } = await supabase.from("checklist_items").insert(rows);
+      if (!error) {
+        qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+        qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      }
+    })();
+  }, [seeded, items, stageItems.length, item.id, item.etapa, qc]);
+
   // Pendência da etapa atual
   const { data: pendencia } = useQuery({
     queryKey: ["impl-pendencia", item.id, item.etapa],
