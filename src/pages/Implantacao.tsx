@@ -24,7 +24,7 @@ import {
   Plus, Loader2, GripVertical, Copy, Trash2, Send, Settings2, Search, X, Eye, EyeOff,
   ExternalLink, ArrowRightLeft, CheckCircle2, MessageSquare, StickyNote, AlertCircle,
 } from "lucide-react";
-import { initials, formatBrazilDateTime } from "@/lib/formatters";
+import { initials, formatBrazilDateTime, formatBrazilDate, formatCnpj } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -54,12 +54,89 @@ const PRODUTOS: { value: string; label: string }[] = [
 const PRODUTO_LABEL: Record<string, string> = Object.fromEntries(PRODUTOS.map((p) => [p.value, p.label]));
 
 const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
-  novo_cliente: ["Cadastrar dados do cliente", "Validar contrato assinado", "Definir responsável interno"],
-  boas_vindas: ["Enviar e-mail de boas-vindas", "Enviar mensagem de WhatsApp", "Coletar dados de acesso"],
-  treinamento_1: ["Agendar Treinamento 1 — Parametrização", "Realizar treinamento", "Validar parametrização"],
-  treinamento_2: ["Agendar Treinamento 2 — Menus", "Realizar treinamento", "Confirmar entendimento dos menus"],
-  treinamento_3: ["Agendar Treinamento 3 — Fechamento", "Realizar treinamento", "Acompanhar primeiro fechamento"],
-  finalizado: ["Confirmar funcionamento pleno", "Enviar mensagem de parabéns", "Transferir para pós-venda"],
+  novo_cliente: [
+    "Contrato assinado",
+    "Dados da empresa coletados (CNPJ, endereço, responsável)",
+    "Acesso ao sistema criado para o cliente",
+    "E-mail de boas-vindas enviado",
+    "Treinamento 1 agendado",
+  ],
+  boas_vindas: [
+    "E-mail de boas-vindas enviado",
+    "Link de agendamento do Treinamento 1 enviado",
+    "Confirmação de recebimento pelo cliente",
+    "Data e horário do Treinamento 1 confirmados",
+  ],
+  treinamento_1: [
+    "Unidades de negócio configuradas",
+    "Centros de custo configurados",
+    "Departamentos criados",
+    "Turnos e horários de trabalho configurados",
+    "Segurança e perfis de acesso definidos",
+    "Restrição de dispositivos configurada (se aplicável)",
+    "Painel de Risco configurado (se aplicável)",
+    "Férias — módulo apresentado",
+    "Controle de ponto — configurações gerais",
+    "Movimentação de turnos / Sobreaviso (se aplicável)",
+    "Cercas virtuais e pontos de referência (se aplicável)",
+    "Motivos de ajustes cadastrados",
+    "Feriados cadastrados",
+    "Exceções de jornada e atestados configurados",
+    "Compensação em Cascata (se aplicável)",
+    "Etiqueta de ponto configurada (se aplicável)",
+    "Equipes criadas",
+    "Cargos cadastrados",
+    "Colaboradores importados / cadastrados",
+    "Alocação de colaboradores nas unidades/departamentos",
+    "Integrações configuradas (se aplicável)",
+    "Relógios de ponto vinculados (se aplicável)",
+    "Exportação de folha de pagamento configurada (se aplicável)",
+    "Extensões contratadas configuradas",
+    "Acesso ao suporte liberado (Co-Browser)",
+    "Treinamento 1 concluído — cliente apto para usar o sistema",
+  ],
+  treinamento_2: [
+    "Indicadores — painel de banco de horas apresentado",
+    "Painel de Risco — apresentado e configurado",
+    "Resumo — abas Status, Evento e Frequência apresentadas",
+    "Meu Perfil — apresentado ao cliente",
+    "Meu Ponto — apresentado ao colaborador",
+    "Universo do Tempo — apresentado",
+    "Minha Equipe — gestão de equipes apresentada",
+    "Solicitações — fluxo de aprovação apresentado",
+    "Classificação de horas extras — configurado",
+    "Escala — apresentada (se aplicável)",
+    "Férias e Folgas — fluxo apresentado",
+    "Controle de Ponto — lançamento de ocorrências e ajustes",
+    "Relatórios — principais relatórios apresentados",
+    "Consulta de Processos — apresentado",
+    "Assistente Virtual — apresentado",
+    "Configurações do sistema — revisão geral",
+    "Central de Ajuda — cliente orientado sobre o recurso",
+    "Treinamento 2 concluído — cliente operando o sistema",
+  ],
+  treinamento_3: [
+    "Processo de fechamento explicado ao cliente",
+    "Acesso ao menu Controle de Ponto → Ações → Fechamento",
+    "Parâmetros do fechamento configurados (período, unidade/CC)",
+    "Ajustes obrigatórios explicados (pontos ímpares, faltas)",
+    "Validação de totais — cliente sabe verificar",
+    "Tratamento de horas extras e banco de horas",
+    "Exportação do espelho de ponto",
+    "Exportação para folha de pagamento",
+    "Rotina mensal definida (quando fechar, quem fecha)",
+    "Cliente realizou um fechamento supervisionado",
+    "Dúvidas do fechamento esclarecidas",
+    "Treinamento 3 concluído — cliente independente",
+  ],
+  finalizado: [
+    "Todos os 3 treinamentos concluídos",
+    "Cliente registra ponto sem assistência",
+    "Primeiro fechamento real realizado com sucesso",
+    "Contato de pós-implantação realizado (7 dias após finalizar)",
+    "Cliente orientado sobre canais de suporte",
+    "Implantação encerrada ✓",
+  ],
 };
 
 const MESSAGE_TEMPLATES = [
@@ -843,8 +920,9 @@ function EditImplantacaoDialog({
               </div>
               <Progress value={totals.pct} className="h-2" />
               <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-[11px] text-muted-foreground">
-                <span>Início: <span className="text-foreground">{item.data_inicio ?? "—"}</span></span>
-                <span>Previsão: <span className="text-foreground">{item.data_go_live ?? "—"}</span></span>
+                <span>Início: <span className="text-foreground">{item.data_inicio ? formatBrazilDate(item.data_inicio) : "—"}</span></span>
+                <span>Previsão: <span className="text-foreground">{item.data_go_live ? formatBrazilDate(item.data_go_live) : "—"}</span></span>
+                {item.cnpj && <span>CNPJ: <span className="text-foreground">{formatCnpj(item.cnpj)}</span></span>}
               </div>
             </div>
 
@@ -1137,6 +1215,33 @@ function ChecklistTab({
   const done = stageItems.filter((i) => i.concluido).length;
   const total = stageItems.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
+
+  // Auto-seed: se a etapa é padrão e ainda não tem nenhum item, popula com o checklist sugerido.
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    setSeeded(false);
+  }, [item.id, item.etapa]);
+  useEffect(() => {
+    if (seeded) return;
+    if (!items) return; // espera dados carregarem
+    if (stageItems.length > 0) return;
+    const defaults = DEFAULT_CHECKLIST[item.etapa as StageKey];
+    if (!defaults || defaults.length === 0) return;
+    setSeeded(true);
+    (async () => {
+      const rows = defaults.map((label, idx) => ({
+        implantacao_id: item.id,
+        etapa: item.etapa,
+        label,
+        ordem: idx,
+      }));
+      const { error } = await supabase.from("checklist_items").insert(rows);
+      if (!error) {
+        qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+        qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      }
+    })();
+  }, [seeded, items, stageItems.length, item.id, item.etapa, qc]);
 
   // Pendência da etapa atual
   const { data: pendencia } = useQuery({

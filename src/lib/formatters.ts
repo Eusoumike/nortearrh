@@ -38,6 +38,30 @@ export function formatBrazilDateTime(date: string | Date | null | undefined): st
   }).format(new Date(date)).replace(",", "");
 }
 
+/** Formata uma data ISO/Date para `dd/MM/yyyy` em Brasília. Aceita também `YYYY-MM-DD` puro. */
+export function formatBrazilDate(date: string | Date | null | undefined): string {
+  if (!date) return "";
+  // Se vier como "YYYY-MM-DD" puro (campo `date` do Postgres), interpretar como data local de Brasília
+  // pra não escorregar 1 dia por causa do fuso UTC.
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit", month: "2-digit", year: "numeric",
+  }).format(new Date(date));
+}
+
+/** Formata um CNPJ (com ou sem máscara) como `XX.XXX.XXX/XXXX-XX`.
+ *  Se não tiver 14 dígitos, devolve o valor original. */
+export function formatCnpj(value: string | null | undefined): string {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 14) return value;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+}
+
 /** Formato curto pra timeline: `dd/mm hh:mm`. */
 export function formatBrazilTime(date: string | Date | null | undefined): string {
   if (!date) return "";
