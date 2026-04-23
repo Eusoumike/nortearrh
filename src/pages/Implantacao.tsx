@@ -22,8 +22,9 @@ import { ToneBadge } from "@/components/ui/tone-badge";
 import { toast } from "sonner";
 import {
   Plus, Loader2, GripVertical, Copy, Trash2, Send, Settings2, Search, X, Eye, EyeOff,
+  ExternalLink, ArrowRightLeft, CheckCircle2, MessageSquare, StickyNote, AlertCircle,
 } from "lucide-react";
-import { initials } from "@/lib/formatters";
+import { initials, formatBrazilDateTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -43,6 +44,7 @@ const DEFAULT_STAGES: { key: StageKey; label: string; tone: "muted" | "info" | "
   { key: "finalizado",     label: "Finalizado",                         tone: "success" },
 ];
 const DEFAULT_STAGE_KEYS = new Set<string>(DEFAULT_STAGES.map((s) => s.key));
+const DEFAULT_STAGE_LABEL: Record<string, string> = Object.fromEntries(DEFAULT_STAGES.map((s) => [s.key, s.label]));
 
 const PRODUTOS: { value: string; label: string }[] = [
   { value: "vr_rh_digital", label: "VR + RH Digital" },
@@ -123,8 +125,39 @@ function daysSince(dateStr: string | null | undefined): number | null {
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
 
+function daysSinceISO(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const ms = Date.now() - d.getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
 function onlyDigits(s: string | null | undefined): string {
   return (s ?? "").replace(/\D/g, "");
+}
+
+/** Registra um evento na timeline da implantação. */
+async function logImplantacaoEvent(params: {
+  implantacao_id: string;
+  tipo: string;
+  descricao: string;
+  metadata?: Record<string, any>;
+  autor_id?: string | null;
+  autor_nome?: string | null;
+}) {
+  try {
+    await supabase.from("implantacao_eventos").insert({
+      implantacao_id: params.implantacao_id,
+      tipo: params.tipo,
+      descricao: params.descricao,
+      metadata: params.metadata ?? {},
+      autor_id: params.autor_id ?? null,
+      autor_nome: params.autor_nome ?? null,
+    });
+  } catch {
+    // silencioso — não interrompe a ação principal
+  }
 }
 
 function useStages(userId: string | null) {
@@ -217,6 +250,8 @@ export default function Implantacao() {
       <ImplantacaoKanban
         stages={visibleStages}
         onOpenCard={(id) => setEditingId(id)}
+        userId={user?.id ?? null}
+        userName={user?.user_metadata?.full_name ?? user?.email ?? null}
       />
 
       <NewImplantacaoDialog
@@ -250,9 +285,13 @@ export default function Implantacao() {
 function ImplantacaoKanban({
   stages,
   onOpenCard,
+  userId,
+  userName,
 }: {
   stages: { key: string; label: string; tone: any }[];
   onOpenCard: (id: string) => void;
+  userId: string | null;
+  userName: string | null;
 }) {
   const qc = useQueryClient();
 
@@ -279,6 +318,27 @@ function ImplantacaoKanban({
     },
   });
 
+  // última atividade por implantação (a partir dos eventos)
+  const { data: lastActs } = useQuery({
+    queryKey: ["impl-last-activity"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("implantacao_eventos")
+        .select("implantacao_id, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const lastActMap = useMemo(() => {
+    const m = new Map<string, string>();
+    (lastActs ?? []).forEach((e: any) => {
+      if (!m.has(e.implantacao_id)) m.set(e.implantacao_id, e.created_at);
+    });
+    return m;
+  }, [lastActs]);
+
   const counts = useMemo(() => {
     const m = new Map<string, { done: number; total: number }>();
     (checklist ?? []).forEach((c: any) => {
@@ -291,11 +351,24 @@ function ImplantacaoKanban({
   }, [checklist]);
 
   const moveStage = useMutation({
-    mutationFn: async ({ id, etapa }: { id: string; etapa: string }) => {
+    mutationFn: async ({ id, etapa, fromEtapa, item }: { id: string; etapa: string; fromEtapa: string; item: any }) => {
       const { error } = await supabase.from("implantacoes").update({ etapa: etapa as any }).eq("id", id);
       if (error) throw error;
+      const fromLabel = stages.find((s) => s.key === fromEtapa)?.label ?? DEFAULT_STAGE_LABEL[fromEtapa] ?? fromEtapa;
+      const toLabel = stages.find((s) => s.key === etapa)?.label ?? DEFAULT_STAGE_LABEL[etapa] ?? etapa;
+      await logImplantacaoEvent({
+        implantacao_id: id,
+        tipo: "mudanca_etapa",
+        descricao: `Movido de "${fromLabel}" para "${toLabel}"`,
+        metadata: { from: fromEtapa, to: etapa },
+        autor_id: userId,
+        autor_nome: userName,
+      });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["implantacoes"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["implantacoes"] });
+      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -317,7 +390,6 @@ function ImplantacaoKanban({
     stages.forEach((s) => (map[s.key] = []));
     (items ?? []).forEach((i: any) => {
       if (map[i.etapa]) map[i.etapa].push(i);
-      // se a etapa estiver oculta, mostra na primeira coluna como fallback
       else if (stages[0]) map[stages[0].key].push(i);
     });
     return map;
@@ -341,7 +413,10 @@ function ImplantacaoKanban({
           onDrop={(e) => {
             e.preventDefault();
             const id = e.dataTransfer.getData("text/plain");
-            if (id) moveStage.mutate({ id, etapa: stage.key });
+            if (!id) return;
+            const found = (items ?? []).find((x: any) => x.id === id);
+            if (!found || found.etapa === stage.key) return;
+            moveStage.mutate({ id, etapa: stage.key, fromEtapa: found.etapa, item: found });
           }}
         >
           <div className="mb-2 flex items-start justify-between gap-2 px-1 min-h-[44px]">
@@ -366,6 +441,7 @@ function ImplantacaoKanban({
                 key={it.id}
                 item={it}
                 count={counts.get(it.id) ?? { done: 0, total: 0 }}
+                lastActivity={lastActMap.get(it.id) ?? null}
                 onClick={() => onOpenCard(it.id)}
                 onDelete={() => {
                   if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
@@ -383,12 +459,17 @@ function ImplantacaoKanban({
 }
 
 function KanbanCard({
-  item, count, onClick, onDelete,
-}: { item: any; count: { done: number; total: number }; onClick: () => void; onDelete: () => void }) {
+  item, count, lastActivity, onClick, onDelete,
+}: { item: any; count: { done: number; total: number }; lastActivity: string | null; onClick: () => void; onDelete: () => void }) {
   const days = daysSince(item.data_inicio);
   const overdue = days !== null && days > 15;
   const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
   const respName = item.responsavel?.full_name ?? "—";
+
+  // última atividade: usa eventos; se não houver nenhum, cai pra updated_at
+  const lastIso = lastActivity ?? item.updated_at ?? item.created_at;
+  const lastDays = daysSinceISO(lastIso);
+  const stale = lastDays !== null && lastDays > 7;
 
   return (
     <div
@@ -430,6 +511,20 @@ function KanbanCard({
               {count.done}/{count.total} — {pct}%
             </p>
           </div>
+
+          {/* Última atividade */}
+          {lastDays !== null && (
+            stale ? (
+              <p className="flex items-center gap-1 text-[10px] font-medium text-warning">
+                <AlertCircle className="h-3 w-3" />
+                Sem atividade há {lastDays} {lastDays === 1 ? "dia" : "dias"}
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground">
+                Última atividade: {lastDays === 0 ? "hoje" : `há ${lastDays} ${lastDays === 1 ? "dia" : "dias"}`}
+              </p>
+            )
+          )}
 
           {days !== null && (
             <p className={cn("text-[10px]", overdue ? "font-medium text-warning" : "text-muted-foreground")}>
@@ -515,7 +610,6 @@ function NewImplantacaoDialog({
       }).select("id").single();
       if (error) throw error;
 
-      // Pré-popula checklist com itens-padrão por etapa
       const seedRows: any[] = [];
       (Object.keys(DEFAULT_CHECKLIST) as StageKey[]).forEach((etapa) => {
         DEFAULT_CHECKLIST[etapa].forEach((label, idx) => {
@@ -525,10 +619,19 @@ function NewImplantacaoDialog({
       if (seedRows.length) {
         await supabase.from("checklist_items").insert(seedRows);
       }
+
+      await logImplantacaoEvent({
+        implantacao_id: created!.id,
+        tipo: "mudanca_etapa",
+        descricao: `Implantação criada na etapa "${DEFAULT_STAGE_LABEL[firstStageKey] ?? firstStageKey}"`,
+        metadata: { to: firstStageKey, criacao: true },
+        autor_id: userId,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["implantacoes"] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
       toast.success("Implantação criada.");
       onOpenChange(false);
       setForm({
@@ -566,7 +669,6 @@ function NewImplantacaoDialog({
           onSubmit={(e) => { e.preventDefault(); if (!form.client_name.trim()) return toast.error("Informe a empresa."); create.mutate(); }}
           className="space-y-3"
         >
-          {/* Busca da carteira */}
           <div className="space-y-1">
             <Label className="text-xs">Buscar cliente da carteira</Label>
             <div className="relative">
@@ -672,13 +774,15 @@ function FieldText({
 }
 
 // ============================================================
-// MODAL: EDITAR (3 abas)
+// MODAL: EDITAR (4 abas)
 // ============================================================
 
 function EditImplantacaoDialog({
   implantacaoId, onClose, stages,
 }: { implantacaoId: string | null; onClose: () => void; stages: { key: string; label: string; tone: any }[] }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.full_name ?? user?.email ?? null;
   const [tab, setTab] = useState("dados");
 
   const { data: item } = useQuery({
@@ -732,7 +836,6 @@ function EditImplantacaoDialog({
               </DialogDescription>
             </DialogHeader>
 
-            {/* Cabeçalho com progresso e datas */}
             <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-medium">Progresso do checklist</span>
@@ -750,18 +853,23 @@ function EditImplantacaoDialog({
                 <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
                 <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
                 <TabsTrigger value="mensagens" className="flex-1">Mensagens</TabsTrigger>
+                <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>
               </TabsList>
 
               <TabsContent value="dados" className="mt-3">
-                <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} />
+                <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} userId={user?.id ?? null} userName={userName} />
               </TabsContent>
 
               <TabsContent value="checklist" className="mt-3">
-                <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} />
+                <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} userId={user?.id ?? null} userName={userName} />
               </TabsContent>
 
               <TabsContent value="mensagens" className="mt-3">
-                <MensagensTab item={item} />
+                <MensagensTab item={item} qc={qc} userId={user?.id ?? null} userName={userName} />
+              </TabsContent>
+
+              <TabsContent value="historico" className="mt-3">
+                <HistoricoTab implantacaoId={item.id} />
               </TabsContent>
             </Tabs>
           </>
@@ -774,8 +882,8 @@ function EditImplantacaoDialog({
 // -------- ABA DADOS --------
 
 function DadosTab({
-  item, qc, stages, onClose,
-}: { item: any; qc: any; stages: { key: string; label: string }[]; onClose: () => void }) {
+  item, qc, stages, onClose, userId, userName,
+}: { item: any; qc: any; stages: { key: string; label: string }[]; onClose: () => void; userId: string | null; userName: string | null }) {
   const [form, setForm] = useState({
     client_name: item.client_name ?? "",
     cnpj: item.cnpj ?? "",
@@ -788,6 +896,12 @@ function DadosTab({
     data_go_live: item.data_go_live ?? "",
     responsavel_id: item.responsavel_id ?? "",
     observacoes: item.observacoes ?? "",
+    gravacao_t1: item.gravacao_t1 ?? "",
+    transcricao_t1: item.transcricao_t1 ?? "",
+    gravacao_t2: item.gravacao_t2 ?? "",
+    transcricao_t2: item.transcricao_t2 ?? "",
+    gravacao_t3: item.gravacao_t3 ?? "",
+    transcricao_t3: item.transcricao_t3 ?? "",
   });
 
   useEffect(() => {
@@ -803,6 +917,12 @@ function DadosTab({
       data_go_live: item.data_go_live ?? "",
       responsavel_id: item.responsavel_id ?? "",
       observacoes: item.observacoes ?? "",
+      gravacao_t1: item.gravacao_t1 ?? "",
+      transcricao_t1: item.transcricao_t1 ?? "",
+      gravacao_t2: item.gravacao_t2 ?? "",
+      transcricao_t2: item.transcricao_t2 ?? "",
+      gravacao_t3: item.gravacao_t3 ?? "",
+      transcricao_t3: item.transcricao_t3 ?? "",
     });
   }, [item.id]);
 
@@ -817,6 +937,7 @@ function DadosTab({
 
   const update = useMutation({
     mutationFn: async () => {
+      const stageChanged = form.etapa !== item.etapa;
       const { error } = await supabase.from("implantacoes").update({
         client_name: form.client_name.trim(),
         cnpj: form.cnpj || null,
@@ -829,12 +950,33 @@ function DadosTab({
         data_go_live: form.data_go_live || null,
         responsavel_id: form.responsavel_id || null,
         observacoes: form.observacoes || null,
+        gravacao_t1: form.gravacao_t1 || null,
+        transcricao_t1: form.transcricao_t1 || null,
+        gravacao_t2: form.gravacao_t2 || null,
+        transcricao_t2: form.transcricao_t2 || null,
+        gravacao_t3: form.gravacao_t3 || null,
+        transcricao_t3: form.transcricao_t3 || null,
       }).eq("id", item.id);
       if (error) throw error;
+
+      if (stageChanged) {
+        const fromLabel = stages.find((s) => s.key === item.etapa)?.label ?? item.etapa;
+        const toLabel = stages.find((s) => s.key === form.etapa)?.label ?? form.etapa;
+        await logImplantacaoEvent({
+          implantacao_id: item.id,
+          tipo: "mudanca_etapa",
+          descricao: `Movido de "${fromLabel}" para "${toLabel}"`,
+          metadata: { from: item.etapa, to: form.etapa },
+          autor_id: userId,
+          autor_nome: userName,
+        });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["implantacoes"] });
       qc.invalidateQueries({ queryKey: ["implantacao", item.id] });
+      qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
+      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
       toast.success("Atualizado.");
     },
     onError: (e: any) => toast.error(e.message),
@@ -907,7 +1049,40 @@ function DadosTab({
         <Textarea rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
       </div>
 
-      <div className="flex items-center justify-between pt-2">
+      {/* Gravações dos treinamentos */}
+      <div className="rounded-md border border-border bg-surface-muted/30 p-3 space-y-3">
+        <div>
+          <p className="text-sm font-medium">Gravações dos treinamentos</p>
+          <p className="text-[11px] text-muted-foreground">Cole links de Google Drive, YouTube, Notion, etc. (opcional)</p>
+        </div>
+        {[
+          { key: "t1", label: "Treinamento 1 — Parametrização" },
+          { key: "t2", label: "Treinamento 2 — Menus" },
+          { key: "t3", label: "Treinamento 3 — Fechamento" },
+        ].map((t) => {
+          const gravKey = `gravacao_${t.key}` as keyof typeof form;
+          const transcKey = `transcricao_${t.key}` as keyof typeof form;
+          return (
+            <div key={t.key} className="space-y-1">
+              <p className="text-xs font-medium">{t.label}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <UrlField
+                  placeholder="Link da gravação"
+                  value={form[gravKey] as string}
+                  onChange={(v) => setForm({ ...form, [gravKey]: v })}
+                />
+                <UrlField
+                  placeholder="Link da transcrição"
+                  value={form[transcKey] as string}
+                  onChange={(v) => setForm({ ...form, [transcKey]: v })}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between pt-2 sticky bottom-0 bg-background pb-1">
         <Button type="button" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => {
           if (confirm("Excluir esta implantação? Os itens de checklist serão removidos.")) remove.mutate();
         }}>
@@ -922,11 +1097,40 @@ function DadosTab({
   );
 }
 
+function UrlField({
+  placeholder, value, onChange,
+}: { placeholder: string; value: string; onChange: (v: string) => void }) {
+  const valid = value && /^https?:\/\//i.test(value);
+  return (
+    <div className="relative">
+      <Input
+        type="url"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 pr-9"
+      />
+      {valid && (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Abrir em nova aba"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      )}
+    </div>
+  );
+}
+
 // -------- ABA CHECKLIST --------
 
 function ChecklistTab({
-  item, stages, items, qc,
-}: { item: any; stages: { key: string; label: string }[]; items: any[]; qc: any }) {
+  item, stages, items, qc, userId, userName,
+}: { item: any; stages: { key: string; label: string }[]; items: any[]; qc: any; userId: string | null; userName: string | null }) {
   const [newLabel, setNewLabel] = useState("");
   const stageItems = items.filter((i) => i.etapa === item.etapa);
   const stageLabel = stages.find((s) => s.key === item.etapa)?.label ?? item.etapa;
@@ -934,14 +1138,85 @@ function ChecklistTab({
   const total = stageItems.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
 
+  // Pendência da etapa atual
+  const { data: pendencia } = useQuery({
+    queryKey: ["impl-pendencia", item.id, item.etapa],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("implantacao_pendencias")
+        .select("*")
+        .eq("implantacao_id", item.id)
+        .eq("etapa", item.etapa)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [pendenciaText, setPendenciaText] = useState("");
+  useEffect(() => {
+    setPendenciaText(pendencia?.conteudo ?? "");
+  }, [pendencia?.id, item.etapa]);
+
+  const savePendencia = useMutation({
+    mutationFn: async () => {
+      const conteudo = pendenciaText.trim();
+      const previousConteudo = (pendencia?.conteudo ?? "").trim();
+      if (conteudo === previousConteudo) return;
+
+      const { error } = await supabase
+        .from("implantacao_pendencias")
+        .upsert(
+          {
+            implantacao_id: item.id,
+            etapa: item.etapa,
+            conteudo,
+            updated_by: userId,
+          },
+          { onConflict: "implantacao_id,etapa" }
+        );
+      if (error) throw error;
+
+      if (conteudo) {
+        await logImplantacaoEvent({
+          implantacao_id: item.id,
+          tipo: "pendencia",
+          descricao: `Pendência registrada em "${stageLabel}": ${conteudo.slice(0, 120)}${conteudo.length > 120 ? "…" : ""}`,
+          metadata: { etapa: item.etapa },
+          autor_id: userId,
+          autor_nome: userName,
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-pendencia", item.id, item.etapa] });
+      qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
+      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
+      toast.success("Pendências salvas.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const toggle = useMutation({
-    mutationFn: async ({ id, concluido }: { id: string; concluido: boolean }) => {
+    mutationFn: async ({ id, concluido, label }: { id: string; concluido: boolean; label: string }) => {
       const { error } = await supabase.from("checklist_items").update({ concluido }).eq("id", id);
       if (error) throw error;
+      await logImplantacaoEvent({
+        implantacao_id: item.id,
+        tipo: concluido ? "checklist_concluido" : "checklist_desmarcado",
+        descricao: concluido
+          ? `✓ "${label}" concluído em "${stageLabel}"`
+          : `Desmarcado: "${label}" em "${stageLabel}"`,
+        metadata: { etapa: item.etapa, item_id: id },
+        autor_id: userId,
+        autor_nome: userName,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checklist", item.id] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+      qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
+      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -996,7 +1271,7 @@ function ChecklistTab({
             <div key={it.id} className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
               <Checkbox
                 checked={it.concluido}
-                onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v })}
+                onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v, label: it.label })}
               />
               <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
                 {it.label}
@@ -1028,13 +1303,40 @@ function ChecklistTab({
           <Plus className="h-4 w-4" /> Adicionar
         </Button>
       </form>
+
+      {/* Pendências da etapa */}
+      <div className="rounded-md border border-border bg-warning/5 p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs font-medium">Pendências / Observações desta etapa</Label>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7"
+            disabled={savePendencia.isPending}
+            onClick={() => savePendencia.mutate()}
+          >
+            {savePendencia.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+            Salvar pendências
+          </Button>
+        </div>
+        <Textarea
+          rows={3}
+          value={pendenciaText}
+          onChange={(e) => setPendenciaText(e.target.value)}
+          placeholder="O que ficou faltando ou precisa de atenção nesta etapa?"
+          className="bg-background"
+        />
+      </div>
     </div>
   );
 }
 
 // -------- ABA MENSAGENS --------
 
-function MensagensTab({ item }: { item: any }) {
+function MensagensTab({
+  item, qc, userId, userName,
+}: { item: any; qc: any; userId: string | null; userName: string | null }) {
   const [tplKey, setTplKey] = useState(MESSAGE_TEMPLATES[0].key);
   const tpl = MESSAGE_TEMPLATES.find((t) => t.key === tplKey)!;
 
@@ -1045,14 +1347,29 @@ function MensagensTab({ item }: { item: any }) {
   const hasPhone = phoneDigits.length >= 8;
   const waNumber = phoneDigits.startsWith("55") ? phoneDigits : `55${phoneDigits}`;
 
-  const copy = () => {
-    navigator.clipboard.writeText(finalText);
-    toast.success("Mensagem copiada.");
+  const logMessage = async (action: "copiada" | "enviada") => {
+    await logImplantacaoEvent({
+      implantacao_id: item.id,
+      tipo: "mensagem",
+      descricao: `📱 Mensagem "${tpl.title}" ${action}`,
+      metadata: { template: tpl.key, action },
+      autor_id: userId,
+      autor_nome: userName,
+    });
+    qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
+    qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
   };
 
-  const openWhats = () => {
+  const copy = async () => {
+    navigator.clipboard.writeText(finalText);
+    toast.success("Mensagem copiada.");
+    await logMessage("copiada");
+  };
+
+  const openWhats = async () => {
     if (!hasPhone) return;
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(finalText)}`, "_blank");
+    await logMessage("enviada");
   };
 
   return (
@@ -1092,6 +1409,64 @@ function MensagensTab({ item }: { item: any }) {
   );
 }
 
+// -------- ABA HISTÓRICO --------
+
+function HistoricoTab({ implantacaoId }: { implantacaoId: string }) {
+  const { data: eventos, isLoading } = useQuery({
+    queryKey: ["impl-eventos", implantacaoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("implantacao_eventos")
+        .select("*")
+        .eq("implantacao_id", implantacaoId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const iconFor = (tipo: string) => {
+    switch (tipo) {
+      case "mudanca_etapa": return <ArrowRightLeft className="h-3.5 w-3.5 text-info" />;
+      case "checklist_concluido": return <CheckCircle2 className="h-3.5 w-3.5 text-success" />;
+      case "checklist_desmarcado": return <X className="h-3.5 w-3.5 text-muted-foreground" />;
+      case "mensagem": return <MessageSquare className="h-3.5 w-3.5 text-primary" />;
+      case "anotacao": return <StickyNote className="h-3.5 w-3.5 text-warning" />;
+      case "pendencia": return <AlertCircle className="h-3.5 w-3.5 text-warning" />;
+      default: return <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+  };
+
+  if (isLoading) {
+    return <p className="py-6 text-center text-sm text-muted-foreground">Carregando…</p>;
+  }
+
+  if (!eventos || eventos.length === 0) {
+    return (
+      <p className="rounded-md border border-dashed border-border bg-surface-muted/30 p-6 text-center text-sm text-muted-foreground">
+        Ainda não há eventos registrados para esta implantação.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 max-h-[55vh] overflow-y-auto pr-1">
+      {eventos.map((ev: any) => (
+        <div key={ev.id} className="flex items-start gap-2 rounded-md border border-border bg-card px-3 py-2">
+          <div className="mt-0.5 shrink-0">{iconFor(ev.tipo)}</div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm leading-snug">{ev.descricao}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {formatBrazilDateTime(ev.created_at)}
+              {ev.autor_nome && <> · {ev.autor_nome}</>}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ============================================================
 // MODAL: PERSONALIZAR ETAPAS
 // ============================================================
@@ -1113,7 +1488,6 @@ function CustomizeStagesDialog({
   const save = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error("Não autenticado");
-      // Upsert por (user_id, stage_key)
       const rows = drafts.map((d) => ({
         user_id: userId,
         stage_key: d.key,
@@ -1199,7 +1573,6 @@ function CustomizeStagesDialog({
                   onClick={() => {
                     setDrafts(drafts.filter((x) => x.key !== d.key));
                     if (!d.key.startsWith("custom_")) {
-                      // se já estava persistida, apaga no banco
                       removeCustom.mutate(d.key);
                     }
                   }}
