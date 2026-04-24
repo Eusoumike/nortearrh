@@ -302,8 +302,9 @@ export default function Implantacao() {
   const visibleStages = stages.filter((s) => !s.hidden);
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
+      {/* Header (fixo) */}
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Implantação</h1>
           <p className="text-xs text-muted-foreground md:text-sm">
@@ -324,12 +325,15 @@ export default function Implantacao() {
         </div>
       </div>
 
-      <ImplantacaoKanban
-        stages={visibleStages}
-        onOpenCard={(id) => setEditingId(id)}
-        userId={user?.id ?? null}
-        userName={user?.user_metadata?.full_name ?? user?.email ?? null}
-      />
+      {/* Kanban (preenche restante) */}
+      <div className="min-h-0 flex-1">
+        <ImplantacaoKanban
+          stages={visibleStages}
+          onOpenCard={(id) => setEditingId(id)}
+          userId={user?.id ?? null}
+          userName={user?.user_metadata?.full_name ?? user?.email ?? null}
+        />
+      </div>
 
       <NewImplantacaoDialog
         open={openNew}
