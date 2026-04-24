@@ -1049,6 +1049,8 @@ function DadosTab({
         client_name: form.client_name.trim(),
         cnpj: form.cnpj || null,
         produto: form.produto || null,
+        metodo_registro: form.metodo_registro || null,
+        metodo_registro_obs: form.metodo_registro_obs || null,
         contato_cliente: form.contato_cliente || null,
         telefone_cliente: form.telefone_cliente || null,
         email_cliente: form.email_cliente || null,
