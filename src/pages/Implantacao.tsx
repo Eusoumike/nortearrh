@@ -115,6 +115,10 @@ const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
     "Assistente Virtual — apresentado",
     "Configurações do sistema — revisão geral",
     "Central de Ajuda — cliente orientado sobre o recurso",
+    "Vídeo tutorial de acesso ao SuperApp VR enviado ao RH (https://www.youtube.com/watch?v=nG_s2MJDshc&t=38s)",
+    "Canal de envio do vídeo definido (WhatsApp / E-mail / Ambos)",
+    "RH orientado a repassar o tutorial aos colaboradores",
+    "Método de registro demonstrado com colaborador piloto (pelo menos 1 colaborador conseguiu registrar o ponto)",
     "Treinamento 2 concluído — cliente operando o sistema",
   ],
   treinamento_3: [
