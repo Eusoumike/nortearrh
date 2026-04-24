@@ -1225,7 +1225,7 @@ function DadosTab({
         </ul>
       </div>
 
-
+      <div className="flex items-center justify-between pt-2 sticky bottom-0 bg-background pb-1">
         <Button type="button" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => {
           if (confirm("Excluir esta implantação? Os itens de checklist serão removidos.")) remove.mutate();
         }}>
