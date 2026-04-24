@@ -1269,6 +1269,74 @@ function UrlField({
   );
 }
 
+const METODO_REGISTRO_OPTS: { value: string; label: string; hint: string }[] = [
+  { value: "rep",         label: "REP (tablet/totem fixo)", hint: "Indicado para construção civil, fábricas, recepções — evita fraudes." },
+  { value: "superapp_vr", label: "SuperApp VR (mobile)",     hint: "Indicado para externos e home office." },
+  { value: "ponto_web",   label: "Ponto Web (navegador)",    hint: "Indicado para escritório." },
+  { value: "whatsapp",    label: "WhatsApp",                  hint: "Indicado para operacionais sem acesso a e-mail." },
+];
+
+function MetodoRegistroField({
+  value, obs, onChange, onObsChange,
+}: { value: string; obs: string; onChange: (v: string) => void; onObsChange: (v: string) => void }) {
+  const selected = new Set(
+    (value ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+
+  function toggle(opt: string, checked: boolean) {
+    const next = new Set(selected);
+    if (checked) next.add(opt);
+    else next.delete(opt);
+    onChange(Array.from(next).join(","));
+  }
+
+  return (
+    <div className="rounded-md border border-border bg-surface-muted/30 p-3 space-y-3">
+      <div>
+        <p className="text-sm font-medium">Método de registro de ponto</p>
+        <p className="text-[11px] text-muted-foreground">Pode marcar mais de um método.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {METODO_REGISTRO_OPTS.map((opt) => {
+          const checked = selected.has(opt.value);
+          return (
+            <label
+              key={opt.value}
+              className={cn(
+                "flex cursor-pointer items-start gap-2 rounded-md border p-2 transition-colors",
+                checked ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-accent/40"
+              )}
+            >
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(v) => toggle(opt.value, !!v)}
+                className="mt-0.5"
+              />
+              <div className="flex-1 space-y-0.5">
+                <p className="text-xs font-medium leading-tight">{opt.label}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">{opt.hint}</p>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Observação sobre o método escolhido</Label>
+        <Textarea
+          rows={2}
+          value={obs}
+          onChange={(e) => onObsChange(e.target.value)}
+          placeholder="Ex: cliente optou pelo REP pois tem equipe de construção civil — risco de fraude com app mobile"
+          className="bg-background"
+        />
+      </div>
+    </div>
+  );
+}
+
 // -------- ABA CHECKLIST --------
 
 function ChecklistTab({
