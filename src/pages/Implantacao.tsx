@@ -1132,6 +1132,15 @@ function DadosTab({
           </Select>
         </div>
       </div>
+
+      {/* Método de registro de ponto */}
+      <MetodoRegistroField
+        value={form.metodo_registro}
+        obs={form.metodo_registro_obs}
+        onChange={(v) => setForm({ ...form, metodo_registro: v })}
+        onObsChange={(v) => setForm({ ...form, metodo_registro_obs: v })}
+      />
+
       <div className="grid grid-cols-2 gap-3">
         <FieldText label="Contato no cliente" value={form.contato_cliente} onChange={(v) => setForm({ ...form, contato_cliente: v })} />
         <FieldText label="Telefone / WhatsApp" value={form.telefone_cliente} onChange={(v) => setForm({ ...form, telefone_cliente: v })} />
