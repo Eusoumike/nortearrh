@@ -1065,7 +1065,7 @@ function DadosTab({
         transcricao_t2: form.transcricao_t2 || null,
         gravacao_t3: form.gravacao_t3 || null,
         transcricao_t3: form.transcricao_t3 || null,
-      }).eq("id", item.id);
+      } as any).eq("id", item.id);
       if (error) throw error;
 
       if (stageChanged) {
