@@ -133,6 +133,11 @@ const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
     "Rotina mensal definida (quando fechar, quem fecha)",
     "Cliente realizou um fechamento supervisionado",
     "Dúvidas do fechamento esclarecidas",
+    "Assinatura eletrônica do espelho explicada (SuperApp VR > Meu Ponto > Espelho de Ponto > Assinar)",
+    "Recálculo de pontos explicado (Controle de Ponto > Configurações > Recalcular pontos)",
+    "Banco de horas: regras de compensação definidas com o cliente",
+    "Primeiro fechamento supervisionado realizado com sucesso",
+    "Arquivos fiscais apresentados (AFD/AEJ) — se aplicável",
     "Treinamento 3 concluído — cliente independente",
   ],
   finalizado: [
