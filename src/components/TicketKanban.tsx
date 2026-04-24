@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { PriorityBadge } from "@/components/badges";
 import { toast } from "sonner";
 import {
@@ -17,9 +16,9 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES } from "@/lib/constants";
-import { ToneBadge } from "@/components/ui/tone-badge";
 import { formatDuration } from "@/lib/formatters";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { cn } from "@/lib/utils";
 
 interface KanbanTicket {
   id: string;
@@ -43,6 +42,18 @@ interface Props {
   tickets: KanbanTicket[];
 }
 
+// Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
+const STRIPE_BY_TONE: Record<string, string> = {
+  info: "bg-info",
+  warning: "bg-warning",
+  muted: "bg-muted-foreground/40",
+  success: "bg-success",
+  neutral: "bg-muted-foreground/40",
+  primary: "bg-primary",
+  accent: "bg-accent",
+  danger: "bg-danger",
+};
+
 // Para uma etapa cronometrada, calcula o tempo decorrido na etapa atual
 function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   const stage = TIMED_STAGES.find((s) => s.key === t.status);
@@ -50,11 +61,10 @@ function timeOnCurrentStage(t: KanbanTicket, now: number): number {
     const enteredAt = (t as any)[stage.enteredCol] as string | null;
     if (enteredAt) return Math.max(0, (now - new Date(enteredAt).getTime()) / 1000);
   }
-  // Para 'novo'/'resolvido'/'fechado' usa current_stage_started_at
   return Math.max(0, (now - new Date(t.current_stage_started_at).getTime()) / 1000);
 }
 
-function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
+function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: number; isOverlay?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const navigate = useNavigate();
   const elapsed = timeOnCurrentStage(t, now);
@@ -73,9 +83,11 @@ function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
           navigate(`/tickets/${t.id}`);
         }
       }}
-      className={`group cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-        isDragging ? "opacity-40" : ""
-      }`}
+      className={cn(
+        "group cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all duration-150 hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        isDragging && !isOverlay && "opacity-30",
+        isOverlay && "kanban-dragging shadow-lg",
+      )}
     >
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary">
@@ -83,8 +95,8 @@ function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
         </span>
         <PriorityBadge priority={t.priority} />
       </div>
-      <p className="line-clamp-2 text-xs font-medium leading-snug">{t.title}</p>
-      <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+      <p className="line-clamp-2 text-xs font-semibold leading-snug">{t.title}</p>
+      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
         <span className="truncate">{t.client?.name ?? "Sem cliente"}</span>
         <span className="font-mono shrink-0">{formatDuration(elapsed)}</span>
       </div>
@@ -99,22 +111,31 @@ function TicketCard({ t, now }: { t: KanbanTicket; now: number }) {
 
 function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
+
   return (
-    <div className="flex h-full min-w-0 flex-1 flex-col">
-      <div className="mb-2 flex items-center justify-between px-1">
-        <ToneBadge tone={STATUS_TONE[status]} dot>
+    <div className="flex h-full min-h-0 w-[15rem] shrink-0 flex-col rounded-lg bg-surface-muted/60">
+      {/* Barra colorida fina (3px) no topo */}
+      <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
+      {/* Header da coluna */}
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-2.5">
+        <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
           {STATUS_LABEL[status]}
-        </ToneBadge>
-        <span className="font-mono text-[11px] text-muted-foreground">{tickets.length}</span>
+        </h3>
+        <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+          {tickets.length}
+        </span>
       </div>
+      {/* Área de cards (scroll interno fino) */}
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-2 rounded-lg border border-dashed p-2 transition-colors ${
-          isOver ? "border-primary bg-primary/5" : "border-border bg-surface-muted/30"
-        }`}
+        className={cn(
+          "scrollbar-thin flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 transition-colors",
+          isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
+        )}
       >
         {tickets.length === 0 ? (
-          <p className="py-6 text-center text-[11px] text-muted-foreground">Nenhum chamado</p>
+          <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
           tickets.map((t) => <TicketCard key={t.id} t={t} now={now} />)
         )}
@@ -147,7 +168,6 @@ export function TicketKanban({ tickets }: Props) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Agrupa por status (fechado vai para resolvido)
   const grouped = useMemo(() => {
     const map: Record<TicketStatus, KanbanTicket[]> = {
       novo: [],
@@ -182,17 +202,16 @@ export function TicketKanban({ tickets }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <Card className="p-2 md:p-3">
-        <div className="overflow-x-auto">
-          <div className="flex min-h-[60vh] gap-2" style={{ minWidth: `${STATUS_FLOW.length * 240}px` }}>
-            {STATUS_FLOW.map((status) => (
-              <Column key={status} status={status} tickets={grouped[status]} now={now} />
-            ))}
-          </div>
+      {/* Rail horizontal: ocupa 100% altura e largura, scroll horizontal sem scrollbar */}
+      <div className="scrollbar-none h-full w-full overflow-x-auto overflow-y-hidden">
+        <div className="flex h-full min-w-max gap-3 pb-1">
+          {STATUS_FLOW.map((status) => (
+            <Column key={status} status={status} tickets={grouped[status]} now={now} />
+          ))}
         </div>
-      </Card>
-      <DragOverlay>
-        {activeTicket ? <TicketCard t={activeTicket} now={now} /> : null}
+      </div>
+      <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
+        {activeTicket ? <TicketCard t={activeTicket} now={now} isOverlay /> : null}
       </DragOverlay>
     </DndContext>
   );
