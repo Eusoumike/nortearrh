@@ -93,6 +93,8 @@ const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
     "Exportação de folha de pagamento configurada (se aplicável)",
     "Extensões contratadas configuradas",
     "Acesso ao suporte liberado (Co-Browser)",
+    "Co-Browser liberado para o suporte VR (Configurações > Segurança > Liberar acesso ao suporte)",
+    "Verificar: empresa tem colaboradores com regime especial? (Ponto por Exceção ou NR17 — pausas obrigatórias)",
     "Treinamento 1 concluído — cliente apto para usar o sistema",
   ],
   treinamento_2: [
@@ -113,6 +115,10 @@ const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
     "Assistente Virtual — apresentado",
     "Configurações do sistema — revisão geral",
     "Central de Ajuda — cliente orientado sobre o recurso",
+    "Vídeo tutorial de acesso ao SuperApp VR enviado ao RH (https://www.youtube.com/watch?v=nG_s2MJDshc&t=38s)",
+    "Canal de envio do vídeo definido (WhatsApp / E-mail / Ambos)",
+    "RH orientado a repassar o tutorial aos colaboradores",
+    "Método de registro demonstrado com colaborador piloto (pelo menos 1 colaborador conseguiu registrar o ponto)",
     "Treinamento 2 concluído — cliente operando o sistema",
   ],
   treinamento_3: [
@@ -127,6 +133,11 @@ const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
     "Rotina mensal definida (quando fechar, quem fecha)",
     "Cliente realizou um fechamento supervisionado",
     "Dúvidas do fechamento esclarecidas",
+    "Assinatura eletrônica do espelho explicada (SuperApp VR > Meu Ponto > Espelho de Ponto > Assinar)",
+    "Recálculo de pontos explicado (Controle de Ponto > Configurações > Recalcular pontos)",
+    "Banco de horas: regras de compensação definidas com o cliente",
+    "Primeiro fechamento supervisionado realizado com sucesso",
+    "Arquivos fiscais apresentados (AFD/AEJ) — se aplicável",
     "Treinamento 3 concluído — cliente independente",
   ],
   finalizado: [
@@ -980,6 +991,8 @@ function DadosTab({
     client_name: item.client_name ?? "",
     cnpj: item.cnpj ?? "",
     produto: item.produto ?? "",
+    metodo_registro: item.metodo_registro ?? "",
+    metodo_registro_obs: item.metodo_registro_obs ?? "",
     contato_cliente: item.contato_cliente ?? "",
     telefone_cliente: item.telefone_cliente ?? "",
     email_cliente: item.email_cliente ?? "",
@@ -1001,6 +1014,8 @@ function DadosTab({
       client_name: item.client_name ?? "",
       cnpj: item.cnpj ?? "",
       produto: item.produto ?? "",
+      metodo_registro: item.metodo_registro ?? "",
+      metodo_registro_obs: item.metodo_registro_obs ?? "",
       contato_cliente: item.contato_cliente ?? "",
       telefone_cliente: item.telefone_cliente ?? "",
       email_cliente: item.email_cliente ?? "",
@@ -1034,6 +1049,8 @@ function DadosTab({
         client_name: form.client_name.trim(),
         cnpj: form.cnpj || null,
         produto: form.produto || null,
+        metodo_registro: form.metodo_registro || null,
+        metodo_registro_obs: form.metodo_registro_obs || null,
         contato_cliente: form.contato_cliente || null,
         telefone_cliente: form.telefone_cliente || null,
         email_cliente: form.email_cliente || null,
@@ -1048,7 +1065,7 @@ function DadosTab({
         transcricao_t2: form.transcricao_t2 || null,
         gravacao_t3: form.gravacao_t3 || null,
         transcricao_t3: form.transcricao_t3 || null,
-      }).eq("id", item.id);
+      } as any).eq("id", item.id);
       if (error) throw error;
 
       if (stageChanged) {
@@ -1115,6 +1132,15 @@ function DadosTab({
           </Select>
         </div>
       </div>
+
+      {/* Método de registro de ponto */}
+      <MetodoRegistroField
+        value={form.metodo_registro}
+        obs={form.metodo_registro_obs}
+        onChange={(v) => setForm({ ...form, metodo_registro: v })}
+        onObsChange={(v) => setForm({ ...form, metodo_registro_obs: v })}
+      />
+
       <div className="grid grid-cols-2 gap-3">
         <FieldText label="Contato no cliente" value={form.contato_cliente} onChange={(v) => setForm({ ...form, contato_cliente: v })} />
         <FieldText label="Telefone / WhatsApp" value={form.telefone_cliente} onChange={(v) => setForm({ ...form, telefone_cliente: v })} />
@@ -1140,6 +1166,7 @@ function DadosTab({
         <Label className="text-xs">Observações internas</Label>
         <Textarea rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
       </div>
+
 
       {/* Gravações dos treinamentos */}
       <div className="rounded-md border border-border bg-surface-muted/30 p-3 space-y-3">
@@ -1172,6 +1199,30 @@ function DadosTab({
             </div>
           );
         })}
+      </div>
+
+      {/* Links úteis */}
+      <div className="rounded-md border border-border bg-info/5 p-3 space-y-2">
+        <p className="text-sm font-medium">Links úteis</p>
+        <ul className="space-y-1.5 text-xs">
+          {[
+            { label: "Central de Ajuda VR", href: "https://materiais.vr.com.br/central-de-ajuda/" },
+            { label: "Tutorial colaborador (SuperApp VR)", href: "https://www.youtube.com/watch?v=nG_s2MJDshc&t=38s" },
+            { label: "Agendamento Treinamento 1", href: "https://vempraponto.pipedrive.com/scheduler/qlapKRSp/treinamento-1-parametrizacao" },
+          ].map((l) => (
+            <li key={l.href}>
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-info hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="flex items-center justify-between pt-2 sticky bottom-0 bg-background pb-1">
@@ -1218,7 +1269,155 @@ function UrlField({
   );
 }
 
+const METODO_REGISTRO_OPTS: { value: string; label: string; hint: string }[] = [
+  { value: "rep",         label: "REP (tablet/totem fixo)", hint: "Indicado para construção civil, fábricas, recepções — evita fraudes." },
+  { value: "superapp_vr", label: "SuperApp VR (mobile)",     hint: "Indicado para externos e home office." },
+  { value: "ponto_web",   label: "Ponto Web (navegador)",    hint: "Indicado para escritório." },
+  { value: "whatsapp",    label: "WhatsApp",                  hint: "Indicado para operacionais sem acesso a e-mail." },
+];
+
+function MetodoRegistroField({
+  value, obs, onChange, onObsChange,
+}: { value: string; obs: string; onChange: (v: string) => void; onObsChange: (v: string) => void }) {
+  const selected = new Set(
+    (value ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+
+  function toggle(opt: string, checked: boolean) {
+    const next = new Set(selected);
+    if (checked) next.add(opt);
+    else next.delete(opt);
+    onChange(Array.from(next).join(","));
+  }
+
+  return (
+    <div className="rounded-md border border-border bg-surface-muted/30 p-3 space-y-3">
+      <div>
+        <p className="text-sm font-medium">Método de registro de ponto</p>
+        <p className="text-[11px] text-muted-foreground">Pode marcar mais de um método.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {METODO_REGISTRO_OPTS.map((opt) => {
+          const checked = selected.has(opt.value);
+          return (
+            <label
+              key={opt.value}
+              className={cn(
+                "flex cursor-pointer items-start gap-2 rounded-md border p-2 transition-colors",
+                checked ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-accent/40"
+              )}
+            >
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(v) => toggle(opt.value, !!v)}
+                className="mt-0.5"
+              />
+              <div className="flex-1 space-y-0.5">
+                <p className="text-xs font-medium leading-tight">{opt.label}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">{opt.hint}</p>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Observação sobre o método escolhido</Label>
+        <Textarea
+          rows={2}
+          value={obs}
+          onChange={(e) => onObsChange(e.target.value)}
+          placeholder="Ex: cliente optou pelo REP pois tem equipe de construção civil — risco de fraude com app mobile"
+          className="bg-background"
+        />
+      </div>
+    </div>
+  );
+}
+
+// -------- WARNING CARDS / LINKS NO CHECKLIST --------
+
+function ChecklistWarning({
+  tone, children,
+}: { tone: "info" | "warning"; children: React.ReactNode }) {
+  const cls =
+    tone === "info"
+      ? "border-info/30 bg-info/10 text-info-foreground dark:text-info"
+      : "border-warning/40 bg-warning/10 text-warning-foreground dark:text-warning";
+  return (
+    <div className={cn("rounded-md border px-3 py-2 text-xs leading-snug", cls)}>
+      {children}
+    </div>
+  );
+}
+
+/** Renderiza um aviso ANTES de um item de checklist específico. */
+function warningBeforeLabel(label: string): React.ReactNode {
+  const l = label.toLowerCase();
+
+  if (l.includes("co-browser liberado para o suporte vr")) {
+    return (
+      <ChecklistWarning tone="info">
+        💡 <span className="font-medium">Co-Browser:</span> permite que o suporte da VR acesse a tela
+        do cliente remotamente. Deve ser liberado uma única vez. Evita atrasos quando o cliente
+        precisar de suporte técnico especializado da VR.
+      </ChecklistWarning>
+    );
+  }
+
+  if (l.includes("vídeo tutorial de acesso ao superapp")) {
+    return (
+      <ChecklistWarning tone="warning">
+        ⚠️ Não oriente colaboradores da construção civil, obras ou áreas de risco a usar o SuperApp —
+        prefira REP para evitar fraudes de localização e dificuldades com o sistema.
+      </ChecklistWarning>
+    );
+  }
+
+  if (l.includes("recálculo de pontos") || l.includes("recalculo de pontos")) {
+    return (
+      <ChecklistWarning tone="warning">
+        ⚠️ <span className="font-medium">Recálculo de pontos:</span> quando um turno é alterado
+        retroativamente, o sistema NÃO recalcula automaticamente as horas. O cliente deve acessar:
+        Controle de Ponto &gt; Configurações &gt; Recalcular pontos. Ensine sempre no T3 — é a
+        pergunta mais frequente após a implantação.
+      </ChecklistWarning>
+    );
+  }
+
+  return null;
+}
+
+/** Detecta uma URL no label e a torna clicável (abre em nova aba). */
+function renderLabelWithLink(label: string): React.ReactNode {
+  const match = label.match(/(https?:\/\/[^\s)]+)/i);
+  if (!match) return label;
+  const url = match[1];
+  const idx = match.index ?? 0;
+  const before = label.slice(0, idx).replace(/\(\s*$/, "").trim();
+  const after = label.slice(idx + url.length).replace(/^\s*\)/, "").trim();
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {before && <span>{before}</span>}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="inline-flex items-center gap-1 text-info hover:underline"
+      >
+        <ExternalLink className="h-3 w-3" />
+        link
+      </a>
+      {after && <span>{after}</span>}
+    </span>
+  );
+}
+
 // -------- ABA CHECKLIST --------
+
 
 function ChecklistTab({
   item, stages, items, qc, userId, userName,
@@ -1386,25 +1585,31 @@ function ChecklistTab({
             Nenhum item de checklist para esta etapa. Adicione abaixo.
           </p>
         ) : (
-          stageItems.map((it) => (
-            <div key={it.id} className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
-              <Checkbox
-                checked={it.concluido}
-                onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v, label: it.label })}
-              />
-              <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
-                {it.label}
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                onClick={() => removeItem.mutate(it.id)}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))
+          stageItems.map((it) => {
+            const before = warningBeforeLabel(it.label);
+            return (
+              <div key={it.id} className="space-y-1.5">
+                {before}
+                <div className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+                  <Checkbox
+                    checked={it.concluido}
+                    onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v, label: it.label })}
+                  />
+                  <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
+                    {renderLabelWithLink(it.label)}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeItem.mutate(it.id)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 

@@ -270,6 +270,8 @@ export type Database = {
           gravacao_t2: string | null
           gravacao_t3: string | null
           id: string
+          metodo_registro: string | null
+          metodo_registro_obs: string | null
           observacoes: string | null
           ordem: number
           produto: string | null
@@ -296,6 +298,8 @@ export type Database = {
           gravacao_t2?: string | null
           gravacao_t3?: string | null
           id?: string
+          metodo_registro?: string | null
+          metodo_registro_obs?: string | null
           observacoes?: string | null
           ordem?: number
           produto?: string | null
@@ -322,6 +326,8 @@ export type Database = {
           gravacao_t2?: string | null
           gravacao_t3?: string | null
           id?: string
+          metodo_registro?: string | null
+          metodo_registro_obs?: string | null
           observacoes?: string | null
           ordem?: number
           produto?: string | null
