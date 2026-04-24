@@ -10,8 +10,11 @@ export function AppLayout() {
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
-          {/* min-h-0 lets children opt into full-height (kanbans) or scroll on their own */}
-          <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/*
+            min-h-0 + flex-col allows full-height children (kanbans use h-full + overflow-hidden).
+            Pages that need vertical scroll wrap their own content; the Outlet itself fills available height.
+          */}
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
             <Outlet />
           </main>
         </div>
