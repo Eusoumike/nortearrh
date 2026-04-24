@@ -476,64 +476,74 @@ function ImplantacaoKanban({
     return map;
   }, [items, stages]);
 
+  // mapa de cor da barra superior por tom da etapa (estilo Pipedrive)
+  const stripeByTone: Record<string, string> = {
+    info: "bg-info",
+    warning: "bg-warning",
+    muted: "bg-muted-foreground/40",
+    success: "bg-success",
+    neutral: "bg-muted-foreground/40",
+    primary: "bg-primary",
+    accent: "bg-accent",
+  };
+
   if (isLoading) {
     return <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>;
   }
 
   return (
-    <div className="-mx-4 overflow-x-auto pb-2 md:mx-0">
-      <div
-        className="grid gap-3 px-4 md:px-0"
-        style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(260px, 1fr))` }}
-      >
-      {stages.map((stage) => (
-        <div
-          key={stage.key}
-          className="flex min-h-[400px] flex-col rounded-lg border border-border bg-surface-muted/30 p-2"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData("text/plain");
-            if (!id) return;
-            const found = (items ?? []).find((x: any) => x.id === id);
-            if (!found || found.etapa === stage.key) return;
-            moveStage.mutate({ id, etapa: stage.key, fromEtapa: found.etapa, item: found });
-          }}
-        >
-          <div className="mb-2 flex items-start justify-between gap-2 px-1 min-h-[44px]">
-            <ToneBadge
-              tone={stage.tone}
-              size="sm"
-              className="line-clamp-2 leading-tight"
-              title={stage.label}
-            >
-              {stage.label}
-            </ToneBadge>
-            <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {grouped[stage.key]?.length ?? 0}
-            </span>
+    <div className="scrollbar-none h-full w-full overflow-x-auto overflow-y-hidden">
+      <div className="flex h-full min-w-max gap-3 pb-1">
+        {stages.map((stage) => (
+          <div
+            key={stage.key}
+            className="flex h-full min-h-0 w-[15rem] shrink-0 flex-col rounded-lg bg-surface-muted/60"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const id = e.dataTransfer.getData("text/plain");
+              if (!id) return;
+              const found = (items ?? []).find((x: any) => x.id === id);
+              if (!found || found.etapa === stage.key) return;
+              moveStage.mutate({ id, etapa: stage.key, fromEtapa: found.etapa, item: found });
+            }}
+          >
+            {/* Barra colorida fina (3px) */}
+            <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
+            {/* Header */}
+            <div className="flex shrink-0 items-start justify-between gap-2 px-3 pb-2 pt-2.5">
+              <h3
+                className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
+                title={stage.label}
+              >
+                {stage.label}
+              </h3>
+              <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+                {grouped[stage.key]?.length ?? 0}
+              </span>
+            </div>
+            {/* Cards (scroll fino) */}
+            <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+              {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
+                <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
+              )}
+              {(grouped[stage.key] ?? []).map((it: any) => (
+                <KanbanCard
+                  key={it.id}
+                  item={it}
+                  count={counts.get(it.id) ?? { done: 0, total: 0 }}
+                  lastActivity={lastActMap.get(it.id) ?? null}
+                  onClick={() => onOpenCard(it.id)}
+                  onDelete={() => {
+                    if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
+                      removeImpl.mutate(it.id);
+                    }
+                  }}
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex flex-1 flex-col gap-2">
-            {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
-              <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">vazio</p>
-            )}
-            {(grouped[stage.key] ?? []).map((it: any) => (
-              <KanbanCard
-                key={it.id}
-                item={it}
-                count={counts.get(it.id) ?? { done: 0, total: 0 }}
-                lastActivity={lastActMap.get(it.id) ?? null}
-                onClick={() => onOpenCard(it.id)}
-                onDelete={() => {
-                  if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
-                    removeImpl.mutate(it.id);
-                  }
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+        ))}
       </div>
     </div>
   );
