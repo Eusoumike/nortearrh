@@ -1201,7 +1201,31 @@ function DadosTab({
         })}
       </div>
 
-      <div className="flex items-center justify-between pt-2 sticky bottom-0 bg-background pb-1">
+      {/* Links úteis */}
+      <div className="rounded-md border border-border bg-info/5 p-3 space-y-2">
+        <p className="text-sm font-medium">Links úteis</p>
+        <ul className="space-y-1.5 text-xs">
+          {[
+            { label: "Central de Ajuda VR", href: "https://materiais.vr.com.br/central-de-ajuda/" },
+            { label: "Tutorial colaborador (SuperApp VR)", href: "https://www.youtube.com/watch?v=nG_s2MJDshc&t=38s" },
+            { label: "Agendamento Treinamento 1", href: "https://vempraponto.pipedrive.com/scheduler/qlapKRSp/treinamento-1-parametrizacao" },
+          ].map((l) => (
+            <li key={l.href}>
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-info hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+
         <Button type="button" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => {
           if (confirm("Excluir esta implantação? Os itens de checklist serão removidos.")) remove.mutate();
         }}>
