@@ -1158,6 +1158,14 @@ function DadosTab({
         <Textarea rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
       </div>
 
+      {/* Método de registro de ponto */}
+      <MetodoRegistroField
+        value={form.metodo_registro}
+        obs={form.metodo_registro_obs}
+        onChange={(v) => setForm({ ...form, metodo_registro: v })}
+        onObsChange={(v) => setForm({ ...form, metodo_registro_obs: v })}
+      />
+
       {/* Gravações dos treinamentos */}
       <div className="rounded-md border border-border bg-surface-muted/30 p-3 space-y-3">
         <div>
