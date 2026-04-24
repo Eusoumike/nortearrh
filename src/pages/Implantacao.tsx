@@ -93,6 +93,8 @@ const DEFAULT_CHECKLIST: Record<StageKey, string[]> = {
     "Exportação de folha de pagamento configurada (se aplicável)",
     "Extensões contratadas configuradas",
     "Acesso ao suporte liberado (Co-Browser)",
+    "Co-Browser liberado para o suporte VR (Configurações > Segurança > Liberar acesso ao suporte)",
+    "Verificar: empresa tem colaboradores com regime especial? (Ponto por Exceção ou NR17 — pausas obrigatórias)",
     "Treinamento 1 concluído — cliente apto para usar o sistema",
   ],
   treinamento_2: [
