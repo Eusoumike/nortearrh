@@ -1505,25 +1505,31 @@ function ChecklistTab({
             Nenhum item de checklist para esta etapa. Adicione abaixo.
           </p>
         ) : (
-          stageItems.map((it) => (
-            <div key={it.id} className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
-              <Checkbox
-                checked={it.concluido}
-                onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v, label: it.label })}
-              />
-              <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
-                {it.label}
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                onClick={() => removeItem.mutate(it.id)}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))
+          stageItems.map((it) => {
+            const before = warningBeforeLabel(it.label);
+            return (
+              <div key={it.id} className="space-y-1.5">
+                {before}
+                <div className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+                  <Checkbox
+                    checked={it.concluido}
+                    onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v, label: it.label })}
+                  />
+                  <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
+                    {renderLabelWithLink(it.label)}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeItem.mutate(it.id)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 
