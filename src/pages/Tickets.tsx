@@ -130,8 +130,9 @@ export default function Tickets() {
     : null;
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
+      {/* Header (fixo) */}
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
@@ -142,7 +143,8 @@ export default function Tickets() {
       </div>
       <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
 
-      <Card className="p-3">
+      {/* Filtros (fixo) */}
+      <Card className="shrink-0 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="relative w-full flex-1 sm:min-w-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -178,11 +180,14 @@ export default function Tickets() {
         )}
       </Card>
 
-      {isLoading ? (
-        <Skeleton className="h-[60vh]" />
-      ) : (
-        <TicketKanban tickets={filtered as any} />
-      )}
+      {/* Kanban (preenche restante) */}
+      <div className="min-h-0 flex-1">
+        {isLoading ? (
+          <Skeleton className="h-full w-full" />
+        ) : (
+          <TicketKanban tickets={filtered as any} />
+        )}
+      </div>
     </div>
   );
 }
