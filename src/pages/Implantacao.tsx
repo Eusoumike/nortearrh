@@ -1337,7 +1337,87 @@ function MetodoRegistroField({
   );
 }
 
+// -------- WARNING CARDS / LINKS NO CHECKLIST --------
+
+function ChecklistWarning({
+  tone, children,
+}: { tone: "info" | "warning"; children: React.ReactNode }) {
+  const cls =
+    tone === "info"
+      ? "border-info/30 bg-info/10 text-info-foreground dark:text-info"
+      : "border-warning/40 bg-warning/10 text-warning-foreground dark:text-warning";
+  return (
+    <div className={cn("rounded-md border px-3 py-2 text-xs leading-snug", cls)}>
+      {children}
+    </div>
+  );
+}
+
+/** Renderiza um aviso ANTES de um item de checklist específico. */
+function warningBeforeLabel(label: string): React.ReactNode {
+  const l = label.toLowerCase();
+
+  if (l.includes("co-browser liberado para o suporte vr")) {
+    return (
+      <ChecklistWarning tone="info">
+        💡 <span className="font-medium">Co-Browser:</span> permite que o suporte da VR acesse a tela
+        do cliente remotamente. Deve ser liberado uma única vez. Evita atrasos quando o cliente
+        precisar de suporte técnico especializado da VR.
+      </ChecklistWarning>
+    );
+  }
+
+  if (l.includes("vídeo tutorial de acesso ao superapp")) {
+    return (
+      <ChecklistWarning tone="warning">
+        ⚠️ Não oriente colaboradores da construção civil, obras ou áreas de risco a usar o SuperApp —
+        prefira REP para evitar fraudes de localização e dificuldades com o sistema.
+      </ChecklistWarning>
+    );
+  }
+
+  if (l.includes("recálculo de pontos") || l.includes("recalculo de pontos")) {
+    return (
+      <ChecklistWarning tone="warning">
+        ⚠️ <span className="font-medium">Recálculo de pontos:</span> quando um turno é alterado
+        retroativamente, o sistema NÃO recalcula automaticamente as horas. O cliente deve acessar:
+        Controle de Ponto &gt; Configurações &gt; Recalcular pontos. Ensine sempre no T3 — é a
+        pergunta mais frequente após a implantação.
+      </ChecklistWarning>
+    );
+  }
+
+  return null;
+}
+
+/** Detecta uma URL no label e a torna clicável (abre em nova aba). */
+function renderLabelWithLink(label: string): React.ReactNode {
+  const match = label.match(/(https?:\/\/[^\s)]+)/i);
+  if (!match) return label;
+  const url = match[1];
+  const idx = match.index ?? 0;
+  const before = label.slice(0, idx).replace(/\(\s*$/, "").trim();
+  const after = label.slice(idx + url.length).replace(/^\s*\)/, "").trim();
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {before && <span>{before}</span>}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="inline-flex items-center gap-1 text-info hover:underline"
+      >
+        <ExternalLink className="h-3 w-3" />
+        link
+      </a>
+      {after && <span>{after}</span>}
+    </span>
+  );
+}
+
 // -------- ABA CHECKLIST --------
+
 
 function ChecklistTab({
   item, stages, items, qc, userId, userName,
