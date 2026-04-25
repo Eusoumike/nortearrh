@@ -46,6 +46,56 @@ export default function ClientDetail() {
     enabled: !!id,
   });
 
+  // NPS: busca a resposta mais recente do cliente (por client_id ou empresa)
+  const { data: npsLatest } = useQuery({
+    queryKey: ["client-nps", id, client?.company, client?.name],
+    queryFn: async () => {
+      if (!id) return null;
+      // 1. Por client_id direto
+      const byId = await supabase
+        .from("nps_responses")
+        .select("*")
+        .eq("client_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (byId.data && byId.data.length > 0) return byId.data[0];
+      // 2. Fallback por nome de empresa (case-insensitive)
+      const empresa = (client?.company || client?.name || "").trim();
+      if (!empresa) return null;
+      const byEmpresa = await supabase
+        .from("nps_responses")
+        .select("*")
+        .ilike("empresa", empresa)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return byEmpresa.data?.[0] ?? null;
+    },
+    enabled: !!id && !!client,
+  });
+
+  const sendSurvey = useMutation({
+    mutationFn: async () => {
+      if (!client) throw new Error("Cliente não carregado");
+      let token = client.nps_token;
+      if (!token) {
+        token = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
+        const { error } = await supabase
+          .from("clients")
+          .update({ nps_token: token })
+          .eq("id", id!);
+        if (error) throw error;
+      }
+      const url = `${window.location.origin}/pesquisa/${token}`;
+      await navigator.clipboard.writeText(url);
+      return url;
+    },
+    onSuccess: (url) => {
+      qc.invalidateQueries({ queryKey: ["client", id] });
+      toast.success("Link copiado: " + url);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [form, setForm] = useState<any>(null);
   useEffect(() => { if (client) setForm(client); }, [client]);
 
