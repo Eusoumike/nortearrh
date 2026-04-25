@@ -1519,120 +1519,62 @@ function renderLabelWithLink(label: string): React.ReactNode {
 
 // -------- ABA CHECKLIST --------
 
-
 function ChecklistTab({
   item, stages, items, qc, userId, userName,
 }: { item: any; stages: { key: string; label: string }[]; items: any[]; qc: any; userId: string | null; userName: string | null }) {
-  const [newLabel, setNewLabel] = useState("");
-  const stageItems = items.filter((i) => i.etapa === item.etapa);
-  const stageLabel = stages.find((s) => s.key === item.etapa)?.label ?? item.etapa;
-  const done = stageItems.filter((i) => i.concluido).length;
-  const total = stageItems.length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-
-  // Auto-seed: se a etapa é padrão e ainda não tem nenhum item, popula com o checklist sugerido.
-  const [seeded, setSeeded] = useState(false);
+  // Auto-seed: para cada etapa padrão, se não há nenhum item, popula os defaults.
+  // Verifica antes de inserir para evitar duplicatas (mesmo após múltiplas montagens).
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  useEffect(() => { setSeededFor(null); }, [item.id]);
   useEffect(() => {
-    setSeeded(false);
-  }, [item.id, item.etapa]);
-  useEffect(() => {
-    if (seeded) return;
-    if (!items) return; // espera dados carregarem
-    if (stageItems.length > 0) return;
-    const defaults = DEFAULT_CHECKLIST[item.etapa as StageKey];
-    if (!defaults || defaults.length === 0) return;
-    setSeeded(true);
+    if (seededFor === item.id) return;
+    if (!items) return;
+    setSeededFor(item.id);
     (async () => {
-      const rows = defaults.map((label, idx) => ({
-        implantacao_id: item.id,
-        etapa: item.etapa,
-        label,
-        ordem: idx,
-      }));
-      const { error } = await supabase.from("checklist_items").insert(rows);
-      if (!error) {
-        qc.invalidateQueries({ queryKey: ["checklist", item.id] });
-        qc.invalidateQueries({ queryKey: ["checklist-counts"] });
-      }
-    })();
-  }, [seeded, items, stageItems.length, item.id, item.etapa, qc]);
-
-  // Pendência da etapa atual
-  const { data: pendencia } = useQuery({
-    queryKey: ["impl-pendencia", item.id, item.etapa],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("implantacao_pendencias")
-        .select("*")
-        .eq("implantacao_id", item.id)
-        .eq("etapa", item.etapa)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const [pendenciaText, setPendenciaText] = useState("");
-  useEffect(() => {
-    setPendenciaText(pendencia?.conteudo ?? "");
-  }, [pendencia?.id, item.etapa]);
-
-  const savePendencia = useMutation({
-    mutationFn: async () => {
-      const conteudo = pendenciaText.trim();
-      const previousConteudo = (pendencia?.conteudo ?? "").trim();
-      if (conteudo === previousConteudo) return;
-
-      const { error } = await supabase
-        .from("implantacao_pendencias")
-        .upsert(
-          {
-            implantacao_id: item.id,
-            etapa: item.etapa,
-            conteudo,
-            updated_by: userId,
-          },
-          { onConflict: "implantacao_id,etapa" }
-        );
-      if (error) throw error;
-
-      if (conteudo) {
-        await logImplantacaoEvent({
+      const stageKeys = (Object.keys(DEFAULT_CHECKLIST) as StageKey[]);
+      for (const etapa of stageKeys) {
+        const defaults = DEFAULT_CHECKLIST[etapa];
+        if (!defaults || defaults.length === 0) continue;
+        // Verifica no banco diretamente (não confia apenas em items, que pode estar desatualizado)
+        const { data: existing } = await supabase
+          .from("checklist_items")
+          .select("id")
+          .eq("implantacao_id", item.id)
+          .eq("etapa", etapa as any)
+          .limit(1);
+        if (existing && existing.length > 0) continue;
+        const rows = defaults.map((label, idx) => ({
           implantacao_id: item.id,
-          tipo: "pendencia",
-          descricao: `Pendência registrada em "${stageLabel}": ${conteudo.slice(0, 120)}${conteudo.length > 120 ? "…" : ""}`,
-          metadata: { etapa: item.etapa },
-          autor_id: userId,
-          autor_nome: userName,
-        });
+          etapa: etapa as any,
+          label,
+          ordem: idx,
+        }));
+        await supabase.from("checklist_items").insert(rows);
       }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["impl-pendencia", item.id, item.etapa] });
-      qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
-      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
-      toast.success("Pendências salvas.");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+      qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-summary", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-counts"] });
+    })();
+  }, [seededFor, items, item.id, qc]);
 
   const toggle = useMutation({
-    mutationFn: async ({ id, concluido, label }: { id: string; concluido: boolean; label: string }) => {
+    mutationFn: async ({ id, concluido, label, etapaKey, etapaLabel }: { id: string; concluido: boolean; label: string; etapaKey: string; etapaLabel: string }) => {
       const { error } = await supabase.from("checklist_items").update({ concluido }).eq("id", id);
       if (error) throw error;
       await logImplantacaoEvent({
         implantacao_id: item.id,
         tipo: concluido ? "checklist_concluido" : "checklist_desmarcado",
         descricao: concluido
-          ? `✓ "${label}" concluído em "${stageLabel}"`
-          : `Desmarcado: "${label}" em "${stageLabel}"`,
-        metadata: { etapa: item.etapa, item_id: id },
+          ? `✓ "${label}" concluído em "${etapaLabel}"`
+          : `Desmarcado: "${label}" em "${etapaLabel}"`,
+        metadata: { etapa: etapaKey, item_id: id },
         autor_id: userId,
         autor_nome: userName,
       });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-summary", item.id] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
       qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
       qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
@@ -1641,19 +1583,19 @@ function ChecklistTab({
   });
 
   const addItem = useMutation({
-    mutationFn: async (label: string) => {
+    mutationFn: async ({ etapa, label, ordem }: { etapa: string; label: string; ordem: number }) => {
       const { error } = await supabase.from("checklist_items").insert({
         implantacao_id: item.id,
-        etapa: item.etapa,
+        etapa: etapa as any,
         label,
-        ordem: total,
+        ordem,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-summary", item.id] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
-      setNewLabel("");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -1665,25 +1607,181 @@ function ChecklistTab({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checklist", item.id] });
+      qc.invalidateQueries({ queryKey: ["checklist-summary", item.id] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Agrupa itens por etapa
+  const itemsByStage = useMemo(() => {
+    const m = new Map<string, any[]>();
+    items.forEach((i) => {
+      const arr = m.get(i.etapa) ?? [];
+      arr.push(i);
+      m.set(i.etapa, arr);
+    });
+    return m;
+  }, [items]);
+
+  // Lista de etapas a exibir: todas as que têm itens OU as etapas padrão conhecidas
+  const allStageKeys = useMemo(() => {
+    const set = new Set<string>();
+    stages.forEach((s) => set.add(s.key));
+    items.forEach((i) => set.add(i.etapa));
+    // Mantém a ordem das stages do usuário, depois extras
+    const ordered = stages.map((s) => s.key).filter((k) => set.has(k));
+    Array.from(set).forEach((k) => { if (!ordered.includes(k)) ordered.push(k); });
+    return ordered;
+  }, [stages, items]);
+
   return (
     <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-      <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-medium">Etapa: {stageLabel}</span>
-          <span className="text-muted-foreground">{done}/{total} — {pct}%</span>
-        </div>
-        <Progress value={pct} className="h-2" />
-      </div>
+      <Accordion type="multiple" defaultValue={[item.etapa]} className="space-y-2">
+        {allStageKeys.map((etapaKey) => {
+          const etapaLabel = stages.find((s) => s.key === etapaKey)?.label
+            ?? DEFAULT_STAGE_LABEL[etapaKey]
+            ?? etapaKey;
+          const stageItems = (itemsByStage.get(etapaKey) ?? []).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+          const done = stageItems.filter((i) => i.concluido).length;
+          const total = stageItems.length;
+          const pct = total ? Math.round((done / total) * 100) : 0;
+          const isCurrent = etapaKey === item.etapa;
 
+          return (
+            <AccordionItem
+              key={etapaKey}
+              value={etapaKey}
+              className={cn(
+                "rounded-md border bg-card",
+                isCurrent ? "border-primary/40" : "border-border"
+              )}
+            >
+              <AccordionTrigger className="px-3 py-2 hover:no-underline">
+                <div className="flex flex-1 items-center justify-between gap-3 pr-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate text-sm font-medium">{etapaLabel}</span>
+                    {isCurrent && (
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                        atual
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      {done}/{total}
+                    </span>
+                    <div className="hidden w-24 sm:block">
+                      <Progress value={pct} className="h-1.5" />
+                    </div>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3">
+                <ChecklistStageSection
+                  itemId={item.id}
+                  etapaKey={etapaKey}
+                  etapaLabel={etapaLabel}
+                  stageItems={stageItems}
+                  total={total}
+                  toggle={toggle}
+                  addItem={addItem}
+                  removeItem={removeItem}
+                  qc={qc}
+                  userId={userId}
+                  userName={userName}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+    </div>
+  );
+}
+
+function ChecklistStageSection({
+  itemId, etapaKey, etapaLabel, stageItems, total, toggle, addItem, removeItem, qc, userId, userName,
+}: {
+  itemId: string;
+  etapaKey: string;
+  etapaLabel: string;
+  stageItems: any[];
+  total: number;
+  toggle: any;
+  addItem: any;
+  removeItem: any;
+  qc: any;
+  userId: string | null;
+  userName: string | null;
+}) {
+  const [newLabel, setNewLabel] = useState("");
+
+  // Pendência da etapa
+  const { data: pendencia } = useQuery({
+    queryKey: ["impl-pendencia", itemId, etapaKey],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("implantacao_pendencias")
+        .select("*")
+        .eq("implantacao_id", itemId)
+        .eq("etapa", etapaKey as any)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [pendenciaText, setPendenciaText] = useState("");
+  useEffect(() => {
+    setPendenciaText(pendencia?.conteudo ?? "");
+  }, [pendencia?.id, etapaKey]);
+
+  const savePendencia = useMutation({
+    mutationFn: async () => {
+      const conteudo = pendenciaText.trim();
+      const previousConteudo = (pendencia?.conteudo ?? "").trim();
+      if (conteudo === previousConteudo) return;
+
+      const { error } = await supabase
+        .from("implantacao_pendencias")
+        .upsert(
+          {
+            implantacao_id: itemId,
+            etapa: etapaKey as any,
+            conteudo,
+            updated_by: userId,
+          },
+          { onConflict: "implantacao_id,etapa" }
+        );
+      if (error) throw error;
+
+      if (conteudo) {
+        await logImplantacaoEvent({
+          implantacao_id: itemId,
+          tipo: "pendencia",
+          descricao: `Pendência registrada em "${etapaLabel}": ${conteudo.slice(0, 120)}${conteudo.length > 120 ? "…" : ""}`,
+          metadata: { etapa: etapaKey },
+          autor_id: userId,
+          autor_nome: userName,
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-pendencia", itemId, etapaKey] });
+      qc.invalidateQueries({ queryKey: ["impl-eventos", itemId] });
+      qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
+      toast.success("Pendências salvas.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3">
       <div className="space-y-1.5">
         {stageItems.length === 0 ? (
-          <p className="rounded-md border border-dashed border-border bg-surface-muted/30 p-4 text-center text-sm text-muted-foreground">
-            Nenhum item de checklist para esta etapa. Adicione abaixo.
+          <p className="rounded-md border border-dashed border-border bg-surface-muted/30 p-3 text-center text-xs text-muted-foreground">
+            Nenhum item nesta etapa. Adicione abaixo.
           </p>
         ) : (
           stageItems.map((it) => {
@@ -1694,7 +1792,10 @@ function ChecklistTab({
                 <div className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
                   <Checkbox
                     checked={it.concluido}
-                    onCheckedChange={(v) => toggle.mutate({ id: it.id, concluido: !!v, label: it.label })}
+                    onCheckedChange={(v) => toggle.mutate({
+                      id: it.id, concluido: !!v, label: it.label,
+                      etapaKey, etapaLabel,
+                    })}
                   />
                   <span className={cn("flex-1 text-sm", it.concluido && "line-through text-muted-foreground")}>
                     {renderLabelWithLink(it.label)}
@@ -1715,13 +1816,19 @@ function ChecklistTab({
       </div>
 
       <form
-        onSubmit={(e) => { e.preventDefault(); if (newLabel.trim()) addItem.mutate(newLabel.trim()); }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const v = newLabel.trim();
+          if (!v) return;
+          addItem.mutate({ etapa: etapaKey, label: v, ordem: total });
+          setNewLabel("");
+        }}
         className="flex gap-2"
       >
         <Input
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value)}
-          placeholder="Novo item de checklist…"
+          placeholder="Novo item nesta etapa…"
           className="h-9"
         />
         <Button type="submit" disabled={!newLabel.trim() || addItem.isPending} className="h-9">
