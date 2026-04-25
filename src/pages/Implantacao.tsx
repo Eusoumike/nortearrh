@@ -569,6 +569,38 @@ function ImplantacaoKanban({
           </div>
         ))}
       </div>
+
+      <AlertDialog open={!!pendingMove} onOpenChange={(v) => !v && setPendingMove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Mudar para {stages.find((s) => s.key === pendingMove?.etapa)?.label ?? "—"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingMove?.clientName && <><strong>{pendingMove.clientName}</strong> — </>}
+              O checklist da etapa atual será preservado. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingMove) return;
+                const found = (items ?? []).find((x: any) => x.id === pendingMove.id);
+                moveStage.mutate({
+                  id: pendingMove.id,
+                  etapa: pendingMove.etapa,
+                  fromEtapa: pendingMove.fromEtapa,
+                  item: found,
+                });
+                setPendingMove(null);
+              }}
+            >
+              Confirmar mudança
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
