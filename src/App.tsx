@@ -33,8 +33,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/nps" element={<NpsForm />} />
-          <Route path="/nps/:token" element={<NpsForm />} />
+          <Route path="/pesquisa" element={<NpsForm />} />
+          <Route path="/pesquisa/:token" element={<NpsForm />} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/tickets" element={<Tickets />} />
@@ -46,6 +46,7 @@ const App = () => (
             <Route path="/clientes/:id" element={<ClientDetail />} />
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
             <Route path="/performance" element={<Performance />} />
+            <Route path="/nps" element={<Nps />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
