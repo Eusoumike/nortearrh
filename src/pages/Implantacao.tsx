@@ -1022,19 +1022,25 @@ function EditImplantacaoDialog({
               </TabsList>
 
               <TabsContent value="dados" className="mt-3">
-                <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} userId={user?.id ?? null} userName={userName} />
+                {tab === "dados" && (
+                  <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} userId={user?.id ?? null} userName={userName} />
+                )}
               </TabsContent>
 
               <TabsContent value="checklist" className="mt-3">
-                <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} userId={user?.id ?? null} userName={userName} />
+                {tab === "checklist" && (
+                  <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} userId={user?.id ?? null} userName={userName} />
+                )}
               </TabsContent>
 
               <TabsContent value="mensagens" className="mt-3">
-                <MensagensTab item={item} qc={qc} userId={user?.id ?? null} userName={userName} />
+                {tab === "mensagens" && (
+                  <MensagensTab item={item} qc={qc} userId={user?.id ?? null} userName={userName} />
+                )}
               </TabsContent>
 
               <TabsContent value="historico" className="mt-3">
-                <HistoricoTab implantacaoId={item.id} />
+                {tab === "historico" && <HistoricoTab implantacaoId={item.id} />}
               </TabsContent>
             </Tabs>
           </>
