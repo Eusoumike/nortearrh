@@ -931,6 +931,7 @@ function EditImplantacaoDialog({
   const { user } = useAuth();
   const userName = user?.user_metadata?.full_name ?? user?.email ?? null;
   const [tab, setTab] = useState("dados");
+  useEffect(() => { setTab("dados"); }, [implantacaoId]);
 
   const { data: item } = useQuery({
     queryKey: ["implantacao", implantacaoId],
