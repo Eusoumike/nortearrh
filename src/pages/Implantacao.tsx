@@ -1316,6 +1316,27 @@ function DadosTab({
           Salvar
         </Button>
       </div>
+
+      <AlertDialog open={confirmStage} onOpenChange={setConfirmStage}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Mudar para {stages.find((s) => s.key === form.etapa)?.label ?? form.etapa}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              O checklist da etapa atual será preservado. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setForm({ ...form, etapa: item.etapa })}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmStage(false); update.mutate(); }}>
+              Confirmar mudança
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
