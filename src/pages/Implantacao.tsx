@@ -524,7 +524,12 @@ function ImplantacaoKanban({
               if (!id) return;
               const found = (items ?? []).find((x: any) => x.id === id);
               if (!found || found.etapa === stage.key) return;
-              moveStage.mutate({ id, etapa: stage.key, fromEtapa: found.etapa, item: found });
+              setPendingMove({
+                id,
+                etapa: stage.key,
+                fromEtapa: found.etapa,
+                clientName: found.client_name,
+              });
             }}
           >
             {/* Barra colorida fina (3px) */}
