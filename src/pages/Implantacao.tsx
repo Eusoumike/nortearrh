@@ -393,6 +393,7 @@ function ImplantacaoKanban({
   userName: string | null;
 }) {
   const qc = useQueryClient();
+  const [pendingMove, setPendingMove] = useState<{ id: string; etapa: string; fromEtapa: string; clientName: string } | null>(null);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["implantacoes"],
