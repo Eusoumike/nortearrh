@@ -1174,8 +1174,19 @@ function DadosTab({
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [confirmStage, setConfirmStage] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (form.etapa !== item.etapa) {
+      setConfirmStage(true);
+      return;
+    }
+    update.mutate();
+  }
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); update.mutate(); }} className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+    <form onSubmit={handleSubmit} className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-3">
         <FieldText label="Razão Social / Empresa *" value={form.client_name} onChange={(v) => setForm({ ...form, client_name: v })} required />
         <FieldText label="CNPJ" value={form.cnpj} onChange={(v) => setForm({ ...form, cnpj: v })} />
