@@ -158,7 +158,7 @@ export default function Nps() {
   }, [data]);
 
   const copyLink = () => {
-    const url = `${window.location.origin}/nps`;
+    const url = `${window.location.origin}/pesquisa`;
     navigator.clipboard.writeText(url);
     toast.success("Link copiado: " + url);
   };
