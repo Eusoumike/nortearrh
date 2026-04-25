@@ -72,6 +72,9 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          nps_data: string | null
+          nps_score: number | null
+          nps_token: string | null
           phone: string | null
           pipedrive_person_id: string | null
           tags: string[] | null
@@ -94,6 +97,9 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
           tags?: string[] | null
@@ -116,6 +122,9 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
           tags?: string[] | null
@@ -403,6 +412,80 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nps_responses: {
+        Row: {
+          atendimento_evolucao: string | null
+          client_id: string | null
+          comentario_adicional: string | null
+          confianca_informacoes: number | null
+          created_at: string
+          email: string
+          empresa: string
+          experiencia_geral: string | null
+          feedback_aberto: string | null
+          frequencia_uso: string | null
+          id: string
+          nome: string
+          nota_atendimento: number | null
+          nps_score: number | null
+          source: string
+          sugestao_melhoria: string | null
+          tempo_cliente: string | null
+          tempo_resposta: string | null
+          token: string | null
+        }
+        Insert: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string
+          email: string
+          empresa: string
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string
+          nome: string
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Update: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string
+          email?: string
+          empresa?: string
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string
+          nome?: string
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_responses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

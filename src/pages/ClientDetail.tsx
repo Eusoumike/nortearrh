@@ -9,11 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HealthBadge, StatusBadge, PriorityBadge } from "@/components/badges";
-import { ArrowLeft, Mail, Phone, Building2, Loader2, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Mail, Phone, Building2, Loader2, Pencil, Star, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
-import { timeAgo } from "@/lib/formatters";
+import { timeAgo, formatBrazilDate } from "@/lib/formatters";
 import { EditClientDialog } from "@/components/EditClientDialog";
 
 export default function ClientDetail() {
@@ -43,6 +44,56 @@ export default function ClientDetail() {
       return data;
     },
     enabled: !!id,
+  });
+
+  // NPS: busca a resposta mais recente do cliente (por client_id ou empresa)
+  const { data: npsLatest } = useQuery({
+    queryKey: ["client-nps", id, client?.company, client?.name],
+    queryFn: async () => {
+      if (!id) return null;
+      // 1. Por client_id direto
+      const byId = await supabase
+        .from("nps_responses")
+        .select("*")
+        .eq("client_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (byId.data && byId.data.length > 0) return byId.data[0];
+      // 2. Fallback por nome de empresa (case-insensitive)
+      const empresa = (client?.company || client?.name || "").trim();
+      if (!empresa) return null;
+      const byEmpresa = await supabase
+        .from("nps_responses")
+        .select("*")
+        .ilike("empresa", empresa)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return byEmpresa.data?.[0] ?? null;
+    },
+    enabled: !!id && !!client,
+  });
+
+  const sendSurvey = useMutation({
+    mutationFn: async () => {
+      if (!client) throw new Error("Cliente não carregado");
+      let token = client.nps_token;
+      if (!token) {
+        token = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
+        const { error } = await supabase
+          .from("clients")
+          .update({ nps_token: token })
+          .eq("id", id!);
+        if (error) throw error;
+      }
+      const url = `${window.location.origin}/pesquisa/${token}`;
+      await navigator.clipboard.writeText(url);
+      return url;
+    },
+    onSuccess: (url) => {
+      qc.invalidateQueries({ queryKey: ["client", id] });
+      toast.success("Link copiado: " + url);
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const [form, setForm] = useState<any>(null);
@@ -150,6 +201,57 @@ export default function ClientDetail() {
               {client.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> {client.email}</p>}
               {client.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {client.phone}</p>}
             </div>
+          </Card>
+
+          <Card className="p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">NPS</h3>
+              <Star className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            {npsLatest ? (
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-semibold tabular-nums">{npsLatest.nps_score ?? "—"}</span>
+                  {npsLatest.nps_score !== null && npsLatest.nps_score !== undefined && (
+                    <Badge
+                      className={
+                        npsLatest.nps_score >= 9
+                          ? "bg-success/15 text-success hover:bg-success/15"
+                          : npsLatest.nps_score >= 7
+                            ? "bg-warning/15 text-warning hover:bg-warning/15"
+                            : "bg-destructive/15 text-destructive hover:bg-destructive/15"
+                      }
+                    >
+                      {npsLatest.nps_score >= 9 ? "Promotor" : npsLatest.nps_score >= 7 ? "Neutro" : "Detrator"}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {npsLatest.nome} · {formatBrazilDate(npsLatest.created_at)}
+                </p>
+                {npsLatest.feedback_aberto && (
+                  <p className="line-clamp-3 rounded-md bg-surface-muted/50 p-2 text-xs italic">
+                    "{npsLatest.feedback_aberto}"
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="py-2 text-center text-xs text-muted-foreground">Sem respostas ainda.</p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full"
+              onClick={() => sendSurvey.mutate()}
+              disabled={sendSurvey.isPending}
+            >
+              {sendSurvey.isPending ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-3.5 w-3.5" />
+              )}
+              Enviar pesquisa NPS
+            </Button>
           </Card>
 
           <Card className="p-5">
