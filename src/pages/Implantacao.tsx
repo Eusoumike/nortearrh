@@ -959,14 +959,31 @@ function EditImplantacaoDialog({
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !!implantacaoId && tab === "checklist",
+  });
+
+  // Resumo leve do checklist para o header (carrega junto com a aba Dados)
+  const { data: checklistCounts } = useQuery({
+    queryKey: ["checklist-summary", implantacaoId],
+    queryFn: async () => {
+      if (!implantacaoId) return { done: 0, total: 0 };
+      const { data, error } = await supabase
+        .from("checklist_items")
+        .select("concluido")
+        .eq("implantacao_id", implantacaoId);
+      if (error) throw error;
+      const total = (data ?? []).length;
+      const done = (data ?? []).filter((c: any) => c.concluido).length;
+      return { done, total };
+    },
     enabled: !!implantacaoId,
   });
 
   const totals = useMemo(() => {
-    const total = (checklist ?? []).length;
-    const done = (checklist ?? []).filter((c: any) => c.concluido).length;
+    const total = checklistCounts?.total ?? 0;
+    const done = checklistCounts?.done ?? 0;
     return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
-  }, [checklist]);
+  }, [checklistCounts]);
 
   const stageLabel = stages.find((s) => s.key === item?.etapa)?.label ?? item?.etapa;
 
