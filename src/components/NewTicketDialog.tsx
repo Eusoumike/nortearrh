@@ -276,14 +276,16 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               <Label htmlFor="title" className="text-xs">
                 Título <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <TitleCategoryCombobox
                 id="title"
                 required
+                compact
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Resumo do chamado"
-                className="h-9"
-                maxLength={200}
+                onChange={(v) => setForm((f) => ({ ...f, title: v }))}
+                onCategorySelected={(cat) =>
+                  setForm((f) => ({ ...f, category: cat?.name ?? f.category }))
+                }
+                placeholder="Comece a digitar para ver classificações…"
               />
             </div>
 
