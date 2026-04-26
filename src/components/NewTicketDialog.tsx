@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { Loader2, Search, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TitleCategoryCombobox } from "@/components/TitleCategoryCombobox";
 import {
   SLA_RESPONSE_HOURS,
   SLA_RESOLUTION_HOURS,
