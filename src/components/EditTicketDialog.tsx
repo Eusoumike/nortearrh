@@ -185,11 +185,15 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="title">Título *</Label>
-              <Input
+              <TitleCategoryCombobox
                 id="title"
+                required
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                maxLength={200}
+                onChange={(v) => setForm((f) => ({ ...f, title: v }))}
+                onCategorySelected={(cat) =>
+                  setForm((f) => ({ ...f, category: cat?.name ?? f.category }))
+                }
+                placeholder="Comece a digitar para ver classificações…"
               />
             </div>
           </div>
