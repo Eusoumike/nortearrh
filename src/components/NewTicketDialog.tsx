@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { Loader2, Search, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TitleCategoryCombobox } from "@/components/TitleCategoryCombobox";
 import {
   SLA_RESPONSE_HOURS,
   SLA_RESOLUTION_HOURS,
@@ -275,14 +276,16 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               <Label htmlFor="title" className="text-xs">
                 Título <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <TitleCategoryCombobox
                 id="title"
                 required
+                compact
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Resumo do chamado"
-                className="h-9"
-                maxLength={200}
+                onChange={(v) => setForm((f) => ({ ...f, title: v }))}
+                onCategorySelected={(cat) =>
+                  setForm((f) => ({ ...f, category: cat?.name ?? f.category }))
+                }
+                placeholder="Comece a digitar para ver classificações…"
               />
             </div>
 

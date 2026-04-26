@@ -623,6 +623,36 @@ export type Database = {
           },
         ]
       }
+      ticket_categories: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          emoji: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          emoji?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          emoji?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ticket_interactions: {
         Row: {
           author_id: string | null
