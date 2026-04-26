@@ -45,6 +45,7 @@ export function TitleCategoryCombobox({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typedText = value.trim();
 
   const { data: categories } = useQuery({
     queryKey: ["ticket-categories"],
@@ -124,7 +125,7 @@ export function TitleCategoryCombobox({
     }
   }, [filtered.length, value, exactMatch, open]);
 
-  const showCreate = !!value.trim() && !exactMatch && !create.isPending;
+  const showCreate = !!typedText && !exactMatch;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -144,6 +145,11 @@ export function TitleCategoryCombobox({
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => {
             if (e.key === "Escape") setOpen(false);
+            if (e.key === "Enter") {
+              e.preventDefault();
+              setOpen(false);
+              inputRef.current?.blur();
+            }
             if (e.key === "ArrowDown" && filtered.length > 0) {
               e.preventDefault();
               const first = document.querySelector<HTMLButtonElement>(
@@ -153,6 +159,7 @@ export function TitleCategoryCombobox({
             }
           }}
           autoComplete="off"
+          aria-autocomplete="list"
         />
       </PopoverTrigger>
       <PopoverContent
@@ -183,7 +190,7 @@ export function TitleCategoryCombobox({
           </div>
         )}
 
-        {filtered.length === 0 && !showCreate && (
+        {filtered.length === 0 && !typedText && (
           <div className="px-3 py-4 text-center text-xs text-muted-foreground">
             <Tag className="mx-auto mb-1 h-4 w-4 opacity-60" />
             Nenhuma classificação ainda.
@@ -195,7 +202,7 @@ export function TitleCategoryCombobox({
           <div className="border-t border-border">
             <button
               type="button"
-              onClick={() => create.mutate(value)}
+              onClick={() => create.mutate(typedText)}
               disabled={create.isPending}
               className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-sm text-primary hover:bg-accent focus:bg-accent focus:outline-none"
             >
@@ -205,7 +212,7 @@ export function TitleCategoryCombobox({
                 <Plus className="h-3.5 w-3.5" />
               )}
               <span>
-                Criar classificação <strong>"{value.trim()}"</strong>
+                Criar classificação <strong>"{typedText}"</strong>
               </span>
             </button>
           </div>
