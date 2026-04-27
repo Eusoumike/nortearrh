@@ -9,7 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import { timeAgo } from "@/lib/formatters";
-import { toast } from "sonner";
+
 
 export function TopBar() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
