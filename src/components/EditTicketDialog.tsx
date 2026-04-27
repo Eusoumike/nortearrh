@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { TitleWithCategorySuggestions } from "@/components/TitleWithCategorySuggestions";
+import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
 import {
   STATUS_LABEL,
   STATUS_FLOW,
@@ -185,15 +185,12 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="title">Título *</Label>
-              <TitleWithCategorySuggestions
+              <TicketTitleCombobox
                 id="title"
                 required
                 value={form.title}
                 onChange={(v) => setForm((f) => ({ ...f, title: v }))}
-                onCategorySelected={(cat) =>
-                  setForm((f) => ({ ...f, category: cat?.name ?? f.category }))
-                }
-                placeholder="Resumo do chamado"
+                placeholder="Selecione ou digite o título…"
               />
             </div>
           </div>
