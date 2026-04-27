@@ -20,12 +20,13 @@ export default function Tickets() {
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
 
-  // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d
+  // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
   const slaMode = searchParams.get("sla"); // "overdue" | "approaching"
   const resolvedWindow = searchParams.get("resolved"); // "7d"
+  const clientFilter = searchParams.get("client"); // nome (client_name/organization)
 
-  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow;
+  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientFilter;
 
   // Sincroniza select com URL quando muda externamente
   useEffect(() => {
