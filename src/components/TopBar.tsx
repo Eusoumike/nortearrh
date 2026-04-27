@@ -9,7 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import { timeAgo } from "@/lib/formatters";
-import { toast } from "sonner";
+
 
 export function TopBar() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
@@ -32,37 +32,41 @@ export function TopBar() {
     localStorage.setItem("hub-theme", next ? "dark" : "light");
   };
 
-  // SLA alerts (P5): tickets with sla_alert_sent = true and still open
+  // SLA alerts (live): tickets abertos com sla_resolution_deadline,
+  // estourados OU com ≥80% do prazo consumido
   const { data: alerts } = useQuery({
-    queryKey: ["sla-alerts"],
+    queryKey: ["sla-alerts-live"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("id, ticket_number, title, sla_resolution_deadline, status")
-        .eq("sla_alert_sent", true)
+        .select("id, ticket_number, title, sla_resolution_deadline, status, created_at")
         .in("status", ["novo", "em_atendimento", "aguardando_cliente", "suporte_vera_n1", "abertura_chamado_n2"])
+        .not("sla_resolution_deadline", "is", null)
         .order("sla_resolution_deadline", { ascending: true })
-        .limit(10);
+        .limit(50);
       if (error) throw error;
-      return data;
+      const now = Date.now();
+      return (data ?? []).filter((t: any) => {
+        const deadline = new Date(t.sla_resolution_deadline).getTime();
+        if (now >= deadline) return true;
+        const created = new Date(t.created_at).getTime();
+        const total = deadline - created;
+        if (total <= 0) return false;
+        return (now - created) / total >= 0.8;
+      }).slice(0, 10);
     },
     refetchInterval: 60_000,
   });
 
-  // Realtime subscription on tickets to refresh alerts and toast on new ones
+  // Realtime: refetch alerts when tickets change
   useEffect(() => {
     const channel = supabase
       .channel("tickets-sla-alerts")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "tickets" },
-        (payload) => {
-          const newRow: any = payload.new;
-          const oldRow: any = payload.old;
-          if (newRow?.sla_alert_sent && !oldRow?.sla_alert_sent) {
-            toast.warning(`SLA próximo: #${newRow.ticket_number} ${newRow.title}`);
-            qc.invalidateQueries({ queryKey: ["sla-alerts"] });
-          }
+        { event: "*", schema: "public", table: "tickets" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["sla-alerts-live"] });
         },
       )
       .subscribe();

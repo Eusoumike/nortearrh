@@ -164,17 +164,17 @@ export default function Dashboard() {
 
   const recentTickets = tickets?.slice(0, 5) ?? [];
 
-  // Clientes em atenção — critério do briefing:
-  // 3+ chamados abertos OU pelo menos 1 chamado urgente aberto
+  // Clientes em atenção — agrupa por nome (client_name → organization → client.name)
+  // Mostra clientes com 3+ chamados abertos OU ao menos 1 urgente/crítico aberto
   const attentionClients = useMemo(() => {
-    if (!tickets) return [] as { name: string; openCount: number; hasUrgent: boolean; clientId?: string | null }[];
+    if (!tickets) return [] as { name: string; openCount: number; hasUrgent: boolean }[];
     const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
-    const buckets = new Map<string, { name: string; openCount: number; hasUrgent: boolean; clientId?: string | null }>();
+    const buckets = new Map<string, { name: string; openCount: number; hasUrgent: boolean }>();
     tickets.filter((t: any) => isOpen(t.status)).forEach((t: any) => {
-      const key = t.client?.id ?? t.client_name ?? t.organization;
-      if (!key) return;
-      const name = t.client?.name ?? t.client_name ?? t.organization ?? "Sem cliente";
-      const cur = buckets.get(key) ?? { name, openCount: 0, hasUrgent: false, clientId: t.client?.id ?? null };
+      const name = (t.client_name ?? t.organization ?? t.client?.name ?? "").trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      const cur = buckets.get(key) ?? { name, openCount: 0, hasUrgent: false };
       cur.openCount += 1;
       if (["urgente", "critica"].includes(t.priority)) cur.hasUrgent = true;
       buckets.set(key, cur);
@@ -183,6 +183,25 @@ export default function Dashboard() {
       .filter((b) => b.openCount >= 3 || b.hasUrgent)
       .sort((a, b) => Number(b.hasUrgent) - Number(a.hasUrgent) || b.openCount - a.openCount)
       .slice(0, 5);
+  }, [tickets]);
+
+  // Alertas SLA ativos (computado ao vivo) — abertos com sla_resolution_deadline,
+  // que estão estourados OU já consumiram ≥80% do prazo
+  const slaAlerts = useMemo(() => {
+    if (!tickets) return [] as any[];
+    const now = Date.now();
+    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
+    return tickets
+      .filter((t: any) => {
+        if (!isOpen(t.status) || !t.sla_resolution_deadline) return false;
+        const deadline = new Date(t.sla_resolution_deadline).getTime();
+        if (now >= deadline) return true; // estourado
+        const created = new Date(t.created_at).getTime();
+        const total = deadline - created;
+        if (total <= 0) return false;
+        return (now - created) / total >= 0.8; // ≥80% consumido
+      })
+      .sort((a: any, b: any) => new Date(a.sla_resolution_deadline).getTime() - new Date(b.sla_resolution_deadline).getTime());
   }, [tickets]);
 
   const handleExport = (kind: "csv" | "pdf") => {
@@ -330,15 +349,15 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {stats.approachingSla.length > 0 && (
+      {slaAlerts.length > 0 && (
         <Card className="border-warning/40 bg-warning/5 p-5">
           <div className="mb-3 flex items-center gap-2">
             <BellRing className="h-4 w-4 text-warning" />
             <h2 className="text-sm font-semibold">Alertas SLA ativos</h2>
-            <span className="text-xs text-muted-foreground">{stats.approachingSla.length} chamado{stats.approachingSla.length === 1 ? "" : "s"} próximo{stats.approachingSla.length === 1 ? "" : "s"} do prazo</span>
+            <span className="text-xs text-muted-foreground">{slaAlerts.length} chamado{slaAlerts.length === 1 ? "" : "s"} requerendo atenção</span>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            {stats.approachingSla.slice(0, 6).map((t: any) => (
+            {slaAlerts.slice(0, 6).map((t: any) => (
               <Link key={t.id} to={`/tickets/${t.id}`} className="flex items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:bg-surface-muted">
                 <span className="font-mono text-[11px] text-muted-foreground">#{t.ticket_number}</span>
                 <p className="flex-1 truncate text-sm font-medium">{t.title}</p>
@@ -401,33 +420,26 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {attentionClients.map((c) => {
-                const inner = (
-                  <>
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-medium">{c.name}</p>
-                      {c.hasUrgent ? (
-                        <HealthBadge health="critico" />
-                      ) : (
-                        <HealthBadge health="em_atencao" />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {c.openCount} chamado{c.openCount === 1 ? "" : "s"} aberto{c.openCount === 1 ? "" : "s"}
-                      {c.hasUrgent ? " · ao menos 1 urgente" : ""}
-                    </p>
-                  </>
-                );
-                return c.clientId ? (
-                  <Link key={c.clientId} to={`/clientes/${c.clientId}`} className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted">
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={c.name} className="rounded-md border border-border bg-surface p-3">
-                    {inner}
+              {attentionClients.map((c) => (
+                <Link
+                  key={c.name}
+                  to={`/tickets?client=${encodeURIComponent(c.name)}&open=1`}
+                  className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted"
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium">{c.name}</p>
+                    {c.hasUrgent ? (
+                      <HealthBadge health="critico" />
+                    ) : (
+                      <HealthBadge health="em_atencao" />
+                    )}
                   </div>
-                );
-              })}
+                  <p className="text-xs text-muted-foreground">
+                    {c.openCount} chamado{c.openCount === 1 ? "" : "s"} aberto{c.openCount === 1 ? "" : "s"}
+                    {c.hasUrgent ? " · ao menos 1 urgente" : ""}
+                  </p>
+                </Link>
+              ))}
             </div>
           )}
         </Card>

@@ -20,12 +20,13 @@ export default function Tickets() {
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
 
-  // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d
+  // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
   const slaMode = searchParams.get("sla"); // "overdue" | "approaching"
   const resolvedWindow = searchParams.get("resolved"); // "7d"
+  const clientFilter = searchParams.get("client"); // nome (client_name/organization)
 
-  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow;
+  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientFilter;
 
   // Sincroniza select com URL quando muda externamente
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function Tickets() {
     next.delete("open");
     next.delete("sla");
     next.delete("resolved");
+    next.delete("client");
     setSearchParams(next, { replace: true });
   };
 
@@ -94,6 +96,7 @@ export default function Tickets() {
     if (!hasSpecialFilter) return list;
     const now = Date.now();
     const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
+    const clientNeedle = clientFilter?.trim().toLowerCase() ?? "";
     return list.filter((t: any) => {
       if (openOnly && !isOpen(t.status)) return false;
       if (slaMode === "overdue") {
@@ -115,9 +118,13 @@ export default function Tickets() {
         if (!t.resolved_at) return false;
         if (new Date(t.resolved_at).getTime() < now - 7 * 86400000) return false;
       }
+      if (clientNeedle) {
+        const name = (t.client_name ?? t.organization ?? t.client?.name ?? "").toLowerCase();
+        if (name !== clientNeedle) return false;
+      }
       return true;
     });
-  }, [tickets, hasSpecialFilter, openOnly, slaMode, resolvedWindow]);
+  }, [tickets, hasSpecialFilter, openOnly, slaMode, resolvedWindow, clientFilter]);
 
   const specialLabel = openOnly
     ? "Abertos"
@@ -127,6 +134,8 @@ export default function Tickets() {
     ? "Próximos do SLA (≥80%)"
     : resolvedWindow === "7d"
     ? "Resolvidos nos últimos 7 dias"
+    : clientFilter
+    ? `Cliente: ${clientFilter}`
     : null;
 
   return (
