@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { TicketTitlesManager } from "@/components/settings/TicketTitlesManager";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -555,6 +556,9 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {/* Títulos de chamado */}
+      <TicketTitlesManager />
 
       {/* Aparência */}
       <Card>
