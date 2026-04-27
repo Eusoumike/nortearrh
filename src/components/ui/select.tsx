@@ -77,17 +77,15 @@ const SelectContent = React.forwardRef<
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(
-          "p-1 max-h-[var(--radix-select-content-available-height)] overflow-y-auto",
+          "p-1 max-h-[var(--radix-select-content-available-height)] overflow-y-auto overscroll-contain",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
         )}
         onWheel={(e) => {
           // Permite scroll do mouse dentro do dropdown sem que a página role atrás
-          const el = e.currentTarget;
-          const atTop = el.scrollTop === 0;
-          const atBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= 1;
-          if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) return;
           e.stopPropagation();
+          const el = e.currentTarget;
+          el.scrollTop += e.deltaY;
         }}
       >
         {children}
