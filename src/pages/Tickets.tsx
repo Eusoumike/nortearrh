@@ -57,6 +57,7 @@ export default function Tickets() {
     next.delete("open");
     next.delete("sla");
     next.delete("resolved");
+    next.delete("client");
     setSearchParams(next, { replace: true });
   };
 
