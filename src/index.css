@@ -227,3 +227,18 @@
   /* Drag preview rotation/opacity (applied via class while dragging) */
   .kanban-dragging { opacity: 0.7; transform: rotate(2deg); }
 }
+
+@layer utilities {
+  /* Garante que dropdowns/menus/popovers Radix sempre rolem com o mouse */
+  [data-radix-select-viewport],
+  [data-radix-popper-content-wrapper] [cmdk-list],
+  [data-radix-dropdown-menu-content],
+  [data-radix-menu-content],
+  [data-radix-popover-content] {
+    overscroll-behavior: contain;
+  }
+  [data-radix-select-viewport],
+  [data-radix-popper-content-wrapper] [cmdk-list] {
+    overflow-y: auto !important;
+  }
+}
