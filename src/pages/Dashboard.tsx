@@ -420,33 +420,26 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {attentionClients.map((c) => {
-                const inner = (
-                  <>
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-medium">{c.name}</p>
-                      {c.hasUrgent ? (
-                        <HealthBadge health="critico" />
-                      ) : (
-                        <HealthBadge health="em_atencao" />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {c.openCount} chamado{c.openCount === 1 ? "" : "s"} aberto{c.openCount === 1 ? "" : "s"}
-                      {c.hasUrgent ? " · ao menos 1 urgente" : ""}
-                    </p>
-                  </>
-                );
-                return c.clientId ? (
-                  <Link key={c.clientId} to={`/clientes/${c.clientId}`} className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted">
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={c.name} className="rounded-md border border-border bg-surface p-3">
-                    {inner}
+              {attentionClients.map((c) => (
+                <Link
+                  key={c.name}
+                  to={`/tickets?client=${encodeURIComponent(c.name)}&open=1`}
+                  className="block rounded-md border border-border bg-surface p-3 transition-colors hover:bg-surface-muted"
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium">{c.name}</p>
+                    {c.hasUrgent ? (
+                      <HealthBadge health="critico" />
+                    ) : (
+                      <HealthBadge health="em_atencao" />
+                    )}
                   </div>
-                );
-              })}
+                  <p className="text-xs text-muted-foreground">
+                    {c.openCount} chamado{c.openCount === 1 ? "" : "s"} aberto{c.openCount === 1 ? "" : "s"}
+                    {c.hasUrgent ? " · ao menos 1 urgente" : ""}
+                  </p>
+                </Link>
+              ))}
             </div>
           )}
         </Card>
