@@ -125,25 +125,17 @@ export default function Tickets() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
       {/* Header (fixo) */}
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
         </div>
-        <Button size="sm" onClick={() => setNewTicketOpen(true)} className="h-9 self-start bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90 sm:self-auto">
-          <Plus className="mr-1.5 h-4 w-4" /> Novo chamado
-        </Button>
       </div>
-      <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
 
       {/* Filtros (fixo) */}
       <Card className="shrink-0 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="relative w-full flex-1 sm:min-w-64">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, descrição ou #número…" className="h-9 pl-8" />
-          </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2">
             <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <Select value={statusFilter} onValueChange={updateStatus}>
               <SelectTrigger className="h-9 flex-1 sm:w-[200px] sm:flex-none"><SelectValue placeholder="Status" /></SelectTrigger>
