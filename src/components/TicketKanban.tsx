@@ -134,7 +134,19 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
   };
 
   return (
-    <div className="kanban-column rounded-lg bg-surface-muted/60">
+    <div
+      className="rounded-lg bg-surface-muted/60"
+      style={{
+        width: "280px",
+        minWidth: "280px",
+        maxWidth: "280px",
+        flexShrink: 0,
+        flexGrow: 0,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {/* Barra colorida fina (3px) no topo + header sticky */}
       <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
         <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
@@ -151,7 +163,14 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
       <div
         ref={setNodeRef}
         onScroll={onScroll}
-        style={{ contain: "strict", overscrollBehavior: "contain" }}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          minHeight: "80px",
+          contain: "strict",
+          overscrollBehavior: "contain",
+        }}
         className={cn(
           "kanban-column-body scrollbar-thin flex flex-col gap-2 px-2 pb-2 transition-colors",
           isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
@@ -238,8 +257,24 @@ export function TicketKanban({ tickets }: Props) {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       {/* Rail horizontal compartilhado: colunas mantêm 280px sob qualquer zoom */}
-      <div className="kanban-rail scrollbar-none">
-        <div className="kanban-rail-inner">
+      <div
+        style={{
+          width: "100%",
+          overflowX: "auto",
+          overflowY: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            flexDirection: "row",
+            gap: "12px",
+            minWidth: "max-content",
+            height: "calc(100vh - 200px)",
+            alignItems: "flex-start",
+            padding: "0 16px 16px",
+          }}
+        >
           {STATUS_FLOW.map((status) => (
             <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
