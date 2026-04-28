@@ -192,6 +192,52 @@ export function TopBar() {
         </Button>
       </div>
       <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
+
+      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <CommandInput
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          placeholder="Buscar por título, #número, cliente ou empresa…"
+        />
+        <CommandList>
+          {debouncedTerm.length < 2 ? (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+              Digite ao menos 2 caracteres para buscar.
+            </div>
+          ) : isSearching ? (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">Buscando…</div>
+          ) : (searchResults?.length ?? 0) === 0 ? (
+            <CommandEmpty>Nenhum chamado encontrado.</CommandEmpty>
+          ) : (
+            <CommandGroup heading="Chamados">
+              {searchResults!.map((t: any) => {
+                const company = t.client?.company ?? t.organization ?? "";
+                const clientName = t.client?.name ?? t.client_name ?? "";
+                return (
+                  <CommandItem
+                    key={t.id}
+                    value={`${t.ticket_number} ${t.title} ${clientName} ${company}`}
+                    onSelect={() => goToTicket(t.id)}
+                    className="flex flex-col items-start gap-0.5"
+                  >
+                    <div className="flex w-full items-center gap-2">
+                      <span className="font-mono text-[10px] text-muted-foreground">#{t.ticket_number}</span>
+                      <span className="flex-1 truncate text-sm font-medium">{t.title}</span>
+                    </div>
+                    {(clientName || company) && (
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {clientName}
+                        {clientName && company ? " · " : ""}
+                        {company}
+                      </p>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
+        </CommandList>
+      </CommandDialog>
     </header>
   );
 }
