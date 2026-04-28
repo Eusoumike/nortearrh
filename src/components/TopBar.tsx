@@ -18,7 +18,7 @@ export function TopBar() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const saved = localStorage.getItem("hub-theme");
+    const saved = localStorage.getItem("nortear_theme") ?? localStorage.getItem("hub-theme");
     if (saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
       document.documentElement.classList.add("dark");
       setDark(true);
@@ -29,7 +29,7 @@ export function TopBar() {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("hub-theme", next ? "dark" : "light");
+    localStorage.setItem("nortear_theme", next ? "dark" : "light");
   };
 
   // SLA alerts (live): tickets abertos com sla_resolution_deadline,
