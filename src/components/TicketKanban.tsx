@@ -237,9 +237,9 @@ export function TicketKanban({ tickets }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* Rail horizontal: ocupa 100% altura e largura, scroll horizontal sem scrollbar */}
-      <div className="scrollbar-none h-full w-full overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full min-w-max gap-3 pb-1">
+      {/* Rail horizontal compartilhado: colunas mantêm 280px sob qualquer zoom */}
+      <div className="kanban-rail scrollbar-none">
+        <div className="kanban-rail-inner">
           {STATUS_FLOW.map((status) => (
             <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
