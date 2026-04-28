@@ -107,7 +107,7 @@ export default function Tickets() {
     <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
+          <h1 className="font-display text-2xl font-normal tracking-tight md:text-3xl">Tickets</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
         </div>
         <Button size="sm" onClick={() => setNewTicketOpen(true)} className="h-9 self-start bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90 sm:self-auto">

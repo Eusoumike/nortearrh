@@ -107,7 +107,7 @@ export default function Performance() {
   return (
     <div className="space-y-4 p-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Performance</h1>
+        <h1 className="font-display text-3xl font-normal tracking-tight">Performance</h1>
         <p className="text-sm text-muted-foreground">Métricas dos últimos {PERIOD_DAYS} dias.</p>
       </div>
 
