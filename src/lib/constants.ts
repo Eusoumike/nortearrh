@@ -54,12 +54,12 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
 };
 
 export const STATUS_TONE: Record<TicketStatus, "info" | "warning" | "muted" | "success" | "neutral" | "primary" | "accent"> = {
-  novo: "info",
-  em_atendimento: "warning",
-  aguardando_cliente: "muted",
-  suporte_vera_n1: "accent",
-  abertura_chamado_n2: "primary",
-  resolvido: "success",
+  novo: "neutral",            // Stone
+  em_atendimento: "info",     // Teal destaque
+  aguardando_cliente: "warning", // Terracota
+  suporte_vera_n1: "primary", // Argila
+  abertura_chamado_n2: "warning", // Terracota mais forte
+  resolvido: "success",       // Musgo
   fechado: "success",
 };
 
