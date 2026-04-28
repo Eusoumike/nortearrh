@@ -342,7 +342,7 @@ function DealCard({ deal, onClick, dragging }: { deal: Deal; onClick: () => void
     >
       <div className="truncate text-sm font-semibold">{deal.company_name}</div>
       {deal.title && deal.title !== deal.company_name && (
-        <div className="mt-0.5 truncate text-xs text-muted-foreground">{deal.title}</div>
+        <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{deal.title}</div>
       )}
       {deal.contact_name && (
         <div className="mt-1 truncate text-xs text-muted-foreground">{deal.contact_name}</div>
