@@ -32,6 +32,7 @@ import {
   Minus,
   ThumbsDown,
   ArrowUpRight,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBrazilDateTime, formatBrazilDate } from "@/lib/formatters";
