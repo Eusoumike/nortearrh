@@ -356,7 +356,7 @@ export default function Settings() {
       <div className="flex items-center gap-3">
         <SettingsIcon className="h-6 w-6 text-muted-foreground" />
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
+          <h1 className="font-display text-3xl font-normal tracking-tight">Configurações</h1>
           <p className="text-sm text-muted-foreground">Integrações, equipe e preferências.</p>
         </div>
       </div>
