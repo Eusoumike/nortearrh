@@ -124,6 +124,50 @@ export default function TicketDetail() {
     enabled: !!ticket?.client_id,
   });
 
+  // Vizinhos no kanban: mesma coluna (status) ordem desc por created_at, igual ao kanban
+  const effectiveStatus = ticket?.status === "fechado" ? "resolvido" : ticket?.status;
+  const { data: columnSiblings } = useQuery({
+    queryKey: ["ticket-column-siblings", effectiveStatus],
+    enabled: !!effectiveStatus,
+    queryFn: async () => {
+      const statuses = effectiveStatus === "resolvido" ? ["resolvido", "fechado"] : [effectiveStatus!];
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("id, created_at")
+        .in("status", statuses as any)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { prevTicketId, nextTicketId } = useMemo(() => {
+    if (!columnSiblings || !id) return { prevTicketId: null as string | null, nextTicketId: null as string | null };
+    const idx = columnSiblings.findIndex((t: any) => t.id === id);
+    if (idx === -1) return { prevTicketId: null, nextTicketId: null };
+    return {
+      prevTicketId: idx > 0 ? (columnSiblings[idx - 1] as any).id : null,
+      nextTicketId: idx < columnSiblings.length - 1 ? (columnSiblings[idx + 1] as any).id : null,
+    };
+  }, [columnSiblings, id]);
+
+  // Atalhos: Alt+← / Alt+→
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey) return;
+      if (e.key === "ArrowLeft" && prevTicketId) {
+        e.preventDefault();
+        navigate(`/tickets/${prevTicketId}`);
+      } else if (e.key === "ArrowRight" && nextTicketId) {
+        e.preventDefault();
+        navigate(`/tickets/${nextTicketId}`);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [prevTicketId, nextTicketId, navigate]);
+
   const { data: profiles } = useQuery({
     queryKey: ["profiles-min"],
     queryFn: async () => {
