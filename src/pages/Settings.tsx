@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, Check, X, Trash2, UserPlus, Settings as SettingsIcon } from "lucide-react";
+import { Loader2, Check, X, Trash2, UserPlus, Settings as SettingsIcon, Copy, Phone, Mail, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
