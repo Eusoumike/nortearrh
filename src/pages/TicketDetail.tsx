@@ -253,24 +253,21 @@ export default function TicketDetail() {
   });
 
   const [anydeskEditOpen, setAnydeskEditOpen] = useState(false);
-  const [anydeskDraft, setAnydeskDraft] = useState({ id: "", senha: "" });
+  const [anydeskDraft, setAnydeskDraft] = useState({ id: "" });
 
   const saveClientAnydesk = useMutation({
     mutationFn: async () => {
       if (!ticket?.client_id) throw new Error("Cliente não vinculado ao chamado.");
       const idTrim = anydeskDraft.id.trim();
-      const senhaTrim = anydeskDraft.senha.trim();
       const idDigits = idTrim.replace(/[\s-]/g, "");
       if (!idTrim) throw new Error("Informe o ID do AnyDesk.");
       if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
       if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
-      if (!senhaTrim) throw new Error("Informe a senha do AnyDesk.");
-      if (senhaTrim.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
       const { error } = await supabase
         .from("clients")
         .update({
           anydesk_id: idDigits,
-          anydesk_senha: senhaTrim,
+          anydesk_senha: null,
         } as any)
         .eq("id", ticket.client_id);
       if (error) throw error;
