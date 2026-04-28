@@ -11,7 +11,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { BarChart3, Clock, Trophy, Target, Loader2, FileText, Copy } from "lucide-react";
+import { BarChart3, Clock, Trophy, Target, Loader2, FileText, Copy, Star, ArrowRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
 } from "recharts";
@@ -197,192 +199,225 @@ export default function Performance() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid gap-3 md:grid-cols-4">
-        <Kpi icon={<BarChart3 className="h-4 w-4" />} label="Chamados abertos" value={String(slaStats.total)} />
-        <Kpi
-          icon={<Target className="h-4 w-4" />}
-          label="SLA cumprido"
-          value={`${slaStats.percent}%`}
-          tone={slaStats.percent >= 80 ? "success" : slaStats.percent >= 60 ? "warning" : "danger"}
-          hint={`${slaStats.met} ok · ${slaStats.missed} estourados`}
-        />
-        <Kpi
-          icon={<Clock className="h-4 w-4" />}
-          label="Etapas em SLA"
-          value={`${stageData.filter((s) => !s.overSla).length}/${stageData.length}`}
-          hint="Tempo médio dentro do SLA"
-        />
-        <Kpi
-          icon={<Trophy className="h-4 w-4" />}
-          label="Top agente"
-          value={ranking[0]?.name?.split(" ")[0] ?? "—"}
-          hint={ranking[0] ? `${ranking[0].resolved} resolvidos` : ""}
-        />
-      </div>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Visão geral</TabsTrigger>
+          <TabsTrigger value="tickets">Chamados</TabsTrigger>
+          <TabsTrigger value="nps">NPS</TabsTrigger>
+        </TabsList>
 
-      {/* Tempo médio por etapa */}
-      <Card className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Tempo médio por etapa (horas)</h3>
-          <span className="text-[11px] text-muted-foreground">Linha vermelha = SLA estourado</span>
-        </div>
-        <div className="h-64">
-          <ResponsiveContainer>
-            <BarChart data={stageData} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--popover))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 6,
-                  fontSize: 12,
-                }}
-                formatter={(v: any, _n, p: any) => [
-                  `${v}h (SLA ${p.payload.slaHours}h)`,
-                  "Tempo médio",
-                ]}
-              />
-              <Bar dataKey="avgHours" radius={[4, 4, 0, 0]}>
-                {stageData.map((s, i) => (
-                  <Cell key={i} fill={s.overSla ? "hsl(var(--destructive))" : "hsl(var(--primary))"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          {stageData.map((s) => (
-            <div key={s.name} className="rounded-md border border-border bg-surface px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.name}</p>
-              <p className={`text-sm font-semibold ${s.overSla ? "text-destructive" : "text-foreground"}`}>
-                {s.avgSeconds > 0 ? formatDuration(s.avgSeconds) : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">SLA: {s.slaHours}h</p>
+        <TabsContent value="overview" className="space-y-4">
+          {/* KPIs */}
+          <div className="grid gap-3 md:grid-cols-4">
+            <Kpi icon={<BarChart3 className="h-4 w-4" />} label="Chamados abertos" value={String(slaStats.total)} />
+            <Kpi
+              icon={<Target className="h-4 w-4" />}
+              label="SLA cumprido"
+              value={`${slaStats.percent}%`}
+              tone={slaStats.percent >= 80 ? "success" : slaStats.percent >= 60 ? "warning" : "danger"}
+              hint={`${slaStats.met} ok · ${slaStats.missed} estourados`}
+            />
+            <Kpi
+              icon={<Clock className="h-4 w-4" />}
+              label="Etapas em SLA"
+              value={`${stageData.filter((s) => !s.overSla).length}/${stageData.length}`}
+              hint="Tempo médio dentro do SLA"
+            />
+            <Kpi
+              icon={<Trophy className="h-4 w-4" />}
+              label="Top agente"
+              value={ranking[0]?.name?.split(" ")[0] ?? "—"}
+              hint={ranking[0] ? `${ranking[0].resolved} resolvidos` : ""}
+            />
+          </div>
+
+          {/* Tempo médio por etapa */}
+          <Card className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Tempo médio por etapa (horas)</h3>
+              <span className="text-[11px] text-muted-foreground">Linha vermelha = SLA estourado</span>
             </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Top problemas recorrentes */}
-      <Card className="p-5 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold">Top problemas recorrentes</h3>
-            <p className="text-[11px] text-muted-foreground">Títulos de chamado mais repetidos.</p>
-          </div>
-          <Select value={topPeriodDays} onValueChange={setTopPeriodDays}>
-            <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {loadingTop ? (
-          <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Calculando…
-          </div>
-        ) : topProblems.length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">Sem dados no período.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="py-2 pr-3 font-medium">#</th>
-                  <th className="py-2 pr-3 font-medium">Título</th>
-                  <th className="py-2 pr-3 text-right font-medium">Qtd</th>
-                  <th className="py-2 pr-3 text-right font-medium">% do total</th>
-                  <th className="py-2 pr-3 text-right font-medium">Tempo médio</th>
-                  <th className="py-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {topProblems.map((p, i) => (
-                  <tr key={p.title} className="border-b last:border-0">
-                    <td className="py-2 pr-3 text-muted-foreground">{i + 1}</td>
-                    <td className="py-2 pr-3 font-medium">{p.title}</td>
-                    <td className="py-2 pr-3 text-right">{p.count}</td>
-                    <td className="py-2 pr-3 text-right text-muted-foreground">{p.pct}%</td>
-                    <td className="py-2 pr-3 text-right">
-                      {p.avgResolution > 0 ? formatDuration(Math.round(p.avgResolution)) : "—"}
-                    </td>
-                    <td className="py-2 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setMaterialFor({ title: p.title, count: p.count });
-                          setMaterialText("");
-                        }}
-                      >
-                        <FileText className="mr-2 h-3.5 w-3.5" />
-                        Gerar material
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      {/* Ranking de agentes */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-5 space-y-3">
-          <h3 className="text-sm font-semibold">Ranking de agentes (resolvidos)</h3>
-          <div className="space-y-2">
-            {ranking.length === 0 && (
-              <p className="py-8 text-center text-xs text-muted-foreground">Sem dados no período.</p>
-            )}
-            {ranking.map((r, i) => {
-              const rate = r.total ? Math.round((r.resolved / r.total) * 100) : 0;
-              return (
-                <div key={r.name + i} className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{r.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{r.resolved} de {r.total} chamados · {rate}% taxa</p>
-                  </div>
-                  <ToneBadge tone={rate >= 80 ? "success" : rate >= 50 ? "warning" : "danger"} size="sm">
-                    {rate}%
-                  </ToneBadge>
+            <div className="h-64">
+              <ResponsiveContainer>
+                <BarChart data={stageData} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 6,
+                      fontSize: 12,
+                    }}
+                    formatter={(v: any, _n, p: any) => [
+                      `${v}h (SLA ${p.payload.slaHours}h)`,
+                      "Tempo médio",
+                    ]}
+                  />
+                  <Bar dataKey="avgHours" radius={[4, 4, 0, 0]}>
+                    {stageData.map((s, i) => (
+                      <Cell key={i} fill={s.overSla ? "hsl(var(--destructive))" : "hsl(var(--primary))"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+              {stageData.map((s) => (
+                <div key={s.name} className="rounded-md border border-border bg-surface px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.name}</p>
+                  <p className={`text-sm font-semibold ${s.overSla ? "text-destructive" : "text-foreground"}`}>
+                    {s.avgSeconds > 0 ? formatDuration(s.avgSeconds) : "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">SLA: {s.slaHours}h</p>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
 
-        <Card className="p-5 space-y-3">
-          <h3 className="text-sm font-semibold">Distribuição por status</h3>
-          <div className="h-64">
-            <ResponsiveContainer>
-              <BarChart data={statusDist} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={80} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 6,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
+          {/* Ranking de agentes */}
+          <Card className="p-5 space-y-3">
+            <h3 className="text-sm font-semibold">Ranking de agentes (resolvidos)</h3>
+            <div className="space-y-2">
+              {ranking.length === 0 && (
+                <p className="py-8 text-center text-xs text-muted-foreground">Sem dados no período.</p>
+              )}
+              {ranking.map((r, i) => {
+                const rate = r.total ? Math.round((r.resolved / r.total) * 100) : 0;
+                return (
+                  <div key={r.name + i} className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{r.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{r.resolved} de {r.total} chamados · {rate}% taxa</p>
+                    </div>
+                    <ToneBadge tone={rate >= 80 ? "success" : rate >= 50 ? "warning" : "danger"} size="sm">
+                      {rate}%
+                    </ToneBadge>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tickets" className="space-y-4">
+          {/* Top problemas recorrentes */}
+          <Card className="p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">Top problemas recorrentes</h3>
+                <p className="text-[11px] text-muted-foreground">Títulos de chamado mais repetidos.</p>
+              </div>
+              <Select value={topPeriodDays} onValueChange={setTopPeriodDays}>
+                <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PERIOD_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {loadingTop ? (
+              <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Calculando…
+              </div>
+            ) : topProblems.length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">Sem dados no período.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <th className="py-2 pr-3 font-medium">#</th>
+                      <th className="py-2 pr-3 font-medium">Título</th>
+                      <th className="py-2 pr-3 text-right font-medium">Qtd</th>
+                      <th className="py-2 pr-3 text-right font-medium">% do total</th>
+                      <th className="py-2 pr-3 text-right font-medium">Tempo médio</th>
+                      <th className="py-2 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topProblems.map((p, i) => (
+                      <tr key={p.title} className="border-b last:border-0">
+                        <td className="py-2 pr-3 text-muted-foreground">{i + 1}</td>
+                        <td className="py-2 pr-3 font-medium">{p.title}</td>
+                        <td className="py-2 pr-3 text-right">{p.count}</td>
+                        <td className="py-2 pr-3 text-right text-muted-foreground">{p.pct}%</td>
+                        <td className="py-2 pr-3 text-right">
+                          {p.avgResolution > 0 ? formatDuration(Math.round(p.avgResolution)) : "—"}
+                        </td>
+                        <td className="py-2 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setMaterialFor({ title: p.title, count: p.count });
+                              setMaterialText("");
+                            }}
+                          >
+                            <FileText className="mr-2 h-3.5 w-3.5" />
+                            Gerar material
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Distribuição por status */}
+          <Card className="p-5 space-y-3">
+            <h3 className="text-sm font-semibold">Distribuição por status</h3>
+            <div className="h-64">
+              <ResponsiveContainer>
+                <BarChart data={statusDist} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={80} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 6,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="nps" className="space-y-4">
+          <Card className="p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Star className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold">Métricas de satisfação (NPS)</h3>
+                <p className="text-sm text-muted-foreground">
+                  As métricas de NPS estão disponíveis na seção de Onboarding, junto às avaliações dos clientes.
+                </p>
+              </div>
+            </div>
+            <Button asChild>
+              <Link to="/nps">
+                Abrir NPS / Avaliações
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Material de apoio */}
       <Dialog open={!!materialFor} onOpenChange={(o) => !o && setMaterialFor(null)}>
