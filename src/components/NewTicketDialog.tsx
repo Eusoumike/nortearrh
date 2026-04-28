@@ -144,7 +144,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         ticket_type: "",
         phone: "",
         anydesk: "",
-        anydesk_senha: "",
         opened_at: n,
         sla_deadline: sla,
       });
