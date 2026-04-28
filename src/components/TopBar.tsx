@@ -22,8 +22,28 @@ import {
 export function TopBar() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [newTicketOpen, setNewTicketOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedTerm(searchTerm.trim()), 200);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Atalho ⌘K / Ctrl+K abre a busca
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("hub-theme");
