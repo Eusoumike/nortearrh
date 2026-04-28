@@ -134,7 +134,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
   };
 
   return (
-    <div className="flex h-full min-h-0 w-[15rem] shrink-0 flex-col rounded-lg bg-surface-muted/60">
+    <div className="flex h-full min-h-0 w-[280px] min-w-[280px] max-w-[280px] shrink-0 grow-0 flex-col rounded-lg bg-surface-muted/60">
       {/* Barra colorida fina (3px) no topo */}
       <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
       {/* Header da coluna */}
