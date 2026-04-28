@@ -211,6 +211,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           client_email: form.email.trim() || null,
           organization: form.organization.trim() || null,
           anydesk_id: form.anydesk.trim() || null,
+          anydesk_senha: form.anydesk_senha.trim() || null,
           assigned_to: assignedTo,
           assigned_name: assignedName,
           created_by: user.id,
