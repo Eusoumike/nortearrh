@@ -39,6 +39,8 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         billing_email: client.billing_email ?? "",
         health: (client.health ?? "saudavel") as ClientHealth,
         notes: client.notes ?? "",
+        anydesk_id: client.anydesk_id ?? "",
+        anydesk_senha: client.anydesk_senha ?? "",
       });
     }
   }, [open, client]);
