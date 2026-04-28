@@ -318,8 +318,7 @@ export default function TicketDetail() {
   const clientEmail = (ticket.client as any)?.email;
   const clientPhone = (ticket.client as any)?.phone;
   const anydeskId = (ticket.client as any)?.anydesk_id ?? (ticket as any).anydesk_id ?? "";
-  const anydeskSenha = (ticket.client as any)?.anydesk_senha ?? (ticket as any).anydesk_senha ?? "";
-  const hasAnydesk = Boolean(anydeskId || anydeskSenha);
+  const hasAnydesk = Boolean(anydeskId);
 
   return (
     <div className="space-y-4 p-6">
