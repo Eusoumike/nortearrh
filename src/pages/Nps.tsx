@@ -192,6 +192,12 @@ export default function Nps() {
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<NpsRow | null>(null);
 
+  // Filtros da listagem de feedbacks
+  const [listPeriod, setListPeriod] = useState<ListPeriod>("all");
+  const [listClass, setListClass] = useState<ListClassification>("all");
+  const [listSearch, setListSearch] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ["nps-responses", period],
     queryFn: async () => {
