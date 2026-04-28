@@ -6,23 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { ToneBadge } from "@/components/ui/tone-badge";
 import { formatBrazilDateTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 
-const PRIORITIES = [
-  { value: "baixa", label: "Baixa", tone: "muted" as const },
-  { value: "media", label: "Média", tone: "info" as const },
-  { value: "alta", label: "Alta", tone: "warning" as const },
-];
-
 const PRIORITY_TONE: Record<string, "muted" | "info" | "warning"> = {
   baixa: "muted",
   media: "info",
   alta: "warning",
+};
+
+const PRIORITY_LABEL: Record<string, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
 };
 
 interface TicketTasksProps {
@@ -35,9 +45,22 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
   const canDelete = role === "admin" || role === "manager";
 
   const [newTitle, setNewTitle] = useState("");
-  const [newPriority, setNewPriority] = useState<"baixa" | "media" | "alta">("media");
+  const [newCategory, setNewCategory] = useState<string>("__none__");
   const [newDueDate, setNewDueDate] = useState("");
   const [editing, setEditing] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState<any | null>(null);
+
+  const { data: categories } = useQuery({
+    queryKey: ["ticket-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_categories")
+        .select("id, name, color, emoji")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["ticket-tasks", ticketId],
@@ -55,10 +78,13 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
   const createTask = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
+      const category =
+        newCategory === "__none__" ? null : newCategory;
       const { error } = await supabase.from("tasks").insert({
         ticket_id: ticketId,
         title: newTitle.trim(),
-        priority: newPriority,
+        category,
+        priority: "media",
         status: "pendente",
         due_date: newDueDate || null,
         created_by: user.id,
@@ -69,7 +95,7 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
       qc.invalidateQueries({ queryKey: ["ticket-tasks", ticketId] });
       setNewTitle("");
       setNewDueDate("");
-      setNewPriority("media");
+      setNewCategory("__none__");
       toast.success("Tarefa criada.");
     },
     onError: (e: any) => toast.error(e.message),
@@ -87,36 +113,76 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const removeTask = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket-tasks", ticketId] });
+      setDeleting(null);
+      toast.success("Tarefa excluída.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const pending = (tasks ?? []).filter((t: any) => t.status !== "concluida");
   const done = (tasks ?? []).filter((t: any) => t.status === "concluida");
+
+  const findCategory = (name: string | null | undefined) =>
+    name ? categories?.find((c) => c.name === name) : undefined;
 
   const renderRow = (t: any) => {
     const isDone = t.status === "concluida";
     const overdue =
       !isDone && t.due_date && new Date(t.due_date + "T23:59:59-03:00") < new Date();
+    const cat = findCategory(t.category);
+    const canDeleteRow = canDelete || t.created_by === user?.id;
     return (
       <div
         key={t.id}
-        className="group flex items-center gap-2 rounded-md border border-border bg-surface p-2 transition-colors hover:bg-surface-muted/40"
+        className="group flex items-start gap-2 rounded-md border border-border bg-surface p-2 transition-colors hover:bg-surface-muted/40"
       >
         <Checkbox
           checked={isDone}
           onCheckedChange={(v) => toggleTask.mutate({ id: t.id, done: !!v })}
+          className="mt-0.5"
         />
         <button
           type="button"
           onClick={() => setEditing(t)}
           className="min-w-0 flex-1 text-left"
         >
-          <p className={cn("truncate text-sm", isDone && "text-muted-foreground line-through")}>
+          <p className={cn("text-sm", isDone && "text-muted-foreground line-through")}>
             {t.title}
           </p>
+          {t.description && (
+            <p className={cn("mt-0.5 text-[11px] text-muted-foreground line-clamp-2", isDone && "line-through")}>
+              {t.description}
+            </p>
+          )}
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
-            <ToneBadge tone={PRIORITY_TONE[t.priority] ?? "muted"} size="sm">
-              {PRIORITIES.find((p) => p.value === t.priority)?.label ?? t.priority}
-            </ToneBadge>
             {t.category && (
-              <ToneBadge tone="muted" size="sm">{t.category}</ToneBadge>
+              cat ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                  style={{
+                    backgroundColor: `${cat.color}20`,
+                    borderColor: `${cat.color}55`,
+                    color: cat.color,
+                  }}
+                >
+                  {cat.emoji && <span>{cat.emoji}</span>}
+                  {cat.name}
+                </span>
+              ) : (
+                <ToneBadge tone="muted" size="sm">{t.category}</ToneBadge>
+              )
+            )}
+            {t.priority && (
+              <ToneBadge tone={PRIORITY_TONE[t.priority] ?? "muted"} size="sm">
+                {PRIORITY_LABEL[t.priority] ?? t.priority}
+              </ToneBadge>
             )}
             {t.due_date && (
               <span className={cn(overdue && "font-medium text-destructive")}>
@@ -126,15 +192,30 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
             )}
           </div>
         </button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-          onClick={() => setEditing(t)}
-          aria-label="Editar tarefa"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => setEditing(t)}
+            aria-label="Editar tarefa"
+            title="Editar"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          {canDeleteRow && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setDeleting(t)}
+              aria-label="Excluir tarefa"
+              title="Excluir"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
     );
   };
@@ -142,7 +223,7 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
   return (
     <div className="space-y-4">
       {/* Form criar inline */}
-      <div className="grid grid-cols-[1fr_140px_140px_auto] gap-2">
+      <div className="grid grid-cols-[1fr_180px_140px_auto] gap-2">
         <Input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
@@ -155,10 +236,17 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
           placeholder="Nova tarefa…"
           className="h-9 text-sm"
         />
-        <Select value={newPriority} onValueChange={(v) => setNewPriority(v as any)}>
-          <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+        <Select value={newCategory} onValueChange={setNewCategory}>
+          <SelectTrigger className="h-9 text-xs">
+            <SelectValue placeholder="Classificação" />
+          </SelectTrigger>
           <SelectContent>
-            {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+            <SelectItem value="__none__">Sem classificação</SelectItem>
+            {(categories ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.name}>
+                {c.emoji ? `${c.emoji} ` : ""}{c.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Input
@@ -211,6 +299,26 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
         invalidateKeys={[["ticket-tasks", ticketId]]}
         canDelete={canDelete || editing?.created_by === user?.id}
       />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleting?.title ? `“${deleting.title}” será removida permanentemente.` : "Esta ação é permanente."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleting && removeTask.mutate(deleting.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
