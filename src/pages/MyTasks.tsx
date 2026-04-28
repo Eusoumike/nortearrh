@@ -319,6 +319,13 @@ export default function MyTasks() {
           </div>
         )}
       </Card>
+
+      <EditTaskDialog
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        task={editing}
+        invalidateKeys={[["my-tasks", user?.id]]}
+      />
     </div>
   );
 }
