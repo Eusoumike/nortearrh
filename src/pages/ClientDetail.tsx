@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { HealthBadge, StatusBadge, PriorityBadge } from "@/components/badges";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Mail, Phone, Building2, Loader2, Pencil, Star, Send } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, Loader2, Pencil, Star, Send, Copy, Monitor } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
