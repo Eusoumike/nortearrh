@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -85,7 +85,7 @@ export default function TicketDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("*, client:clients(id, name, email, company, phone, health), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
+        .select("*, client:clients(id, name, email, company, phone, health, anydesk_id, anydesk_senha), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -252,6 +252,36 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [anydeskEditOpen, setAnydeskEditOpen] = useState(false);
+  const [anydeskDraft, setAnydeskDraft] = useState({ id: "", senha: "" });
+
+  const saveClientAnydesk = useMutation({
+    mutationFn: async () => {
+      if (!ticket?.client_id) throw new Error("Cliente não vinculado ao chamado.");
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          anydesk_id: anydeskDraft.id.trim() || null,
+          anydesk_senha: anydeskDraft.senha.trim() || null,
+        } as any)
+        .eq("id", ticket.client_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket", id] });
+      qc.invalidateQueries({ queryKey: ["client", ticket?.client_id] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("AnyDesk cadastrado.");
+      setAnydeskEditOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado`);
+  };
+
   const lastInteractionAt = useMemo(() => {
     if (!interactions || interactions.length === 0) return null;
     return interactions
@@ -282,6 +312,9 @@ export default function TicketDetail() {
   const clientCompany = (ticket.client as any)?.company;
   const clientEmail = (ticket.client as any)?.email;
   const clientPhone = (ticket.client as any)?.phone;
+  const anydeskId = (ticket.client as any)?.anydesk_id ?? (ticket as any).anydesk_id ?? "";
+  const anydeskSenha = (ticket.client as any)?.anydesk_senha ?? (ticket as any).anydesk_senha ?? "";
+  const hasAnydesk = Boolean(anydeskId || anydeskSenha);
 
   return (
     <div className="space-y-4 p-6">
@@ -363,29 +396,149 @@ export default function TicketDetail() {
               </p>
             )}
             {ticket.client && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3">
-                <Link to={`/clientes/${ticket.client.id}`} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                  <UserAvatar name={ticket.client.name} size="sm" />
-                  {ticket.client.name}
-                </Link>
-                {clientCompany && (
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Building2 className="h-3 w-3" />
-                    {clientCompany}
-                  </span>
-                )}
-                {clientEmail && (
-                  <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
-                    <Mail className="h-3 w-3" />
-                    {clientEmail}
-                  </a>
-                )}
-                {clientPhone && (
-                  <a href={`tel:${clientPhone}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
-                    <Phone className="h-3 w-3" />
-                    {clientPhone}
-                  </a>
-                )}
+              <div className="space-y-3 border-t border-border/60 pt-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <Link to={`/clientes/${ticket.client.id}`} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
+                    <UserAvatar name={ticket.client.name} size="sm" />
+                    {ticket.client.name}
+                  </Link>
+                  {clientCompany && (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Building2 className="h-3 w-3" />
+                      {clientCompany}
+                    </span>
+                  )}
+                  {clientEmail && (
+                    <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+                      <Mail className="h-3 w-3" />
+                      {clientEmail}
+                    </a>
+                  )}
+                  {clientPhone && (
+                    <a href={`tel:${clientPhone}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+                      <Phone className="h-3 w-3" />
+                      {clientPhone}
+                    </a>
+                  )}
+                </div>
+
+                {/* Acesso Remoto - AnyDesk */}
+                <div className="rounded-lg border border-border bg-surface-muted/30 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Monitor className="h-3.5 w-3.5" />
+                      Acesso Remoto (AnyDesk)
+                    </div>
+                    {hasAnydesk && !anydeskEditOpen && ticket.client_id && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          setAnydeskDraft({ id: anydeskId, senha: anydeskSenha });
+                          setAnydeskEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1 h-3 w-3" />
+                        Editar
+                      </Button>
+                    )}
+                  </div>
+
+                  {anydeskEditOpen ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          value={anydeskDraft.id}
+                          onChange={(e) => setAnydeskDraft((d) => ({ ...d, id: e.target.value }))}
+                          placeholder="ID AnyDesk"
+                          className="h-8 text-xs"
+                        />
+                        <Input
+                          value={anydeskDraft.senha}
+                          onChange={(e) => setAnydeskDraft((d) => ({ ...d, senha: e.target.value }))}
+                          placeholder="Senha AnyDesk"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setAnydeskEditOpen(false)}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={saveClientAnydesk.isPending}
+                          onClick={() => saveClientAnydesk.mutate()}
+                        >
+                          {saveClientAnydesk.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                          Salvar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : hasAnydesk ? (
+                    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                      <div className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5">
+                        <div className="min-w-0">
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">ID</div>
+                          <div className="truncate font-mono text-xs">{anydeskId || "—"}</div>
+                        </div>
+                        {anydeskId && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => copyToClipboard(anydeskId, "ID")}
+                            title="Copiar ID"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5">
+                        <div className="min-w-0">
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Senha</div>
+                          <div className="truncate font-mono text-xs">{anydeskSenha || "—"}</div>
+                        </div>
+                        {anydeskSenha && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => copyToClipboard(anydeskSenha, "Senha")}
+                            title="Copiar senha"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setAnydeskDraft({ id: "", senha: "" });
+                        setAnydeskEditOpen(true);
+                      }}
+                    >
+                      <Plus className="mr-1 h-3 w-3" />
+                      Cadastrar AnyDesk
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

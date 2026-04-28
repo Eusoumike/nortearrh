@@ -100,6 +100,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
+    anydesk_senha: "",
     opened_at: openedDefault,
     sla_deadline: slaDefault,
   });
@@ -144,6 +145,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         ticket_type: "",
         phone: "",
         anydesk: "",
+        anydesk_senha: "",
         opened_at: n,
         sla_deadline: sla,
       });
@@ -155,7 +157,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, email, phone")
+        .select("id, name, company, email, phone, anydesk_id, anydesk_senha")
         .order("name");
       if (error) throw error;
       return data;
@@ -209,6 +211,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           client_email: form.email.trim() || null,
           organization: form.organization.trim() || null,
           anydesk_id: form.anydesk.trim() || null,
+          anydesk_senha: form.anydesk_senha.trim() || null,
           assigned_to: assignedTo,
           assigned_name: assignedName,
           created_by: user.id,
@@ -359,6 +362,8 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                                 organization: c.company ?? prev.organization,
                                 email: c.email ?? prev.email,
                                 phone: c.phone ? maskPhone(c.phone) : prev.phone,
+                                anydesk: (c as any).anydesk_id ?? prev.anydesk,
+                                anydesk_senha: (c as any).anydesk_senha ?? prev.anydesk_senha,
                               }));
                               setClientPickerOpen(false);
                             }}

@@ -59,6 +59,8 @@ export type Database = {
         Row: {
           account_owner: string | null
           address: string | null
+          anydesk_id: string | null
+          anydesk_senha: string | null
           billing_email: string | null
           cnpj: string | null
           company: string | null
@@ -84,6 +86,8 @@ export type Database = {
         Insert: {
           account_owner?: string | null
           address?: string | null
+          anydesk_id?: string | null
+          anydesk_senha?: string | null
           billing_email?: string | null
           cnpj?: string | null
           company?: string | null
@@ -109,6 +113,8 @@ export type Database = {
         Update: {
           account_owner?: string | null
           address?: string | null
+          anydesk_id?: string | null
+          anydesk_senha?: string | null
           billing_email?: string | null
           cnpj?: string | null
           company?: string | null
@@ -794,6 +800,7 @@ export type Database = {
       tickets: {
         Row: {
           anydesk_id: string | null
+          anydesk_senha: string | null
           assigned_name: string | null
           assigned_to: string | null
           category: string | null
@@ -839,6 +846,7 @@ export type Database = {
         }
         Insert: {
           anydesk_id?: string | null
+          anydesk_senha?: string | null
           assigned_name?: string | null
           assigned_to?: string | null
           category?: string | null
@@ -884,6 +892,7 @@ export type Database = {
         }
         Update: {
           anydesk_id?: string | null
+          anydesk_senha?: string | null
           assigned_name?: string | null
           assigned_to?: string | null
           category?: string | null
