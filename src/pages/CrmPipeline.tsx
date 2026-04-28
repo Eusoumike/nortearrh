@@ -234,19 +234,23 @@ export default function CrmPipeline() {
         <div
           className={cn(
             "flex-1 min-h-0",
-            isMobile ? "overflow-y-auto p-3" : "flex flex-row gap-3 overflow-x-auto p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            isMobile
+              ? "overflow-y-auto p-3"
+              : "kanban-rail scrollbar-none px-4 py-4",
           )}
         >
-          {visibleStages.map((s) => (
-            <Column
-              key={s.key}
-              stage={s}
-              deals={byStage[s.key] ?? []}
-              total={totals[s.key]}
-              onCardClick={(d) => { setEditing(d); setDialogOpen(true); }}
-              isMobile={isMobile}
-            />
-          ))}
+          <div className={cn(!isMobile && "kanban-rail-inner")}>
+            {visibleStages.map((s) => (
+              <Column
+                key={s.key}
+                stage={s}
+                deals={byStage[s.key] ?? []}
+                total={totals[s.key]}
+                onCardClick={(d) => { setEditing(d); setDialogOpen(true); }}
+                isMobile={isMobile}
+              />
+            ))}
+          </div>
         </div>
 
         <DragOverlay>
