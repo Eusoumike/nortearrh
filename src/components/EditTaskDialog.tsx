@@ -209,11 +209,31 @@ export function EditTaskDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Classificação</Label>
-              <Input
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                placeholder="Ex.: Ligação, Follow-up…"
-              />
+              <Select
+                value={form.category || "__none__"}
+                onValueChange={(v) =>
+                  setForm({ ...form, category: v === "__none__" ? "" : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem classificação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem classificação</SelectItem>
+                  {/* Tarefa antiga com texto livre que não está na lista — mantém compatibilidade */}
+                  {form.category &&
+                    !categories?.some((c: any) => c.name === form.category) && (
+                      <SelectItem value={form.category}>
+                        {form.category} (legado)
+                      </SelectItem>
+                    )}
+                  {categories?.map((c: any) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.emoji ? `${c.emoji} ` : ""}{c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
