@@ -392,7 +392,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                                 email: c.email ?? prev.email,
                                 phone: c.phone ? maskPhone(c.phone) : prev.phone,
                                 anydesk: (c as any).anydesk_id ?? prev.anydesk,
-                                anydesk_senha: (c as any).anydesk_senha ?? prev.anydesk_senha,
                               }));
                               setClientPickerOpen(false);
                             }}
