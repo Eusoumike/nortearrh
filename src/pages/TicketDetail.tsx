@@ -419,7 +419,33 @@ export default function TicketDetail() {
                   Aberto {timeAgo(ticket.opened_at ?? ticket.created_at)} por {(ticket as any).creator?.full_name ?? "—"}
                 </span>
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight leading-tight text-foreground">{ticket.title}</h1>
+              <div className="flex items-start gap-2">
+                <h1 className="flex-1 text-2xl font-semibold tracking-tight leading-tight text-foreground">{ticket.title}</h1>
+                <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={!prevTicketId}
+                    onClick={() => prevTicketId && navigate(`/tickets/${prevTicketId}`)}
+                    title="Chamado anterior na coluna (Alt + ←)"
+                    aria-label="Chamado anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={!nextTicketId}
+                    onClick={() => nextTicketId && navigate(`/tickets/${nextTicketId}`)}
+                    title="Próximo chamado na coluna (Alt + →)"
+                    aria-label="Próximo chamado"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <StatusBadge status={ticket.status} />
