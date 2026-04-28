@@ -172,7 +172,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
           overscrollBehavior: "contain",
         }}
         className={cn(
-          "kanban-column-body scrollbar-thin flex flex-col gap-2 px-2 pb-2 transition-colors",
+          "scrollbar-thin flex flex-col gap-2 px-2 pb-2 transition-colors",
           isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
         )}
       >
