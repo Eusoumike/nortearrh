@@ -228,55 +228,16 @@
   .kanban-dragging { opacity: 0.7; transform: rotate(2deg); }
 
   /* ============================================================
-     Kanban — Shared layout primitives (zoom-resilient, Pipedrive-like)
-     Used by Tickets, Implantação and CRM Pipeline.
-     Columns NEVER shrink with browser zoom — horizontal scroll appears instead.
+     Kanban — Header sticky utility
+     Layout (rail/column widths) é definido por style inline em px nos
+     componentes (TicketKanban, Implantacao, CrmPipeline) para garantir
+     comportamento idêntico ao Pipedrive em qualquer nível de zoom.
   ============================================================ */
-  /* Wrapper: ocupa 100% da largura disponível e gera scroll horizontal */
-  .kanban-rail {
-    width: 100%;
-    height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-behavior: smooth;
-  }
-  /* Inner: inline-flex com min-width: max-content garante que as colunas
-     mantenham largura fixa e o scroll do wrapper apareça quando necessário,
-     em qualquer nível de zoom. */
-  .kanban-rail-inner {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: stretch;
-    flex-wrap: nowrap;
-    gap: 12px;
-    height: 100%;
-    min-width: max-content;
-    padding-bottom: 4px;
-  }
-  .kanban-column {
-    display: flex;
-    flex-direction: column;
-    width: 280px;
-    min-width: 280px;
-    max-width: 280px;
-    flex-shrink: 0;
-    flex-grow: 0;
-    height: 100%;
-    align-self: stretch;
-    min-height: 0;
-  }
   .kanban-column-header {
     position: sticky;
     top: 0;
     z-index: 10;
     flex-shrink: 0;
-  }
-  .kanban-column-body {
-    flex: 1 1 auto;
-    min-height: 80px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
   }
 }
 
