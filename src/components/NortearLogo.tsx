@@ -9,36 +9,30 @@ interface Props {
 }
 
 const SIZE = {
-  sm: { box: "h-7 w-7", icon: 16, text: "text-lg" },
-  md: { box: "h-9 w-9", icon: 20, text: "text-xl" },
-  lg: { box: "h-11 w-11", icon: 24, text: "text-2xl" },
+  sm: { box: "h-8 w-8", icon: 18, text: "text-[18px]" },
+  md: { box: "h-10 w-10", icon: 22, text: "text-2xl" },
+  lg: { box: "h-12 w-12", icon: 26, text: "text-3xl" },
 };
 
 /**
- * Logo Nortear: bússola arredondada em fundo Teal Âncora
- * + wordmark "Nor" regular + "tear" itálico em Instrument Serif.
+ * Logo Nortear: bússola arredondada em fundo Teal de destaque (#3D7A7A)
+ * + wordmark "Nor" regular + "tear" itálico em Instrument Serif, em creme #F2EFE9.
  */
-export function NortearLogo({ className, iconOnly = false, size = "md", textClassName }: Props) {
+export function NortearLogo({ className, iconOnly = false, size = "sm", textClassName }: Props) {
   const s = SIZE[size];
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <span
-        className={cn(
-          "flex items-center justify-center rounded-xl shadow-sm",
-          s.box,
-        )}
-        style={{ backgroundColor: "hsl(181 78% 25%)" }}
+        className={cn("flex items-center justify-center shadow-sm", s.box)}
+        style={{ backgroundColor: "#3D7A7A", borderRadius: "30%" }}
         aria-hidden="true"
       >
         <CompassIcon size={s.icon} />
       </span>
       {!iconOnly && (
         <span
-          className={cn(
-            "font-display leading-none tracking-tight",
-            s.text,
-            textClassName,
-          )}
+          className={cn("font-display leading-none tracking-tight", s.text, textClassName)}
+          style={{ color: textClassName ? undefined : "#F2EFE9" }}
         >
           <span>Nor</span>
           <span className="italic">tear</span>
@@ -48,8 +42,8 @@ export function NortearLogo({ className, iconOnly = false, size = "md", textClas
   );
 }
 
-function CompassIcon({ size = 20 }: { size?: number }) {
-  // Bússola arredondada — simples e elegante, em creme/areia
+function CompassIcon({ size = 22 }: { size?: number }) {
+  // Bússola apontando para cima — losango com agulha norte destacada
   return (
     <svg
       width={size}
@@ -59,12 +53,11 @@ function CompassIcon({ size = 20 }: { size?: number }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <circle cx="12" cy="12" r="9" stroke="hsl(39 26% 96%)" strokeWidth="1.6" />
-      <path
-        d="M12 6.5 L13.6 12 L12 17.5 L10.4 12 Z"
-        fill="hsl(39 26% 96%)"
-      />
-      <circle cx="12" cy="12" r="1.1" fill="hsl(181 78% 25%)" />
+      <circle cx="12" cy="12" r="9" stroke="#F2EFE9" strokeWidth="1.6" />
+      {/* Agulha (norte = creme cheio, sul = traço) */}
+      <path d="M12 5.5 L13.8 12 L12 11 L10.2 12 Z" fill="#F2EFE9" />
+      <path d="M12 18.5 L10.2 12 L12 13 L13.8 12 Z" fill="#F2EFE9" fillOpacity="0.4" />
+      <circle cx="12" cy="12" r="1.1" fill="#3D7A7A" />
     </svg>
   );
 }
