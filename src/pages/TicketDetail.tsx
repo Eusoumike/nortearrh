@@ -440,7 +440,7 @@ export default function TicketDetail() {
                         size="sm"
                         className="h-6 px-2 text-xs"
                         onClick={() => {
-                          setAnydeskDraft({ id: anydeskId, senha: anydeskSenha });
+                          setAnydeskDraft({ id: anydeskId });
                           setAnydeskEditOpen(true);
                         }}
                       >
@@ -452,20 +452,13 @@ export default function TicketDetail() {
 
                   {anydeskEditOpen ? (
                     <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          value={anydeskDraft.id}
-                          onChange={(e) => setAnydeskDraft((d) => ({ ...d, id: e.target.value }))}
-                          placeholder="ID AnyDesk"
-                          className="h-8 text-xs"
-                        />
-                        <Input
-                          value={anydeskDraft.senha}
-                          onChange={(e) => setAnydeskDraft((d) => ({ ...d, senha: e.target.value }))}
-                          placeholder="Senha AnyDesk"
-                          className="h-8 text-xs"
-                        />
-                      </div>
+                      <Input
+                        value={anydeskDraft.id}
+                        onChange={(e) => setAnydeskDraft({ id: e.target.value })}
+                        placeholder="ID AnyDesk"
+                        className="h-8 text-xs"
+                        inputMode="numeric"
+                      />
                       <div className="flex justify-end gap-1">
                         <Button
                           type="button"
@@ -480,11 +473,7 @@ export default function TicketDetail() {
                           type="button"
                           size="sm"
                           className="h-7 text-xs"
-                          disabled={
-                            saveClientAnydesk.isPending ||
-                            !anydeskDraft.id.trim() ||
-                            !anydeskDraft.senha.trim()
-                          }
+                          disabled={saveClientAnydesk.isPending || !anydeskDraft.id.trim()}
                           onClick={() => saveClientAnydesk.mutate()}
                         >
                           {saveClientAnydesk.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
@@ -493,43 +482,23 @@ export default function TicketDetail() {
                       </div>
                     </div>
                   ) : hasAnydesk ? (
-                    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                      <div className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5">
-                        <div className="min-w-0">
-                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">ID</div>
-                          <div className="truncate font-mono text-xs">{anydeskId || "—"}</div>
-                        </div>
-                        {anydeskId && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => copyToClipboard(anydeskId, "ID")}
-                            title="Copiar ID"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        )}
+                    <div className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5">
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">ID</div>
+                        <div className="truncate font-mono text-xs">{anydeskId || "—"}</div>
                       </div>
-                      <div className="flex items-center justify-between gap-2 rounded border border-border/50 bg-background px-2 py-1.5">
-                        <div className="min-w-0">
-                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Senha</div>
-                          <div className="truncate font-mono text-xs">{anydeskSenha || "—"}</div>
-                        </div>
-                        {anydeskSenha && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => copyToClipboard(anydeskSenha, "Senha")}
-                            title="Copiar senha"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                      {anydeskId && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => copyToClipboard(anydeskId, "ID")}
+                          title="Copiar ID"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <Button
@@ -538,7 +507,7 @@ export default function TicketDetail() {
                       size="sm"
                       className="h-7 text-xs"
                       onClick={() => {
-                        setAnydeskDraft({ id: "", senha: "" });
+                        setAnydeskDraft({ id: "" });
                         setAnydeskEditOpen(true);
                       }}
                     >
