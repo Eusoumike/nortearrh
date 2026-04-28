@@ -240,7 +240,7 @@ export function TicketKanban({ tickets }: Props) {
       <div className="scrollbar-none h-full w-full overflow-x-auto overflow-y-hidden">
         <div className="flex h-full min-w-max gap-3 pb-1">
           {STATUS_FLOW.map((status) => (
-            <Column key={status} status={status} tickets={grouped[status]} now={now} />
+            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
         </div>
       </div>
