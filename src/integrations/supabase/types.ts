@@ -154,6 +154,77 @@ export type Database = {
           },
         ]
       }
+      deals: {
+        Row: {
+          client_id: string | null
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          owner_id: string | null
+          pipedrive_deal_id: string | null
+          position: number
+          product: Database["public"]["Enums"]["deal_product"] | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          title: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          client_id?: string | null
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          pipedrive_deal_id?: string | null
+          position?: number
+          product?: Database["public"]["Enums"]["deal_product"] | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          title: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          client_id?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          pipedrive_deal_id?: string | null
+          position?: number
+          product?: Database["public"]["Enums"]["deal_product"] | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          title?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       implantacao_eventos: {
         Row: {
           autor_id: string | null
@@ -1042,6 +1113,14 @@ export type Database = {
     Enums: {
       app_role: "admin" | "manager" | "agent" | "viewer"
       client_health: "saudavel" | "em_atencao" | "critico"
+      deal_product: "vr_beneficios" | "rh_digital" | "ambos"
+      deal_stage:
+        | "lead"
+        | "contato"
+        | "apresentacao"
+        | "negociacao"
+        | "fechado_ganho"
+        | "fechado_perdido"
       implantacao_etapa:
         | "novo_cliente"
         | "boas_vindas"
@@ -1220,6 +1299,15 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "manager", "agent", "viewer"],
       client_health: ["saudavel", "em_atencao", "critico"],
+      deal_product: ["vr_beneficios", "rh_digital", "ambos"],
+      deal_stage: [
+        "lead",
+        "contato",
+        "apresentacao",
+        "negociacao",
+        "fechado_ganho",
+        "fechado_perdido",
+      ],
       implantacao_etapa: [
         "novo_cliente",
         "boas_vindas",
