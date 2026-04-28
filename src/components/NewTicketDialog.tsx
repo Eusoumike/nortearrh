@@ -547,36 +547,22 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                   )
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  id="anydesk"
-                  value={form.anydesk}
-                  onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
-                  placeholder="ID (123 456 789)"
-                  className="h-9"
-                  inputMode="numeric"
-                  maxLength={50}
-                />
-                <Input
-                  id="anydesk_senha"
-                  value={form.anydesk_senha}
-                  onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
-                  placeholder="Senha"
-                  className="h-9"
-                  maxLength={50}
-                />
-              </div>
-              {form.client_id && !anydeskMatchesClient && (form.anydesk.trim() || form.anydesk_senha.trim()) && (
+              <Input
+                id="anydesk"
+                value={form.anydesk}
+                onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
+                placeholder="ID (123 456 789)"
+                className="h-9"
+                inputMode="numeric"
+                maxLength={50}
+              />
+              {form.client_id && !anydeskMatchesClient && form.anydesk.trim() && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  disabled={
-                    saveAnydeskToClient.isPending ||
-                    !form.anydesk.trim() ||
-                    !form.anydesk_senha.trim()
-                  }
+                  disabled={saveAnydeskToClient.isPending || !form.anydesk.trim()}
                   onClick={() => saveAnydeskToClient.mutate()}
                 >
                   {saveAnydeskToClient.isPending ? (
