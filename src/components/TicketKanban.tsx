@@ -115,6 +115,23 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
 function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reset paginação quando o tamanho da lista muda significativamente
+  useEffect(() => {
+    setVisibleCount((prev) => Math.min(Math.max(prev, PAGE_SIZE), Math.max(tickets.length, PAGE_SIZE)));
+  }, [tickets.length]);
+
+  const visibleTickets = useMemo(() => tickets.slice(0, visibleCount), [tickets, visibleCount]);
+  const hasMore = visibleCount < tickets.length;
+
+  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore) return;
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 120) {
+      setVisibleCount((c) => Math.min(c + PAGE_SIZE, tickets.length));
+    }
+  };
 
   return (
     <div className="flex h-full min-h-0 w-[15rem] shrink-0 flex-col rounded-lg bg-surface-muted/60">
@@ -132,6 +149,8 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
       {/* Área de cards (scroll interno fino) */}
       <div
         ref={setNodeRef}
+        onScroll={onScroll}
+        style={{ contain: "strict", overscrollBehavior: "contain" }}
         className={cn(
           "scrollbar-thin flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 transition-colors",
           isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
@@ -140,12 +159,24 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
         {tickets.length === 0 ? (
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
-          tickets.map((t) => <TicketCard key={t.id} t={t} now={now} />)
+          <>
+            {visibleTickets.map((t) => <TicketCard key={t.id} t={t} now={now} />)}
+            {hasMore && (
+              <button
+                type="button"
+                onClick={() => setVisibleCount((c) => Math.min(c + PAGE_SIZE, tickets.length))}
+                className="mt-1 rounded-md border border-dashed border-border py-1.5 text-center text-[10px] text-muted-foreground hover:bg-background hover:text-foreground"
+              >
+                Carregar mais ({tickets.length - visibleCount})
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
+const MemoColumn = memo(Column);
 
 export function TicketKanban({ tickets }: Props) {
   const qc = useQueryClient();
