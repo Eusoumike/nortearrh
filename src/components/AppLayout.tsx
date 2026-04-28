@@ -2,8 +2,15 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import { Outlet } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useAutoCloseTickets } from "@/hooks/useAutoCloseTickets";
 
 export function AppLayout() {
+  const { user } = useAuth();
+  // Verifica chamados em "aguardando_cliente" há mais de 24h sem retorno
+  // a cada 30 minutos (apenas com usuário autenticado).
+  useAutoCloseTickets(!!user);
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden bg-background">

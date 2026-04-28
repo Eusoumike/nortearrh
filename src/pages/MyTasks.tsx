@@ -14,7 +14,8 @@ import { ToneBadge } from "@/components/ui/tone-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ListChecks, Search, Plus, Loader2 } from "lucide-react";
+import { ListChecks, Search, Plus, Loader2, Pencil } from "lucide-react";
+import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatBrazilDateTime } from "@/lib/formatters";
@@ -51,6 +52,7 @@ export default function MyTasks() {
   const [filter, setFilter] = useState<TaskFilter>("abertas");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -262,13 +264,17 @@ export default function MyTasks() {
               return (
                 <div
                   key={t.id}
-                  className="flex items-center gap-3 px-2 py-2.5 transition-colors hover:bg-surface-muted/40"
+                  className="group flex items-center gap-3 px-2 py-2.5 transition-colors hover:bg-surface-muted/40"
                 >
                   <Checkbox
                     checked={done}
                     onCheckedChange={(v) => toggle.mutate({ id: t.id, done: !!v })}
                   />
-                  <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(t)}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <p className={cn("truncate text-sm font-medium", done && "text-muted-foreground line-through")}>
                         {t.title}
@@ -276,11 +282,15 @@ export default function MyTasks() {
                       <ToneBadge tone={PRIORITY_TONE[t.priority] ?? "muted"} size="sm">
                         {PRIORITY_LABEL[t.priority] ?? t.priority}
                       </ToneBadge>
+                      {t.category && (
+                        <ToneBadge tone="muted" size="sm">{t.category}</ToneBadge>
+                      )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                       {t.ticket && (
                         <Link
                           to={`/tickets/${t.ticket.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="font-mono text-primary hover:underline"
                         >
                           #{t.ticket.ticket_number} · {t.ticket.title}
@@ -293,13 +303,29 @@ export default function MyTasks() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => setEditing(t)}
+                    aria-label="Editar tarefa"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               );
             })}
           </div>
         )}
       </Card>
+
+      <EditTaskDialog
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        task={editing}
+        invalidateKeys={[["my-tasks", user?.id]]}
+      />
     </div>
   );
 }
