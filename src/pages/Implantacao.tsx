@@ -206,6 +206,33 @@ Lembre-se: estou sempre disponível para suporte. Qualquer dúvida, é só abrir
 
 Obrigado pela confiança! 💚`,
   },
+  {
+    key: "lembrete_planilha",
+    title: "Lembrete de planilha",
+    body: `Oi, {nome}! Tudo bem? 👋
+
+Passando para lembrar da planilha de colaboradores que precisa ser preenchida antes do nosso Treinamento 1.
+
+Qualquer dúvida sobre o preenchimento, é só me chamar!
+
+📎 Se precisar da planilha novamente, me avise.`,
+  },
+  {
+    key: "confirmacao_planilha",
+    title: "Confirmação de recebimento da planilha",
+    body: `Oi, {nome}! Recebi a planilha, obrigado! 📋
+
+Vou revisar e te retorno em breve para confirmar se está tudo certo e agendar o Treinamento 1.`,
+  },
+  {
+    key: "solicitacao_anydesk",
+    title: "Solicitação de AnyDesk",
+    body: `Oi, {nome}! Para o nosso treinamento, preciso que você instale o AnyDesk no computador que usaremos:
+
+🔗 https://anydesk.com/pt/downloads
+
+Após instalar, me envie o número de 9 dígitos que aparece na tela principal. Qualquer dúvida é só chamar!`,
+  },
 ];
 
 // ============================================================
