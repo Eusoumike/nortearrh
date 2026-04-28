@@ -50,20 +50,14 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
       const company = form.company.trim();
       if (!company) throw new Error("Razão social / empresa é obrigatória.");
 
-      // Validação AnyDesk: se um dos dois for preenchido, ambos são obrigatórios
+      // Validação AnyDesk: apenas ID
       const adIdRaw = form.anydesk_id?.trim() ?? "";
-      const adSenhaRaw = form.anydesk_senha?.trim() ?? "";
       let anydeskIdValue: string | null = null;
-      let anydeskSenhaValue: string | null = null;
-      if (adIdRaw || adSenhaRaw) {
+      if (adIdRaw) {
         const idDigits = adIdRaw.replace(/[\s-]/g, "");
-        if (!adIdRaw) throw new Error("Informe o ID do AnyDesk.");
         if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
         if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
-        if (!adSenhaRaw) throw new Error("Informe a senha do AnyDesk.");
-        if (adSenhaRaw.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
         anydeskIdValue = idDigits;
-        anydeskSenhaValue = adSenhaRaw;
       }
 
       const { error } = await supabase
@@ -81,7 +75,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           health: form.health,
           notes: form.notes?.trim() || null,
           anydesk_id: anydeskIdValue,
-          anydesk_senha: anydeskSenhaValue,
+          anydesk_senha: null,
         } as any)
         .eq("id", client.id);
       if (error) throw error;
