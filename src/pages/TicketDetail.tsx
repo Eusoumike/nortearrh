@@ -484,7 +484,11 @@ export default function TicketDetail() {
                           type="button"
                           size="sm"
                           className="h-7 text-xs"
-                          disabled={saveClientAnydesk.isPending}
+                          disabled={
+                            saveClientAnydesk.isPending ||
+                            !anydeskDraft.id.trim() ||
+                            !anydeskDraft.senha.trim()
+                          }
                           onClick={() => saveClientAnydesk.mutate()}
                         >
                           {saveClientAnydesk.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
