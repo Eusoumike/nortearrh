@@ -538,12 +538,12 @@ function ImplantacaoKanban({
   }
 
   return (
-    <div className="scrollbar-none h-full w-full overflow-x-auto overflow-y-hidden">
-      <div className="flex h-full min-w-max gap-3 pb-1">
+    <div className="kanban-rail scrollbar-none">
+      <div className="kanban-rail-inner">
         {stages.map((stage) => (
           <div
             key={stage.key}
-            className="flex h-full min-h-0 w-[280px] min-w-[280px] max-w-[280px] shrink-0 grow-0 flex-col rounded-lg bg-surface-muted/60"
+            className="kanban-column rounded-lg bg-surface-muted/60"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
@@ -559,22 +559,23 @@ function ImplantacaoKanban({
               });
             }}
           >
-            {/* Barra colorida fina (3px) */}
-            <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
-            {/* Header */}
-            <div className="flex shrink-0 items-start justify-between gap-2 px-3 pb-2 pt-2.5">
-              <h3
-                className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
-                title={stage.label}
-              >
-                {stage.label}
-              </h3>
-              <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-                {grouped[stage.key]?.length ?? 0}
-              </span>
+            {/* Header sticky com barra colorida + título */}
+            <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
+              <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
+              <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
+                <h3
+                  className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
+                  title={stage.label}
+                >
+                  {stage.label}
+                </h3>
+                <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+                  {grouped[stage.key]?.length ?? 0}
+                </span>
+              </div>
             </div>
             {/* Cards (scroll fino) */}
-            <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+            <div className="kanban-column-body scrollbar-thin flex flex-col gap-2 px-2 pb-2">
               {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
                 <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
               )}

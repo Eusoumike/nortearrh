@@ -234,19 +234,23 @@ export default function CrmPipeline() {
         <div
           className={cn(
             "flex-1 min-h-0",
-            isMobile ? "overflow-y-auto p-3" : "flex flex-row gap-3 overflow-x-auto p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            isMobile
+              ? "overflow-y-auto p-3"
+              : "kanban-rail scrollbar-none px-4 py-4",
           )}
         >
-          {visibleStages.map((s) => (
-            <Column
-              key={s.key}
-              stage={s}
-              deals={byStage[s.key] ?? []}
-              total={totals[s.key]}
-              onCardClick={(d) => { setEditing(d); setDialogOpen(true); }}
-              isMobile={isMobile}
-            />
-          ))}
+          <div className={cn(!isMobile && "kanban-rail-inner")}>
+            {visibleStages.map((s) => (
+              <Column
+                key={s.key}
+                stage={s}
+                deals={byStage[s.key] ?? []}
+                total={totals[s.key]}
+                onCardClick={(d) => { setEditing(d); setDialogOpen(true); }}
+                isMobile={isMobile}
+              />
+            ))}
+          </div>
         </div>
 
         <DragOverlay>
@@ -283,23 +287,22 @@ function Column({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col rounded-lg border bg-muted/30 transition-colors",
-        isMobile ? "w-full mb-3" : "w-[280px] min-w-[280px] max-w-[280px] shrink-0 grow-0",
+        "rounded-lg border bg-muted/30 transition-colors",
+        isMobile ? "flex w-full flex-col mb-3" : "kanban-column",
         isOver && "border-primary ring-2 ring-primary/30",
       )}
-      style={{ height: isMobile ? "auto" : "100%" }}
     >
-      <div className="sticky top-0 z-10 rounded-t-lg bg-background/95 backdrop-blur">
+      <div className="kanban-column-header rounded-t-lg bg-background/95 backdrop-blur">
         <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
         <div className="px-3 py-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold">{stage.label}</span>
-            <span className="text-xs text-muted-foreground">{deals.length} negócios</span>
+            <span className="truncate text-sm font-semibold">{stage.label}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
           </div>
-          <div className="mt-0.5 text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
+          <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
         </div>
       </div>
-      <div className={cn("flex flex-col gap-2 p-2", !isMobile && "flex-1 overflow-y-auto")}>
+      <div className={cn("flex flex-col gap-2 p-2", !isMobile && "kanban-column-body scrollbar-thin")}>
         {deals.length === 0 ? (
           <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
             Sem negócios
@@ -339,7 +342,7 @@ function DealCard({ deal, onClick, dragging }: { deal: Deal; onClick: () => void
     >
       <div className="truncate text-sm font-semibold">{deal.company_name}</div>
       {deal.title && deal.title !== deal.company_name && (
-        <div className="mt-0.5 truncate text-xs text-muted-foreground">{deal.title}</div>
+        <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{deal.title}</div>
       )}
       {deal.contact_name && (
         <div className="mt-1 truncate text-xs text-muted-foreground">{deal.contact_name}</div>
