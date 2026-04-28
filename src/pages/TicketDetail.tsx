@@ -252,6 +252,36 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [anydeskEditOpen, setAnydeskEditOpen] = useState(false);
+  const [anydeskDraft, setAnydeskDraft] = useState({ id: "", senha: "" });
+
+  const saveClientAnydesk = useMutation({
+    mutationFn: async () => {
+      if (!ticket?.client_id) throw new Error("Cliente não vinculado ao chamado.");
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          anydesk_id: anydeskDraft.id.trim() || null,
+          anydesk_senha: anydeskDraft.senha.trim() || null,
+        } as any)
+        .eq("id", ticket.client_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket", id] });
+      qc.invalidateQueries({ queryKey: ["client", ticket?.client_id] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("AnyDesk cadastrado.");
+      setAnydeskEditOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado`);
+  };
+
   const lastInteractionAt = useMemo(() => {
     if (!interactions || interactions.length === 0) return null;
     return interactions
