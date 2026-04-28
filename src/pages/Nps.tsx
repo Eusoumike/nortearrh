@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -31,6 +32,7 @@ import {
   Minus,
   ThumbsDown,
   ArrowUpRight,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBrazilDateTime, formatBrazilDate } from "@/lib/formatters";
@@ -69,14 +71,18 @@ type NpsRow = {
   created_at: string;
 };
 
-type Period = "30" | "90" | "year" | "all";
+type Period = "7" | "30" | "90" | "year" | "all";
 
 const PERIOD_LABEL: Record<Period, string> = {
+  "7": "Últimos 7 dias",
   "30": "Últimos 30 dias",
   "90": "Últimos 90 dias",
   year: "Este ano",
   all: "Todo o período",
 };
+
+type ListClassification = "all" | "promotor" | "neutro" | "detrator";
+type ListPeriod = "7" | "30" | "90" | "year" | "all";
 
 function classify(score: number | null): "promotor" | "neutro" | "detrator" | "—" {
   if (score === null || score === undefined) return "—";
@@ -186,6 +192,12 @@ export default function Nps() {
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<NpsRow | null>(null);
 
+  // Filtros da listagem de feedbacks
+  const [listPeriod, setListPeriod] = useState<ListPeriod>("all");
+  const [listClass, setListClass] = useState<ListClassification>("all");
+  const [listSearch, setListSearch] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ["nps-responses", period],
     queryFn: async () => {
@@ -194,7 +206,7 @@ export default function Nps() {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(1000);
-      if (period === "30" || period === "90") {
+      if (period === "7" || period === "30" || period === "90") {
         const since = new Date();
         since.setDate(since.getDate() - parseInt(period));
         q = q.gte("created_at", since.toISOString());
@@ -302,7 +314,43 @@ export default function Nps() {
     };
   }, [data]);
 
-  const recent = useMemo(() => (data ?? []).slice(0, 6), [data]);
+  // Lista filtrada de feedbacks (filtros independentes do período do dashboard)
+  const filteredFeedbacks = useMemo(() => {
+    const rows = data ?? [];
+    const now = Date.now();
+    let cutoff: number | null = null;
+    if (listPeriod === "7" || listPeriod === "30" || listPeriod === "90") {
+      cutoff = now - parseInt(listPeriod) * 86400000;
+    } else if (listPeriod === "year") {
+      cutoff = new Date(new Date().getFullYear(), 0, 1).getTime();
+    }
+    const needle = listSearch.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (cutoff !== null && new Date(r.created_at).getTime() < cutoff) return false;
+      if (listClass !== "all" && classify(r.nps_score) !== listClass) return false;
+      if (needle) {
+        const hay = [
+          r.nome,
+          r.empresa,
+          r.email,
+          r.feedback_aberto,
+          r.experiencia_geral,
+          r.sugestao_melhoria,
+          r.comentario_adicional,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(needle)) return false;
+      }
+      return true;
+    });
+  }, [data, listPeriod, listClass, listSearch]);
+
+  const visibleFeedbacks = useMemo(
+    () => (showAll ? filteredFeedbacks : filteredFeedbacks.slice(0, 6)),
+    [filteredFeedbacks, showAll],
+  );
 
   const copyLink = () => {
     const url = `${window.location.origin}/pesquisa`;
@@ -365,6 +413,7 @@ export default function Nps() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
               <SelectItem value="30">Últimos 30 dias</SelectItem>
               <SelectItem value="90">Últimos 90 dias</SelectItem>
               <SelectItem value="year">Este ano</SelectItem>
@@ -607,65 +656,137 @@ export default function Nps() {
         </Card>
       </div>
 
-      {/* LINHA 5 — Feedbacks recentes */}
+      {/* LINHA 5 — Feedbacks com filtros */}
       <Card className="flex flex-col p-5">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold">Feedbacks recentes</h2>
+            <h2 className="text-sm font-semibold">Feedbacks</h2>
             <p className="text-xs text-muted-foreground">
-              Últimas {recent.length} avaliação{recent.length === 1 ? "" : "es"}
+              {filteredFeedbacks.length} resultado{filteredFeedbacks.length === 1 ? "" : "s"}
+              {!showAll && filteredFeedbacks.length > visibleFeedbacks.length
+                ? ` · exibindo ${visibleFeedbacks.length}`
+                : ""}
             </p>
           </div>
         </div>
-        {recent.length === 0 && (
+
+        {/* Filtros da listagem */}
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative w-full flex-1 sm:min-w-64">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={listSearch}
+              onChange={(e) => setListSearch(e.target.value)}
+              placeholder="Buscar por nome, empresa ou feedback…"
+              className="h-9 pl-8"
+            />
+          </div>
+          <Select value={listPeriod} onValueChange={(v) => setListPeriod(v as ListPeriod)}>
+            <SelectTrigger className="h-9 w-full sm:w-[160px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="year">Este ano</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={listClass} onValueChange={(v) => setListClass(v as ListClassification)}>
+            <SelectTrigger className="h-9 w-full sm:w-[180px]">
+              <SelectValue placeholder="Classificação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas classificações</SelectItem>
+              <SelectItem value="promotor">Promotores (9-10)</SelectItem>
+              <SelectItem value="neutro">Neutros (7-8)</SelectItem>
+              <SelectItem value="detrator">Detratores (0-6)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {filteredFeedbacks.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Nenhuma resposta encontrada no período.
+            Nenhum feedback encontrado com os filtros selecionados.
           </p>
-        )}
-        <div className="space-y-2">
-          {recent.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-md border border-border bg-background p-4 transition-colors hover:bg-surface-muted/40"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{r.nome}</p>
-                  <p className="text-xs text-muted-foreground">{r.empresa}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <NpsBadge score={r.nps_score} />
-                  <span className="font-mono text-sm font-semibold">
-                    {r.nps_score ?? "—"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatBrazilDate(r.created_at)}
-                  </span>
-                </div>
-              </div>
-              {r.feedback_aberto && (
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                  "{r.feedback_aberto}"
-                </p>
-              )}
-              {r.experiencia_geral && (
-                <p className="mt-1 line-clamp-1 text-xs text-muted-foreground/80">
-                  {r.experiencia_geral}
-                </p>
-              )}
-              <div className="mt-3 flex items-center justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 text-xs text-primary hover:text-primary"
-                  onClick={() => setSelected(r)}
+        ) : (
+          <>
+            <div className="space-y-3">
+              {visibleFeedbacks.map((r) => (
+                <div
+                  key={r.id}
+                  className="rounded-md border border-border bg-background p-4 transition-colors hover:bg-surface-muted/40"
                 >
-                  Ver completo <ArrowUpRight className="h-3 w-3" />
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{r.nome}</p>
+                      <p className="text-xs text-muted-foreground">{r.empresa}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <NpsBadge score={r.nps_score} />
+                      <span className="font-mono text-sm font-semibold">
+                        {r.nps_score ?? "—"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatBrazilDate(r.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Todos os campos textuais preenchidos */}
+                  <div className="mt-3 space-y-2">
+                    {r.feedback_aberto && (
+                      <FeedbackBlock label="Experiência" value={r.feedback_aberto} quoted />
+                    )}
+                    {r.experiencia_geral && (
+                      <FeedbackBlock label="Experiência geral" value={r.experiencia_geral} />
+                    )}
+                    {r.sugestao_melhoria && (
+                      <FeedbackBlock label="Sugestão de melhoria" value={r.sugestao_melhoria} />
+                    )}
+                    {r.comentario_adicional && (
+                      <FeedbackBlock label="Comentário adicional" value={r.comentario_adicional} />
+                    )}
+                    {!r.feedback_aberto &&
+                      !r.experiencia_geral &&
+                      !r.sugestao_melhoria &&
+                      !r.comentario_adicional && (
+                        <p className="text-xs italic text-muted-foreground/70">
+                          Sem comentários textuais.
+                        </p>
+                      )}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs text-primary hover:text-primary"
+                      onClick={() => setSelected(r)}
+                    >
+                      Ver detalhes <ArrowUpRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredFeedbacks.length > 6 && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAll((v) => !v)}
+                >
+                  {showAll
+                    ? "Mostrar menos"
+                    : `Ver todos os feedbacks (${filteredFeedbacks.length})`}
                 </Button>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </>
+        )}
       </Card>
 
       <ImportNpsDialog
@@ -762,6 +883,27 @@ function LongField({ label, value }: { label: string; value: string | null | und
     <div className="space-y-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       <p className="rounded-md bg-surface-muted/50 p-3 text-sm">{value}</p>
+    </div>
+  );
+}
+
+function FeedbackBlock({
+  label,
+  value,
+  quoted = false,
+}: {
+  label: string;
+  value: string;
+  quoted?: boolean;
+}) {
+  return (
+    <div className="rounded-md bg-surface-muted/50 p-3">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="whitespace-pre-wrap text-sm text-foreground/90">
+        {quoted ? `"${value}"` : value}
+      </p>
     </div>
   );
 }
