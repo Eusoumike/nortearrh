@@ -181,6 +181,43 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const selectedClient = clients?.find((c) => c.id === form.client_id);
   const selectedAssignee = profiles?.find((p) => p.id === form.assigned_to);
 
+  // AnyDesk state derivado: cliente já tem cadastro?
+  const clientHasAnydesk = Boolean(
+    (selectedClient as any)?.anydesk_id || (selectedClient as any)?.anydesk_senha,
+  );
+  const anydeskMatchesClient =
+    clientHasAnydesk &&
+    form.anydesk.trim() === ((selectedClient as any)?.anydesk_id ?? "") &&
+    form.anydesk_senha.trim() === ((selectedClient as any)?.anydesk_senha ?? "");
+
+  const saveAnydeskToClient = useMutation({
+    mutationFn: async () => {
+      if (!form.client_id) throw new Error("Selecione um cliente primeiro.");
+      const idTrim = form.anydesk.trim();
+      const senhaTrim = form.anydesk_senha.trim();
+      const idDigits = idTrim.replace(/[\s-]/g, "");
+      if (!idTrim) throw new Error("Informe o ID do AnyDesk.");
+      if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
+      if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
+      if (!senhaTrim) throw new Error("Informe a senha do AnyDesk.");
+      if (senhaTrim.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
+      const { error } = await supabase
+        .from("clients")
+        .update({ anydesk_id: idDigits, anydesk_senha: senhaTrim } as any)
+        .eq("id", form.client_id);
+      if (error) throw error;
+      // sincroniza form com versão normalizada
+      setForm((f) => ({ ...f, anydesk: idDigits, anydesk_senha: senhaTrim }));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients-min"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["client", form.client_id] });
+      toast.success("AnyDesk salvo no perfil do cliente.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
