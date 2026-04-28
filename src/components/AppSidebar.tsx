@@ -56,7 +56,8 @@ const groups: NavGroup[] = [
     icon: Headphones,
     children: [
       { title: "Chamados", url: "/tickets" },
-      { title: "KPIs de Suporte", url: "/performance?tab=suporte" },
+      { title: "Tarefas", url: "/tarefas" },
+      { title: "KPIs de Suporte", url: "/performance" },
     ],
   },
   {
@@ -80,10 +81,7 @@ const groups: NavGroup[] = [
     key: "performance",
     title: "Performance",
     icon: TrendingUp,
-    children: [
-      { title: "Relatórios", url: "/performance?tab=relatorios" },
-      { title: "Desempenho", url: "/performance?tab=desempenho" },
-    ],
+    url: "/performance",
   },
 ];
 
