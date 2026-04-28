@@ -9,13 +9,41 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import { timeAgo } from "@/lib/formatters";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 
 export function TopBar() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [newTicketOpen, setNewTicketOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedTerm(searchTerm.trim()), 200);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Atalho ⌘K / Ctrl+K abre a busca
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("hub-theme");
@@ -77,16 +105,42 @@ export function TopBar() {
 
   const alertCount = alerts?.length ?? 0;
 
+  // Busca global: tickets (título, #número, cliente, empresa)
+  const { data: searchResults, isFetching: isSearching } = useQuery({
+    queryKey: ["global-search", debouncedTerm],
+    enabled: searchOpen && debouncedTerm.length >= 2,
+    queryFn: async () => {
+      const safe = debouncedTerm.replace(/[%_,()]/g, " ").trim();
+      const numeric = safe.replace(/^#/, "");
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("id, ticket_number, title, status, client_name, organization, client:clients(name, company)")
+        .or(
+          `title.ilike.%${safe}%,ticket_number.ilike.%${numeric}%,client_name.ilike.%${safe}%,organization.ilike.%${safe}%`,
+        )
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const goToTicket = (ticketId: string) => {
+    setSearchOpen(false);
+    setSearchTerm("");
+    navigate(`/tickets/${ticketId}`);
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
       <SidebarTrigger className="h-8 w-8" />
       <div className="hidden md:flex flex-1 max-w-md">
         <button
-          onClick={() => navigate("/tickets")}
+          onClick={() => setSearchOpen(true)}
           className="group inline-flex w-full items-center gap-2 rounded-md border border-input bg-surface-muted px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1">Buscar tickets, clientes, agentes…</span>
+          <span className="flex-1">Buscar tickets, clientes, empresas…</span>
           <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
           </kbd>
@@ -138,6 +192,52 @@ export function TopBar() {
         </Button>
       </div>
       <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
+
+      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <CommandInput
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          placeholder="Buscar por título, #número, cliente ou empresa…"
+        />
+        <CommandList>
+          {debouncedTerm.length < 2 ? (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+              Digite ao menos 2 caracteres para buscar.
+            </div>
+          ) : isSearching ? (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">Buscando…</div>
+          ) : (searchResults?.length ?? 0) === 0 ? (
+            <CommandEmpty>Nenhum chamado encontrado.</CommandEmpty>
+          ) : (
+            <CommandGroup heading="Chamados">
+              {searchResults!.map((t: any) => {
+                const company = t.client?.company ?? t.organization ?? "";
+                const clientName = t.client?.name ?? t.client_name ?? "";
+                return (
+                  <CommandItem
+                    key={t.id}
+                    value={`${t.ticket_number} ${t.title} ${clientName} ${company}`}
+                    onSelect={() => goToTicket(t.id)}
+                    className="flex flex-col items-start gap-0.5"
+                  >
+                    <div className="flex w-full items-center gap-2">
+                      <span className="font-mono text-[10px] text-muted-foreground">#{t.ticket_number}</span>
+                      <span className="flex-1 truncate text-sm font-medium">{t.title}</span>
+                    </div>
+                    {(clientName || company) && (
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {clientName}
+                        {clientName && company ? " · " : ""}
+                        {company}
+                      </p>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
+        </CommandList>
+      </CommandDialog>
     </header>
   );
 }

@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -123,6 +123,50 @@ export default function TicketDetail() {
     },
     enabled: !!ticket?.client_id,
   });
+
+  // Vizinhos no kanban: mesma coluna (status) ordem desc por created_at, igual ao kanban
+  const effectiveStatus = ticket?.status === "fechado" ? "resolvido" : ticket?.status;
+  const { data: columnSiblings } = useQuery({
+    queryKey: ["ticket-column-siblings", effectiveStatus],
+    enabled: !!effectiveStatus,
+    queryFn: async () => {
+      const statuses = effectiveStatus === "resolvido" ? ["resolvido", "fechado"] : [effectiveStatus!];
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("id, created_at")
+        .in("status", statuses as any)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { prevTicketId, nextTicketId } = useMemo(() => {
+    if (!columnSiblings || !id) return { prevTicketId: null as string | null, nextTicketId: null as string | null };
+    const idx = columnSiblings.findIndex((t: any) => t.id === id);
+    if (idx === -1) return { prevTicketId: null, nextTicketId: null };
+    return {
+      prevTicketId: idx > 0 ? (columnSiblings[idx - 1] as any).id : null,
+      nextTicketId: idx < columnSiblings.length - 1 ? (columnSiblings[idx + 1] as any).id : null,
+    };
+  }, [columnSiblings, id]);
+
+  // Atalhos: Alt+← / Alt+→
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey) return;
+      if (e.key === "ArrowLeft" && prevTicketId) {
+        e.preventDefault();
+        navigate(`/tickets/${prevTicketId}`);
+      } else if (e.key === "ArrowRight" && nextTicketId) {
+        e.preventDefault();
+        navigate(`/tickets/${nextTicketId}`);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [prevTicketId, nextTicketId, navigate]);
 
   const { data: profiles } = useQuery({
     queryKey: ["profiles-min"],
@@ -301,7 +345,7 @@ export default function TicketDetail() {
 
   const isClosed = ["resolvido", "fechado"].includes(ticket.status);
   const interactionFormReady = newInt.summary.trim().length > 0;
-  const effectiveStatus: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
+  const effectiveStatusTyped: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
 
   const stageDurations = TIMED_STAGES.map((stage) => {
     const total = ((ticket as any)[stage.totalCol] as number) ?? 0;
@@ -375,7 +419,33 @@ export default function TicketDetail() {
                   Aberto {timeAgo(ticket.opened_at ?? ticket.created_at)} por {(ticket as any).creator?.full_name ?? "—"}
                 </span>
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight leading-tight text-foreground">{ticket.title}</h1>
+              <div className="flex items-start gap-2">
+                <h1 className="flex-1 text-2xl font-semibold tracking-tight leading-tight text-foreground">{ticket.title}</h1>
+                <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={!prevTicketId}
+                    onClick={() => prevTicketId && navigate(`/tickets/${prevTicketId}`)}
+                    title="Chamado anterior na coluna (Alt + ←)"
+                    aria-label="Chamado anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={!nextTicketId}
+                    onClick={() => nextTicketId && navigate(`/tickets/${nextTicketId}`)}
+                    title="Próximo chamado na coluna (Alt + →)"
+                    aria-label="Próximo chamado"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <StatusBadge status={ticket.status} />
@@ -791,7 +861,7 @@ export default function TicketDetail() {
           {/* Status */}
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-            <Select value={effectiveStatus} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
+            <Select value={effectiveStatusTyped} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
               <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}

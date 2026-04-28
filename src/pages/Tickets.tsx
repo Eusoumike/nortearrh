@@ -3,22 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Filter, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
-import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { TicketKanban } from "@/components/TicketKanban";
 
 export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
-  const [newTicketOpen, setNewTicketOpen] = useState(false);
 
   // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
@@ -61,13 +55,8 @@ export default function Tickets() {
     setSearchParams(next, { replace: true });
   };
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
-    return () => clearTimeout(t);
-  }, [q]);
-
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter, debouncedQ],
+    queryKey: ["tickets", statusFilter, priorityFilter],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
@@ -77,13 +66,6 @@ export default function Tickets() {
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
-
-      if (debouncedQ) {
-        const safe = debouncedQ.replace(/[%_,()]/g, " ").trim();
-        query = query.or(
-          `title.ilike.%${safe}%,description.ilike.%${safe}%,ticket_number.ilike.%${safe}%`,
-        );
-      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -141,25 +123,17 @@ export default function Tickets() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
       {/* Header (fixo) */}
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
         </div>
-        <Button size="sm" onClick={() => setNewTicketOpen(true)} className="h-9 self-start bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90 sm:self-auto">
-          <Plus className="mr-1.5 h-4 w-4" /> Novo chamado
-        </Button>
       </div>
-      <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
 
       {/* Filtros (fixo) */}
       <Card className="shrink-0 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="relative w-full flex-1 sm:min-w-64">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, descrição ou #número…" className="h-9 pl-8" />
-          </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2">
             <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <Select value={statusFilter} onValueChange={updateStatus}>
               <SelectTrigger className="h-9 flex-1 sm:w-[200px] sm:flex-none"><SelectValue placeholder="Status" /></SelectTrigger>
