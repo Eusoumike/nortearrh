@@ -134,17 +134,18 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
   };
 
   return (
-    <div className="flex h-full min-h-0 w-[280px] min-w-[280px] max-w-[280px] shrink-0 grow-0 flex-col rounded-lg bg-surface-muted/60">
-      {/* Barra colorida fina (3px) no topo */}
-      <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
-      {/* Header da coluna */}
-      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-2.5">
-        <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-          {STATUS_LABEL[status]}
-        </h3>
-        <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-          {tickets.length}
-        </span>
+    <div className="kanban-column rounded-lg bg-surface-muted/60">
+      {/* Barra colorida fina (3px) no topo + header sticky */}
+      <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
+        <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
+        <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
+          <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+            {STATUS_LABEL[status]}
+          </h3>
+          <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+            {tickets.length}
+          </span>
+        </div>
       </div>
       {/* Área de cards (scroll interno fino) */}
       <div
@@ -152,7 +153,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
         onScroll={onScroll}
         style={{ contain: "strict", overscrollBehavior: "contain" }}
         className={cn(
-          "scrollbar-thin flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 transition-colors",
+          "kanban-column-body scrollbar-thin flex flex-col gap-2 px-2 pb-2 transition-colors",
           isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
         )}
       >
