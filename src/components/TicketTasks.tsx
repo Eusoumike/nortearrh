@@ -37,10 +37,7 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<"baixa" | "media" | "alta">("media");
   const [newDueDate, setNewDueDate] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDueDate, setEditDueDate] = useState("");
-  const [editPriority, setEditPriority] = useState<"baixa" | "media" | "alta">("media");
+  const [editing, setEditing] = useState<any | null>(null);
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["ticket-tasks", ticketId],
@@ -90,53 +87,57 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const updateTask = useMutation({
-    mutationFn: async ({
-      id,
-      title,
-      due_date,
-      priority,
-    }: {
-      id: string;
-      title: string;
-      due_date: string | null;
-      priority: string;
-    }) => {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ title: title.trim(), due_date: due_date || null, priority })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["ticket-tasks", ticketId] });
-      setEditingId(null);
-      toast.success("Tarefa atualizada.");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const deleteTask = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("tasks").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["ticket-tasks", ticketId] });
-      toast.success("Tarefa excluída.");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const startEdit = (t: any) => {
-    setEditingId(t.id);
-    setEditTitle(t.title);
-    setEditDueDate(t.due_date ?? "");
-    setEditPriority((t.priority as any) ?? "media");
-  };
-
   const pending = (tasks ?? []).filter((t: any) => t.status !== "concluida");
   const done = (tasks ?? []).filter((t: any) => t.status === "concluida");
+
+  const renderRow = (t: any) => {
+    const isDone = t.status === "concluida";
+    const overdue =
+      !isDone && t.due_date && new Date(t.due_date + "T23:59:59-03:00") < new Date();
+    return (
+      <div
+        key={t.id}
+        className="group flex items-center gap-2 rounded-md border border-border bg-surface p-2 transition-colors hover:bg-surface-muted/40"
+      >
+        <Checkbox
+          checked={isDone}
+          onCheckedChange={(v) => toggleTask.mutate({ id: t.id, done: !!v })}
+        />
+        <button
+          type="button"
+          onClick={() => setEditing(t)}
+          className="min-w-0 flex-1 text-left"
+        >
+          <p className={cn("truncate text-sm", isDone && "text-muted-foreground line-through")}>
+            {t.title}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+            <ToneBadge tone={PRIORITY_TONE[t.priority] ?? "muted"} size="sm">
+              {PRIORITIES.find((p) => p.value === t.priority)?.label ?? t.priority}
+            </ToneBadge>
+            {t.category && (
+              <ToneBadge tone="muted" size="sm">{t.category}</ToneBadge>
+            )}
+            {t.due_date && (
+              <span className={cn(overdue && "font-medium text-destructive")}>
+                📅 {formatBrazilDateTime(t.due_date + "T12:00:00-03:00").split(" ")[0]}
+                {overdue && " · atrasada"}
+              </span>
+            )}
+          </div>
+        </button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+          onClick={() => setEditing(t)}
+          aria-label="Editar tarefa"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -188,33 +189,7 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Pendentes ({pending.length})
               </p>
-              {pending.map((t: any) => (
-                <TaskRow
-                  key={t.id}
-                  task={t}
-                  isEditing={editingId === t.id}
-                  editTitle={editTitle}
-                  editDueDate={editDueDate}
-                  editPriority={editPriority}
-                  setEditTitle={setEditTitle}
-                  setEditDueDate={setEditDueDate}
-                  setEditPriority={setEditPriority}
-                  onToggle={(done) => toggleTask.mutate({ id: t.id, done })}
-                  onStartEdit={() => startEdit(t)}
-                  onCancelEdit={() => setEditingId(null)}
-                  onSaveEdit={() =>
-                    updateTask.mutate({
-                      id: t.id,
-                      title: editTitle,
-                      due_date: editDueDate,
-                      priority: editPriority,
-                    })
-                  }
-                  onDelete={() => deleteTask.mutate(t.id)}
-                  canDelete={canDelete || t.created_by === user?.id}
-                  saving={updateTask.isPending}
-                />
-              ))}
+              {pending.map(renderRow)}
             </div>
           )}
 
@@ -223,148 +198,19 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Concluídas ({done.length})
               </p>
-              {done.map((t: any) => (
-                <TaskRow
-                  key={t.id}
-                  task={t}
-                  isEditing={editingId === t.id}
-                  editTitle={editTitle}
-                  editDueDate={editDueDate}
-                  editPriority={editPriority}
-                  setEditTitle={setEditTitle}
-                  setEditDueDate={setEditDueDate}
-                  setEditPriority={setEditPriority}
-                  onToggle={(done) => toggleTask.mutate({ id: t.id, done })}
-                  onStartEdit={() => startEdit(t)}
-                  onCancelEdit={() => setEditingId(null)}
-                  onSaveEdit={() =>
-                    updateTask.mutate({
-                      id: t.id,
-                      title: editTitle,
-                      due_date: editDueDate,
-                      priority: editPriority,
-                    })
-                  }
-                  onDelete={() => deleteTask.mutate(t.id)}
-                  canDelete={canDelete || t.created_by === user?.id}
-                  saving={updateTask.isPending}
-                />
-              ))}
+              {done.map(renderRow)}
             </div>
           )}
         </div>
       )}
-    </div>
-  );
-}
 
-interface TaskRowProps {
-  task: any;
-  isEditing: boolean;
-  editTitle: string;
-  editDueDate: string;
-  editPriority: "baixa" | "media" | "alta";
-  setEditTitle: (v: string) => void;
-  setEditDueDate: (v: string) => void;
-  setEditPriority: (v: "baixa" | "media" | "alta") => void;
-  onToggle: (done: boolean) => void;
-  onStartEdit: () => void;
-  onCancelEdit: () => void;
-  onSaveEdit: () => void;
-  onDelete: () => void;
-  canDelete: boolean;
-  saving: boolean;
-}
-
-function TaskRow({
-  task,
-  isEditing,
-  editTitle,
-  editDueDate,
-  editPriority,
-  setEditTitle,
-  setEditDueDate,
-  setEditPriority,
-  onToggle,
-  onStartEdit,
-  onCancelEdit,
-  onSaveEdit,
-  onDelete,
-  canDelete,
-  saving,
-}: TaskRowProps) {
-  const isDone = task.status === "concluida";
-  const overdue =
-    !isDone && task.due_date && new Date(task.due_date + "T23:59:59-03:00") < new Date();
-
-  if (isEditing) {
-    return (
-      <div className="grid grid-cols-[auto_1fr_140px_140px_auto] items-center gap-2 rounded-md border border-border bg-surface-muted/40 p-2">
-        <Checkbox checked={isDone} onCheckedChange={(v) => onToggle(!!v)} />
-        <Input
-          value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
-          className="h-8 text-sm"
-          autoFocus
-        />
-        <Select value={editPriority} onValueChange={(v) => setEditPriority(v as any)}>
-          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Input
-          type="date"
-          value={editDueDate}
-          onChange={(e) => setEditDueDate(e.target.value)}
-          className="h-8 text-xs"
-        />
-        <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit} disabled={saving || !editTitle.trim()}>
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-          </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCancelEdit}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="group flex items-center gap-2 rounded-md border border-border bg-surface p-2 transition-colors hover:bg-surface-muted/40">
-      <Checkbox checked={isDone} onCheckedChange={(v) => onToggle(!!v)} />
-      <div className="min-w-0 flex-1">
-        <p className={cn("truncate text-sm", isDone && "text-muted-foreground line-through")}>
-          {task.title}
-        </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
-          <ToneBadge tone={PRIORITY_TONE[task.priority] ?? "muted"} size="sm">
-            {PRIORITIES.find((p) => p.value === task.priority)?.label ?? task.priority}
-          </ToneBadge>
-          {task.due_date && (
-            <span className={cn(overdue && "font-medium text-destructive")}>
-              📅 {formatBrazilDateTime(task.due_date + "T12:00:00-03:00").split(" ")[0]}
-              {overdue && " · atrasada"}
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onStartEdit}>
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-        {canDelete && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </div>
+      <EditTaskDialog
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        task={editing}
+        invalidateKeys={[["ticket-tasks", ticketId]]}
+        canDelete={canDelete || editing?.created_by === user?.id}
+      />
     </div>
   );
 }
