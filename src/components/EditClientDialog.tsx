@@ -190,9 +190,16 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
 
 
           <div className="space-y-2 rounded-lg border border-border bg-surface-muted/30 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Monitor className="h-4 w-4 text-muted-foreground" />
-              Acesso Remoto
+            <div className="flex items-center justify-between gap-2 text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <Monitor className="h-4 w-4 text-muted-foreground" />
+                Acesso Remoto
+              </div>
+              {!form.anydesk_id?.trim() && !form.anydesk_senha?.trim() && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  Nenhum AnyDesk cadastrado — preencha abaixo
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
