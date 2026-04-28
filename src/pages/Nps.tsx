@@ -314,7 +314,43 @@ export default function Nps() {
     };
   }, [data]);
 
-  const recent = useMemo(() => (data ?? []).slice(0, 6), [data]);
+  // Lista filtrada de feedbacks (filtros independentes do período do dashboard)
+  const filteredFeedbacks = useMemo(() => {
+    const rows = data ?? [];
+    const now = Date.now();
+    let cutoff: number | null = null;
+    if (listPeriod === "7" || listPeriod === "30" || listPeriod === "90") {
+      cutoff = now - parseInt(listPeriod) * 86400000;
+    } else if (listPeriod === "year") {
+      cutoff = new Date(new Date().getFullYear(), 0, 1).getTime();
+    }
+    const needle = listSearch.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (cutoff !== null && new Date(r.created_at).getTime() < cutoff) return false;
+      if (listClass !== "all" && classify(r.nps_score) !== listClass) return false;
+      if (needle) {
+        const hay = [
+          r.nome,
+          r.empresa,
+          r.email,
+          r.feedback_aberto,
+          r.experiencia_geral,
+          r.sugestao_melhoria,
+          r.comentario_adicional,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(needle)) return false;
+      }
+      return true;
+    });
+  }, [data, listPeriod, listClass, listSearch]);
+
+  const visibleFeedbacks = useMemo(
+    () => (showAll ? filteredFeedbacks : filteredFeedbacks.slice(0, 6)),
+    [filteredFeedbacks, showAll],
+  );
 
   const copyLink = () => {
     const url = `${window.location.origin}/pesquisa`;
