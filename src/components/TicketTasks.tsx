@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Pencil, Check, X } from "lucide-react";
+import { Loader2, Plus, Pencil } from "lucide-react";
 import { ToneBadge } from "@/components/ui/tone-badge";
 import { formatBrazilDateTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { EditTaskDialog } from "@/components/EditTaskDialog";
 
 const PRIORITIES = [
   { value: "baixa", label: "Baixa", tone: "muted" as const },
