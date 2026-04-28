@@ -234,38 +234,22 @@ export default function ClientDetail() {
               {client.company && <p className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {client.company}</p>}
               {client.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> <a href={`mailto:${client.email}`} className="hover:underline">{client.email}</a></p>}
               {client.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> <a href={`tel:${client.phone}`} className="hover:underline">{client.phone}</a></p>}
-              {(client.anydesk_id || client.anydesk_senha) && (
+              {client.anydesk_id && (
                 <div className="mt-3 space-y-1.5 border-t pt-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">AnyDesk</p>
-                  {client.anydesk_id && (
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="font-mono text-xs">{client.anydesk_id}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => { navigator.clipboard.writeText(client.anydesk_id!); toast.success("ID copiado"); }}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                  {client.anydesk_senha && (
-                    <div className="flex items-center gap-2">
-                      <span className="ml-5 font-mono text-xs">{client.anydesk_senha}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => { navigator.clipboard.writeText(client.anydesk_senha!); toast.success("Senha copiada"); }}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-mono text-xs">{client.anydesk_id}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => { navigator.clipboard.writeText(client.anydesk_id!); toast.success("ID copiado"); }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
