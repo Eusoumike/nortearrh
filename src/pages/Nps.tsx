@@ -69,14 +69,18 @@ type NpsRow = {
   created_at: string;
 };
 
-type Period = "30" | "90" | "year" | "all";
+type Period = "7" | "30" | "90" | "year" | "all";
 
 const PERIOD_LABEL: Record<Period, string> = {
+  "7": "Últimos 7 dias",
   "30": "Últimos 30 dias",
   "90": "Últimos 90 dias",
   year: "Este ano",
   all: "Todo o período",
 };
+
+type ListClassification = "all" | "promotor" | "neutro" | "detrator";
+type ListPeriod = "7" | "30" | "90" | "year" | "all";
 
 function classify(score: number | null): "promotor" | "neutro" | "detrator" | "—" {
   if (score === null || score === undefined) return "—";
