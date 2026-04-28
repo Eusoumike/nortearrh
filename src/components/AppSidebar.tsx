@@ -1,5 +1,23 @@
-import { LayoutDashboard, Ticket, Users, BarChart3, Settings, Inbox, Sparkles, ListChecks, Rocket, Star } from "lucide-react";
+import {
+  Ticket,
+  Users,
+  BarChart3,
+  Settings,
+  Sparkles,
+  Rocket,
+  Star,
+  Headphones,
+  Briefcase,
+  DollarSign,
+  TrendingUp,
+  LineChart,
+  Lock,
+  ChevronDown,
+  LucideIcon,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useLocation } from "react-router-dom";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,38 +27,86 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth, signOut } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Chamados", url: "/tickets", icon: Ticket },
-  { title: "Minhas tarefas", url: "/tarefas", icon: ListChecks },
-  { title: "Implantação", url: "/implantacao", icon: Rocket },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Caixa de entrada", url: "/inbox", icon: Inbox },
-];
+type NavChild = { title: string; url: string };
+type NavGroup = {
+  key: string;
+  title: string;
+  icon: LucideIcon;
+  children?: NavChild[];
+  url?: string;
+  disabled?: boolean;
+};
 
-const insightItems = [
-  { title: "Performance", url: "/performance", icon: BarChart3 },
-  { title: "NPS", url: "/nps", icon: Star },
-];
-
-const settingsItems = [
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+const groups: NavGroup[] = [
+  {
+    key: "suporte",
+    title: "Suporte",
+    icon: Headphones,
+    children: [
+      { title: "Chamados", url: "/tickets" },
+      { title: "KPIs de Suporte", url: "/performance?tab=suporte" },
+    ],
+  },
+  {
+    key: "clientes",
+    title: "Clientes",
+    icon: Users,
+    children: [{ title: "Carteira", url: "/clientes" }],
+  },
+  {
+    key: "onboarding",
+    title: "Onboarding",
+    icon: Rocket,
+    children: [
+      { title: "Implantação", url: "/implantacao" },
+      { title: "NPS / Avaliações", url: "/nps" },
+    ],
+  },
+  { key: "crm", title: "CRM", icon: Briefcase, disabled: true },
+  { key: "financeiro", title: "Financeiro", icon: DollarSign, disabled: true },
+  {
+    key: "performance",
+    title: "Performance",
+    icon: TrendingUp,
+    children: [
+      { title: "Relatórios", url: "/performance?tab=relatorios" },
+      { title: "Desempenho", url: "/performance?tab=desempenho" },
+    ],
+  },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const { user, role } = useAuth();
   const collapsed = state === "collapsed";
+  const { pathname } = useLocation();
+
+  const isChildActive = (url: string) => {
+    const path = url.split("?")[0];
+    return pathname === path || pathname.startsWith(path + "/");
+  };
+
+  const initialOpen = () =>
+    Object.fromEntries(
+      groups.map((g) => [g.key, g.children?.some((c) => isChildActive(c.url)) ?? false]),
+    );
+
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>(initialOpen);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -60,42 +126,104 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Operação</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel>Navegação</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium"
-                      activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              {groups.map((g) => {
+                if (g.disabled) {
+                  return (
+                    <SidebarMenuItem key={g.key}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton
+                            className="cursor-not-allowed opacity-50"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <g.icon className="h-4 w-4" />
+                            <span>{g.title}</span>
+                            {!collapsed && <Lock className="ml-auto h-3 w-3" />}
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">Em breve</TooltipContent>
+                      </Tooltip>
+                    </SidebarMenuItem>
+                  );
+                }
 
-        <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Análise</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {insightItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                if (!g.children || g.children.length === 0) {
+                  return (
+                    <SidebarMenuItem key={g.key}>
+                      <SidebarMenuButton asChild tooltip={g.title}>
+                        <NavLink
+                          to={g.url ?? "#"}
+                          activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground"
+                        >
+                          <g.icon className="h-4 w-4" />
+                          <span>{g.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
+
+                const isOpen = openMap[g.key] ?? false;
+                const hasActive = g.children.some((c) => isChildActive(c.url));
+
+                // Collapsed sidebar: render as flat icon button linking to first child
+                if (collapsed) {
+                  return (
+                    <SidebarMenuItem key={g.key}>
+                      <SidebarMenuButton asChild tooltip={g.title}>
+                        <NavLink to={g.children[0].url}>
+                          <g.icon className="h-4 w-4" />
+                          <span>{g.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
+
+                return (
+                  <Collapsible
+                    key={g.key}
+                    open={isOpen}
+                    onOpenChange={(o) => setOpenMap((m) => ({ ...m, [g.key]: o }))}
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          className={cn(hasActive && "bg-sidebar-accent/50 text-sidebar-accent-foreground")}
+                        >
+                          <g.icon className="h-4 w-4" />
+                          <span>{g.title}</span>
+                          <ChevronDown
+                            className={cn(
+                              "ml-auto h-3.5 w-3.5 transition-transform",
+                              isOpen && "rotate-180",
+                            )}
+                          />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {g.children.map((c) => (
+                            <SidebarMenuSubItem key={c.url}>
+                              <SidebarMenuSubButton asChild isActive={isChildActive(c.url)}>
+                                <NavLink
+                                  to={c.url}
+                                  activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground"
+                                >
+                                  <span>{c.title}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
