@@ -64,7 +64,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           billing_email: form.billing_email?.trim() || null,
           health: form.health,
           notes: form.notes?.trim() || null,
-        })
+          anydesk_id: form.anydesk_id?.trim() || null,
+          anydesk_senha: form.anydesk_senha?.trim() || null,
+        } as any)
         .eq("id", client.id);
       if (error) throw error;
     },
