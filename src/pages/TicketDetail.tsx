@@ -835,7 +835,7 @@ export default function TicketDetail() {
           {/* Status */}
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-            <Select value={effectiveStatus} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
+            <Select value={effectiveStatusTyped} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
               <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
