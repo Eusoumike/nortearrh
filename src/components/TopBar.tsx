@@ -105,16 +105,42 @@ export function TopBar() {
 
   const alertCount = alerts?.length ?? 0;
 
+  // Busca global: tickets (título, #número, cliente, empresa)
+  const { data: searchResults, isFetching: isSearching } = useQuery({
+    queryKey: ["global-search", debouncedTerm],
+    enabled: searchOpen && debouncedTerm.length >= 2,
+    queryFn: async () => {
+      const safe = debouncedTerm.replace(/[%_,()]/g, " ").trim();
+      const numeric = safe.replace(/^#/, "");
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("id, ticket_number, title, status, client_name, organization, client:clients(name, company)")
+        .or(
+          `title.ilike.%${safe}%,ticket_number.ilike.%${numeric}%,client_name.ilike.%${safe}%,organization.ilike.%${safe}%`,
+        )
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const goToTicket = (ticketId: string) => {
+    setSearchOpen(false);
+    setSearchTerm("");
+    navigate(`/tickets/${ticketId}`);
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
       <SidebarTrigger className="h-8 w-8" />
       <div className="hidden md:flex flex-1 max-w-md">
         <button
-          onClick={() => navigate("/tickets")}
+          onClick={() => setSearchOpen(true)}
           className="group inline-flex w-full items-center gap-2 rounded-md border border-input bg-surface-muted px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1">Buscar tickets, clientes, agentes…</span>
+          <span className="flex-1">Buscar tickets, clientes, empresas…</span>
           <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
           </kbd>
