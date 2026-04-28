@@ -7,18 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Filter, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
-import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { TicketKanban } from "@/components/TicketKanban";
 
 export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
-  const [newTicketOpen, setNewTicketOpen] = useState(false);
 
   // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
@@ -61,13 +57,8 @@ export default function Tickets() {
     setSearchParams(next, { replace: true });
   };
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
-    return () => clearTimeout(t);
-  }, [q]);
-
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter, debouncedQ],
+    queryKey: ["tickets", statusFilter, priorityFilter],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
@@ -77,13 +68,6 @@ export default function Tickets() {
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
-
-      if (debouncedQ) {
-        const safe = debouncedQ.replace(/[%_,()]/g, " ").trim();
-        query = query.or(
-          `title.ilike.%${safe}%,description.ilike.%${safe}%,ticket_number.ilike.%${safe}%`,
-        );
-      }
 
       const { data, error } = await query;
       if (error) throw error;
