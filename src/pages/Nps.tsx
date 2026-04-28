@@ -886,3 +886,24 @@ function LongField({ label, value }: { label: string; value: string | null | und
     </div>
   );
 }
+
+function FeedbackBlock({
+  label,
+  value,
+  quoted = false,
+}: {
+  label: string;
+  value: string;
+  quoted?: boolean;
+}) {
+  return (
+    <div className="rounded-md bg-surface-muted/50 p-3">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="whitespace-pre-wrap text-sm text-foreground/90">
+        {quoted ? `"${value}"` : value}
+      </p>
+    </div>
+  );
+}
