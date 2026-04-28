@@ -102,19 +102,12 @@ export default function ClientDetail() {
   const save = useMutation({
     mutationFn: async () => {
       const idTrim = (form.anydesk_id ?? "").trim();
-      const senhaTrim = (form.anydesk_senha ?? "").trim();
       let anydeskIdValue: string | null = null;
-      let anydeskSenhaValue: string | null = null;
-      // Se algum dos dois for preenchido, validar ambos
-      if (idTrim || senhaTrim) {
+      if (idTrim) {
         const idDigits = idTrim.replace(/[\s-]/g, "");
-        if (!idTrim) throw new Error("Informe o ID do AnyDesk.");
         if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
         if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
-        if (!senhaTrim) throw new Error("Informe a senha do AnyDesk.");
-        if (senhaTrim.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
         anydeskIdValue = idDigits;
-        anydeskSenhaValue = senhaTrim;
       }
       const { error } = await supabase.from("clients").update({
         name: form.name,
@@ -125,7 +118,7 @@ export default function ClientDetail() {
         health_reason: form.health_reason || null,
         notes: form.notes || null,
         anydesk_id: anydeskIdValue,
-        anydesk_senha: anydeskSenhaValue,
+        anydesk_senha: null,
       }).eq("id", id!);
       if (error) throw error;
     },
