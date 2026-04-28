@@ -361,6 +361,9 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Contatos de Suporte VR */}
+      <VrSupportContactsCard />
+
       {/* Pipedrive (admin) */}
       {isAdmin && (
         <Card>
