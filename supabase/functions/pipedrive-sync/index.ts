@@ -70,6 +70,14 @@ Deno.serve(async (req: Request) => {
     const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Sessão inválida" }, 401);
 
+    // Server-side admin enforcement (UI-only gate is not enough)
+    const { data: roles } = await supabaseAuth
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id);
+    const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
+    if (!isAdmin) return json({ error: "Apenas administradores podem sincronizar" }, 403);
+
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // 1) Descobre a key do campo CNPJ (uma vez)
