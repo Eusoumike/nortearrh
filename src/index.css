@@ -232,27 +232,25 @@
      Used by Tickets, Implantação and CRM Pipeline.
      Columns NEVER shrink with browser zoom — horizontal scroll appears instead.
   ============================================================ */
+  /* Wrapper: ocupa 100% da largura disponível e gera scroll horizontal */
   .kanban-rail {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch; /* colunas esticam para a mesma altura */
-    flex-wrap: nowrap;
-    gap: 12px;
     width: 100%;
     height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-behavior: smooth;
   }
+  /* Inner: inline-flex com min-width: max-content garante que as colunas
+     mantenham largura fixa e o scroll do wrapper apareça quando necessário,
+     em qualquer nível de zoom. */
   .kanban-rail-inner {
-    display: flex;
+    display: inline-flex;
     flex-direction: row;
     align-items: stretch;
     flex-wrap: nowrap;
     gap: 12px;
     height: 100%;
-    width: fit-content;
-    min-width: 100%;
+    min-width: max-content;
     padding-bottom: 4px;
   }
   .kanban-column {
