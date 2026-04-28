@@ -171,6 +171,62 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             </div>
           </div>
 
+
+          <div className="space-y-2 rounded-lg border border-border bg-surface-muted/30 p-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Monitor className="h-4 w-4 text-muted-foreground" />
+              Acesso Remoto
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>ID AnyDesk</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    value={form.anydesk_id}
+                    onChange={(e) => setForm({ ...form, anydesk_id: e.target.value })}
+                    placeholder="000 000 000"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={!form.anydesk_id?.trim()}
+                    onClick={() => {
+                      navigator.clipboard.writeText(form.anydesk_id);
+                      toast.success("ID copiado");
+                    }}
+                    title="Copiar ID"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Senha AnyDesk</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    value={form.anydesk_senha}
+                    onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
+                    placeholder="Senha de acesso"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={!form.anydesk_senha?.trim()}
+                    onClick={() => {
+                      navigator.clipboard.writeText(form.anydesk_senha);
+                      toast.success("Senha copiada");
+                    }}
+                    title="Copiar senha"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Observações</Label>
             <Textarea
@@ -179,6 +235,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </div>
+
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
