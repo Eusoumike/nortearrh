@@ -206,7 +206,7 @@ export default function Nps() {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(1000);
-      if (period === "30" || period === "90") {
+      if (period === "7" || period === "30" || period === "90") {
         const since = new Date();
         since.setDate(since.getDate() - parseInt(period));
         q = q.gte("created_at", since.toISOString());
