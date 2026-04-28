@@ -649,3 +649,82 @@ export default function Settings() {
     </div>
   );
 }
+
+// =============================================================
+// Contatos de Suporte VR
+// =============================================================
+
+const VR_CONTACTS = [
+  { key: "tel", label: "Suporte via telefone", value: "(11) 4004-4938", icon: Phone, copyValue: "(11) 4004-4938" },
+  { key: "email", label: "E-mail de suporte", value: "meajuda@pontomais.com.br", icon: Mail, copyValue: "meajuda@pontomais.com.br" },
+  { key: "fin", label: "Contato financeiro", value: "4004-4938", icon: Phone, copyValue: "4004-4938" },
+  { key: "rh", label: "Guia do RH", value: "https://beneficios.vr.com.br/3Cgbrzz", icon: LinkIcon, copyValue: "https://beneficios.vr.com.br/3Cgbrzz" },
+  { key: "trab", label: "Guia do trabalhador", value: "https://beneficios.vr.com.br/3AFLxEG", icon: LinkIcon, copyValue: "https://beneficios.vr.com.br/3AFLxEG" },
+];
+
+function VrSupportContactsCard() {
+  const copy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copiado", description: label });
+    } catch {
+      toast({ title: "Erro ao copiar", variant: "destructive" });
+    }
+  };
+
+  const copyAll = async () => {
+    const text =
+      `*Contatos de Suporte VR / Pontomais*\n\n` +
+      `📞 Suporte via telefone: (11) 4004-4938\n` +
+      `✉️ E-mail de suporte: meajuda@pontomais.com.br\n` +
+      `💰 Contato financeiro: 4004-4938\n` +
+      `🔗 Guia do RH: https://beneficios.vr.com.br/3Cgbrzz\n` +
+      `🔗 Guia do trabalhador: https://beneficios.vr.com.br/3AFLxEG`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copiado", description: "Todos os contatos formatados para WhatsApp." });
+    } catch {
+      toast({ title: "Erro ao copiar", variant: "destructive" });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div>
+          <CardTitle>Contatos de Suporte VR</CardTitle>
+          <CardDescription>
+            Dados oficiais para encaminhar ao cliente quando necessário.
+          </CardDescription>
+        </div>
+        <Button size="sm" onClick={copyAll}>
+          <Copy className="mr-2 h-4 w-4" /> Copiar tudo
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {VR_CONTACTS.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div
+              key={c.key}
+              className="flex flex-wrap items-center gap-3 rounded-md border p-3"
+            >
+              <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-muted-foreground">{c.label}</div>
+                <div className="truncate text-sm font-medium">{c.value}</div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => copy(c.copyValue, c.label)}
+              >
+                <Copy className="mr-2 h-3.5 w-3.5" /> Copiar
+              </Button>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
