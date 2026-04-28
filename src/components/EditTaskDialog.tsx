@@ -101,6 +101,19 @@ export function EditTaskDialog({
     enabled: open,
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["ticket-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_categories")
+        .select("id, name, emoji")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: open,
+  });
+
   const invalidate = () => {
     invalidateKeys.forEach((key) =>
       qc.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] }),
