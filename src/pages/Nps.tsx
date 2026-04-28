@@ -352,7 +352,7 @@ export default function Nps() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-normal tracking-tight md:text-3xl">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
             Pesquisa de Satisfação — NPS
           </h1>
           <p className="text-xs text-muted-foreground md:text-sm">

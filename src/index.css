@@ -1,92 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================================
-   Nortear Connect · Design System (Identidade Terrosa 2026)
-   - Ink #2A1F1A · Paper #F2EFE9 · Argila #6B4226
-   - Musgo #7A8456 (sucesso) · Terracota #C4622D (alerta)
-   - Amber #E8C99A (decorativo) · Stone #9B8A78 (neutro)
-   - Teal de destaque #3D7A7A (botões e acentos secundários)
-   Sidebar SEMPRE escura (Ink), em ambos os temas.
+   Nortear Connect · Design System
+   Sidebar dark #1A1A2E · Background #F2EFE9 · Primary teal #0F7173
    All colors in HSL.
 ============================================================ */
 
 @layer base {
   :root {
-    /* --- Surfaces (light) — Paper #F2EFE9 / Surface #FFFFFF --- */
-    --background: 39 26% 93%;            /* Paper */
-    --foreground: 22 24% 13%;            /* Ink #2A1F1A */
+    /* --- Surfaces (light) — fundo bege #F2EFE9 --- */
+    --background: 39 26% 93%;
+    --foreground: 215 30% 12%;
 
     --surface: 0 0% 100%;
     --surface-muted: 39 22% 90%;
     --surface-raised: 0 0% 100%;
 
     --card: 0 0% 100%;
-    --card-foreground: 22 24% 13%;
+    --card-foreground: 215 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 22 24% 13%;
+    --popover-foreground: 215 30% 12%;
 
-    /* --- Brand — Argila #6B4226 (primary) --- */
-    --primary: 22 48% 28%;
-    --primary-foreground: 39 26% 93%;
-    --primary-glow: 22 44% 33%;          /* hover #7A4E30 */
+    /* --- Brand — teal Nortear #0F7173 --- */
+    --primary: 181 78% 25%;
+    --primary-foreground: 39 26% 96%;
+    --primary-glow: 181 60% 38%;
 
-    /* Amber #E8C99A (accent decorativo) */
-    --accent: 35 65% 76%;
-    --accent-foreground: 22 40% 18%;
+    --accent: 35 92% 55%;
+    --accent-foreground: 25 60% 15%;
 
-    /* Stone para superfícies suaves */
     --secondary: 39 18% 88%;
-    --secondary-foreground: 22 24% 18%;
+    --secondary-foreground: 215 30% 18%;
 
     --muted: 39 18% 90%;
-    --muted-foreground: 25 12% 42%;      /* Stone escurecido p/ contraste */
+    --muted-foreground: 215 16% 38%;
 
-    /* --- Status (semantic) — paleta terrosa --- */
-    --success: 76 21% 43%;               /* Musgo #7A8456 */
-    --success-foreground: 39 26% 96%;
-    --warning: 22 63% 47%;               /* Terracota #C4622D */
-    --warning-foreground: 39 26% 96%;
-    --danger: 22 63% 47%;                /* Terracota como crítico */
-    --danger-foreground: 39 26% 96%;
-    --info: 180 33% 36%;                 /* Teal destaque #3D7A7A */
-    --info-foreground: 39 26% 96%;
+    /* --- Status (semantic) --- */
+    --success: 152 60% 38%;
+    --success-foreground: 150 30% 98%;
+    --warning: 38 92% 52%;
+    --warning-foreground: 30 50% 12%;
+    --danger: 354 72% 52%;
+    --danger-foreground: 0 0% 98%;
+    --info: 212 92% 52%;
+    --info-foreground: 210 30% 98%;
 
-    --destructive: 22 63% 47%;
-    --destructive-foreground: 39 26% 96%;
+    --destructive: 354 72% 52%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* --- Lines — rgba(42,31,26,0.12) ≈ HSL 22 24% 88% --- */
-    --border: 22 18% 86%;
-    --input: 22 18% 84%;
-    --ring: 22 48% 32%;
+    /* --- Lines --- */
+    --border: 39 18% 82%;
+    --input: 39 18% 84%;
+    --ring: 181 78% 30%;
 
     --radius: 0.625rem;
 
     /* --- Gradients --- */
-    --gradient-brand: linear-gradient(135deg, hsl(22 48% 28%), hsl(22 44% 36%));
-    --gradient-accent: linear-gradient(135deg, hsl(35 65% 76%), hsl(22 63% 55%));
+    --gradient-brand: linear-gradient(135deg, hsl(181 78% 25%), hsl(181 60% 38%));
+    --gradient-accent: linear-gradient(135deg, hsl(35 92% 55%), hsl(28 88% 50%));
     --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(39 22% 92%));
 
     /* --- Shadows --- */
-    --shadow-xs: 0 1px 2px 0 hsl(22 24% 13% / 0.05);
-    --shadow-sm: 0 1px 3px 0 hsl(22 24% 13% / 0.07), 0 1px 2px -1px hsl(22 24% 13% / 0.05);
-    --shadow-md: 0 4px 12px -2px hsl(22 24% 13% / 0.08), 0 2px 4px -2px hsl(22 24% 13% / 0.05);
-    --shadow-lg: 0 12px 32px -8px hsl(22 24% 16% / 0.14), 0 4px 12px -4px hsl(22 24% 16% / 0.08);
-    --shadow-glow: 0 0 0 1px hsl(22 48% 32% / 0.2), 0 8px 24px -4px hsl(22 48% 32% / 0.25);
+    --shadow-xs: 0 1px 2px 0 hsl(215 30% 12% / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(215 30% 12% / 0.06), 0 1px 2px -1px hsl(215 30% 12% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(215 30% 12% / 0.08), 0 2px 4px -2px hsl(215 30% 12% / 0.04);
+    --shadow-lg: 0 12px 32px -8px hsl(215 30% 20% / 0.12), 0 4px 12px -4px hsl(215 30% 20% / 0.06);
+    --shadow-glow: 0 0 0 1px hsl(181 78% 30% / 0.2), 0 8px 24px -4px hsl(181 78% 30% / 0.25);
 
-    /* --- Sidebar — Ink #2A1F1A (sempre escura) --- */
-    --sidebar-background: 22 24% 13%;
-    --sidebar-foreground: 39 26% 88%;
-    --sidebar-primary: 22 48% 28%;                /* Argila */
-    --sidebar-primary-foreground: 39 26% 96%;
-    --sidebar-accent: 22 48% 28%;                 /* Hover/active = Argila com alpha */
-    --sidebar-accent-foreground: 35 65% 76%;      /* Amber para texto ativo */
-    --sidebar-border: 22 20% 22%;
-    --sidebar-ring: 35 65% 70%;
+    /* --- Sidebar — dark Nortear #1A1A2E --- */
+    --sidebar-background: 240 29% 14%;
+    --sidebar-foreground: 220 15% 78%;
+    --sidebar-primary: 181 60% 45%;
+    --sidebar-primary-foreground: 240 29% 10%;
+    --sidebar-accent: 240 24% 20%;
+    --sidebar-accent-foreground: 220 20% 96%;
+    --sidebar-border: 240 22% 22%;
+    --sidebar-ring: 181 60% 45%;
 
     /* --- Motion --- */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -94,68 +88,66 @@
   }
 
   .dark {
-    /* Paper #1A1410 · Surface #231B16 · Surface-2 #2D2118 */
-    --background: 22 22% 8%;
-    --foreground: 39 26% 93%;
+    --background: 240 29% 8%;
+    --foreground: 220 20% 96%;
 
-    --surface: 22 18% 12%;
-    --surface-muted: 22 18% 14%;
-    --surface-raised: 22 16% 16%;
+    --surface: 240 26% 11%;
+    --surface-muted: 240 24% 13%;
+    --surface-raised: 240 24% 14%;
 
-    --card: 22 18% 12%;
-    --card-foreground: 39 26% 93%;
+    --card: 240 26% 11%;
+    --card-foreground: 220 20% 96%;
 
-    --popover: 22 18% 12%;
-    --popover-foreground: 39 26% 93%;
+    --popover: 240 26% 11%;
+    --popover-foreground: 220 20% 96%;
 
-    --primary: 25 47% 53%;               /* Argila claro #C4844A */
-    --primary-foreground: 22 22% 8%;
-    --primary-glow: 25 50% 60%;
+    --primary: 181 60% 45%;
+    --primary-foreground: 240 29% 10%;
+    --primary-glow: 181 70% 55%;
 
-    --accent: 38 45% 57%;                /* Amber escuro #C4A060 */
-    --accent-foreground: 22 22% 8%;
+    --accent: 35 92% 60%;
+    --accent-foreground: 25 60% 12%;
 
-    --secondary: 22 14% 16%;
-    --secondary-foreground: 39 26% 93%;
+    --secondary: 240 22% 18%;
+    --secondary-foreground: 220 20% 96%;
 
-    --muted: 22 12% 14%;
-    --muted-foreground: 28 14% 54%;      /* Stone */
+    --muted: 240 22% 16%;
+    --muted-foreground: 220 14% 62%;
 
-    --success: 76 25% 57%;               /* Musgo claro #A0AD76 */
-    --success-foreground: 22 22% 8%;
-    --warning: 18 73% 56%;               /* Terracota clara #E07040 */
-    --warning-foreground: 22 22% 8%;
-    --danger: 18 73% 56%;
-    --danger-foreground: 22 22% 8%;
-    --info: 180 33% 50%;
-    --info-foreground: 22 22% 8%;
+    --success: 152 55% 50%;
+    --success-foreground: 240 29% 10%;
+    --warning: 38 92% 58%;
+    --warning-foreground: 30 50% 12%;
+    --danger: 354 72% 60%;
+    --danger-foreground: 0 0% 98%;
+    --info: 212 92% 60%;
+    --info-foreground: 240 29% 10%;
 
-    --destructive: 18 73% 50%;
-    --destructive-foreground: 39 26% 96%;
+    --destructive: 354 72% 55%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 39 22% 18%;
-    --input: 39 22% 18%;
-    --ring: 25 47% 55%;
+    --border: 240 20% 20%;
+    --input: 240 20% 20%;
+    --ring: 181 60% 50%;
 
-    --gradient-brand: linear-gradient(135deg, hsl(22 48% 32%), hsl(25 47% 50%));
-    --gradient-accent: linear-gradient(135deg, hsl(38 45% 57%), hsl(22 63% 50%));
-    --gradient-surface: linear-gradient(180deg, hsl(22 18% 12%), hsl(22 22% 9%));
+    --gradient-brand: linear-gradient(135deg, hsl(181 70% 32%), hsl(181 60% 45%));
+    --gradient-accent: linear-gradient(135deg, hsl(35 92% 60%), hsl(28 88% 55%));
+    --gradient-surface: linear-gradient(180deg, hsl(240 26% 12%), hsl(240 29% 9%));
 
     --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
     --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.4);
     --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.45);
     --shadow-lg: 0 12px 32px -8px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 0 1px hsl(25 47% 55% / 0.3), 0 8px 24px -4px hsl(25 47% 55% / 0.35);
+    --shadow-glow: 0 0 0 1px hsl(181 60% 50% / 0.3), 0 8px 24px -4px hsl(181 60% 50% / 0.35);
 
-    /* Sidebar mantém Ink mais profundo no dark */
-    --sidebar-background: 22 30% 6%;
-    --sidebar-foreground: 39 26% 80%;
-    --sidebar-primary: 25 47% 53%;
-    --sidebar-primary-foreground: 22 22% 8%;
-    --sidebar-accent: 22 48% 25%;
-    --sidebar-accent-foreground: 35 65% 76%;
-    --sidebar-border: 22 22% 14%;
-    --sidebar-ring: 35 65% 70%;
+    --sidebar-background: 240 35% 6%;
+    --sidebar-foreground: 220 15% 78%;
+    --sidebar-primary: 181 60% 50%;
+    --sidebar-primary-foreground: 240 29% 10%;
+    --sidebar-accent: 240 24% 14%;
+    --sidebar-accent-foreground: 220 20% 96%;
+    --sidebar-border: 240 22% 14%;
+    --sidebar-ring: 181 60% 50%;
   }
 }
 
@@ -168,7 +160,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
   ::selection {
@@ -176,11 +168,6 @@
   }
   .font-mono {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-  }
-  .font-display {
-    font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-    font-weight: 400;
-    letter-spacing: -0.01em;
   }
   /* Scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -216,12 +203,14 @@
   /* ============================================================
      Kanban — Pipedrive-style scrollbars
   ============================================================ */
+  /* Horizontal kanban rail: scroll without visible scrollbar */
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   .scrollbar-none::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
+  /* Column internal scroll: thin, neutral scrollbar */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
@@ -235,6 +224,7 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.45); }
 
+  /* Drag preview rotation/opacity (applied via class while dragging) */
   .kanban-dragging { opacity: 0.7; transform: rotate(2deg); }
 }
 

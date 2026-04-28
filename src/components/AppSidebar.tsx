@@ -1,5 +1,4 @@
-import { LayoutDashboard, Ticket, Users, BarChart3, Settings, Inbox, ListChecks, Rocket, Star } from "lucide-react";
-import { NortearLogo } from "@/components/NortearLogo";
+import { LayoutDashboard, Ticket, Users, BarChart3, Settings, Inbox, Sparkles, ListChecks, Rocket, Star } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -46,15 +45,14 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className={cn("flex items-center px-2 py-1.5", collapsed && "justify-center px-0")}>
-          {collapsed ? (
-            <NortearLogo iconOnly size="sm" />
-          ) : (
-            <div className="flex flex-col gap-0.5 leading-tight">
-              <NortearLogo size="sm" textClassName="text-sidebar-foreground" />
-              <span className="pl-9 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
-                Connect
-              </span>
+        <div className={cn("flex items-center gap-2.5 px-2 py-1", collapsed && "justify-center px-0")}>
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-accent shadow-sm">
+            <Sparkles className="h-4 w-4 text-accent-foreground" />
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">Nortear</span>
+              <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Connect</span>
             </div>
           )}
         </div>

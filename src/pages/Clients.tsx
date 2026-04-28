@@ -113,7 +113,7 @@ export default function Clients() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-normal tracking-tight md:text-3xl">Clientes</h1>
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Clientes</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} clientes</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

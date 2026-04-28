@@ -54,12 +54,12 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
 };
 
 export const STATUS_TONE: Record<TicketStatus, "info" | "warning" | "muted" | "success" | "neutral" | "primary" | "accent"> = {
-  novo: "neutral",            // Stone
-  em_atendimento: "info",     // Teal destaque
-  aguardando_cliente: "warning", // Terracota
-  suporte_vera_n1: "primary", // Argila
-  abertura_chamado_n2: "warning", // Terracota mais forte
-  resolvido: "success",       // Musgo
+  novo: "info",
+  em_atendimento: "warning",
+  aguardando_cliente: "muted",
+  suporte_vera_n1: "accent",
+  abertura_chamado_n2: "primary",
+  resolvido: "success",
   fechado: "success",
 };
 
@@ -97,11 +97,11 @@ export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   critica: "Urgente", // legado: tratado como urgente na UI
 };
 
-export const PRIORITY_TONE: Record<TicketPriority, "muted" | "info" | "warning" | "danger" | "accent"> = {
-  baixa: "muted",      // Stone
-  media: "info",       // Teal destaque
-  alta: "accent",      // Amber
-  urgente: "danger",   // Terracota
+export const PRIORITY_TONE: Record<TicketPriority, "muted" | "info" | "warning" | "danger"> = {
+  baixa: "muted",
+  media: "info",
+  alta: "warning",
+  urgente: "danger",
   critica: "danger",
 };
 

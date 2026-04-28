@@ -146,7 +146,7 @@ export default function MyTasks() {
     <div className="space-y-4 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 font-display text-3xl font-normal tracking-tight">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <ListChecks className="h-5 w-5 text-primary" />
             Minhas tarefas
           </h1>

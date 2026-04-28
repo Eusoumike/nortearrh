@@ -3,44 +3,54 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X } from "lucide-react";
+import { Plus, Search, Filter, X } from "lucide-react";
+import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { TicketKanban } from "@/components/TicketKanban";
-import {
-  TicketFilters,
-  applyTicketFilters,
-  loadFilters,
-  saveFilters,
-  DEFAULT_FILTERS,
-  type TicketFiltersState,
-} from "@/components/TicketFilters";
 
 export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
+  const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
-  const [filters, setFilters] = useState<TicketFiltersState>(() => loadFilters());
 
-  // URL-driven special filters (mantidos): open, sla=overdue|approaching, resolved=7d, client=<nome>
+  // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
-  const slaMode = searchParams.get("sla");
-  const resolvedWindow = searchParams.get("resolved");
-  const clientUrl = searchParams.get("client");
-  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientUrl;
+  const slaMode = searchParams.get("sla"); // "overdue" | "approaching"
+  const resolvedWindow = searchParams.get("resolved"); // "7d"
+  const clientFilter = searchParams.get("client"); // nome (client_name/organization)
 
-  // Persiste filtros sempre que mudarem
-  useEffect(() => {
-    saveFilters(filters);
-  }, [filters]);
+  const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientFilter;
 
-  // Aplica filtro de cliente via URL ao state (uma vez)
+  // Sincroniza select com URL quando muda externamente
   useEffect(() => {
-    if (clientUrl && filters.client !== clientUrl) {
-      setFilters((f) => ({ ...f, client: clientUrl }));
-    }
-    // eslint-disable-next-line
-  }, [clientUrl]);
+    const s = searchParams.get("status") ?? "all";
+    const p = searchParams.get("priority") ?? "all";
+    setStatusFilter(s);
+    setPriorityFilter(p);
+  }, [searchParams]);
+
+  const updateStatus = (v: string) => {
+    setStatusFilter(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("status");
+    else next.set("status", v);
+    setSearchParams(next, { replace: true });
+  };
+
+  const updatePriority = (v: string) => {
+    setPriorityFilter(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "all") next.delete("priority");
+    else next.set("priority", v);
+    setSearchParams(next, { replace: true });
+  };
 
   const clearSpecialFilters = () => {
     const next = new URLSearchParams(searchParams);
@@ -51,33 +61,52 @@ export default function Tickets() {
     setSearchParams(next, { replace: true });
   };
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets-all"],
+    queryKey: ["tickets", statusFilter, priorityFilter, debouncedQ],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("tickets")
         .select("*, client:clients(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(200);
+
+      if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
+      if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
+
+      if (debouncedQ) {
+        const safe = debouncedQ.replace(/[%_,()]/g, " ").trim();
+        query = query.or(
+          `title.ilike.%${safe}%,description.ilike.%${safe}%,ticket_number.ilike.%${safe}%`,
+        );
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
-  // Para o kanban, o filtro de Status não se aplica (cada coluna já é um status).
   const filtered = useMemo(() => {
-    let list = applyTicketFilters((tickets as any[]) ?? [], filters, { ignoreStatus: true });
+    const list = tickets ?? [];
     if (!hasSpecialFilter) return list;
     const now = Date.now();
     const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
+    const clientNeedle = clientFilter?.trim().toLowerCase() ?? "";
     return list.filter((t: any) => {
       if (openOnly && !isOpen(t.status)) return false;
       if (slaMode === "overdue") {
-        if (!t.sla_resolution_deadline || !isOpen(t.status)) return false;
+        if (!t.sla_resolution_deadline) return false;
+        if (!isOpen(t.status)) return false;
         if (new Date(t.sla_resolution_deadline).getTime() >= now) return false;
       }
       if (slaMode === "approaching") {
-        if (!t.sla_resolution_deadline || !isOpen(t.status)) return false;
+        if (!t.sla_resolution_deadline) return false;
+        if (!isOpen(t.status)) return false;
         const created = new Date(t.created_at).getTime();
         const deadline = new Date(t.sla_resolution_deadline).getTime();
         const total = deadline - created;
@@ -89,9 +118,13 @@ export default function Tickets() {
         if (!t.resolved_at) return false;
         if (new Date(t.resolved_at).getTime() < now - 7 * 86400000) return false;
       }
+      if (clientNeedle) {
+        const name = (t.client_name ?? t.organization ?? t.client?.name ?? "").toLowerCase();
+        if (name !== clientNeedle) return false;
+      }
       return true;
     });
-  }, [tickets, filters, hasSpecialFilter, openOnly, slaMode, resolvedWindow]);
+  }, [tickets, hasSpecialFilter, openOnly, slaMode, resolvedWindow, clientFilter]);
 
   const specialLabel = openOnly
     ? "Abertos"
@@ -101,13 +134,16 @@ export default function Tickets() {
     ? "Próximos do SLA (≥80%)"
     : resolvedWindow === "7d"
     ? "Resolvidos nos últimos 7 dias"
+    : clientFilter
+    ? `Cliente: ${clientFilter}`
     : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
+      {/* Header (fixo) */}
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-normal tracking-tight md:text-3xl">Tickets</h1>
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
         </div>
         <Button size="sm" onClick={() => setNewTicketOpen(true)} className="h-9 self-start bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90 sm:self-auto">
@@ -116,8 +152,31 @@ export default function Tickets() {
       </div>
       <NewTicketDialog open={newTicketOpen} onOpenChange={setNewTicketOpen} />
 
+      {/* Filtros (fixo) */}
       <Card className="shrink-0 p-3">
-        <TicketFilters value={filters} onChange={setFilters} resultCount={filtered.length} hideStatus />
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative w-full flex-1 sm:min-w-64">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, descrição ou #número…" className="h-9 pl-8" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={updateStatus}>
+              <SelectTrigger className="h-9 flex-1 sm:w-[200px] sm:flex-none"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={updatePriority}>
+              <SelectTrigger className="h-9 flex-1 sm:w-[160px] sm:flex-none"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas prioridades</SelectItem>
+                {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         {specialLabel && (
           <div className="mt-2 flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
@@ -130,6 +189,7 @@ export default function Tickets() {
         )}
       </Card>
 
+      {/* Kanban (preenche restante) */}
       <div className="min-h-0 flex-1">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
