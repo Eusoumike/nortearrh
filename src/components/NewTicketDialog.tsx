@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Loader2, Search, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
 import {
@@ -180,6 +180,43 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
   const selectedClient = clients?.find((c) => c.id === form.client_id);
   const selectedAssignee = profiles?.find((p) => p.id === form.assigned_to);
+
+  // AnyDesk state derivado: cliente já tem cadastro?
+  const clientHasAnydesk = Boolean(
+    (selectedClient as any)?.anydesk_id || (selectedClient as any)?.anydesk_senha,
+  );
+  const anydeskMatchesClient =
+    clientHasAnydesk &&
+    form.anydesk.trim() === ((selectedClient as any)?.anydesk_id ?? "") &&
+    form.anydesk_senha.trim() === ((selectedClient as any)?.anydesk_senha ?? "");
+
+  const saveAnydeskToClient = useMutation({
+    mutationFn: async () => {
+      if (!form.client_id) throw new Error("Selecione um cliente primeiro.");
+      const idTrim = form.anydesk.trim();
+      const senhaTrim = form.anydesk_senha.trim();
+      const idDigits = idTrim.replace(/[\s-]/g, "");
+      if (!idTrim) throw new Error("Informe o ID do AnyDesk.");
+      if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
+      if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
+      if (!senhaTrim) throw new Error("Informe a senha do AnyDesk.");
+      if (senhaTrim.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
+      const { error } = await supabase
+        .from("clients")
+        .update({ anydesk_id: idDigits, anydesk_senha: senhaTrim } as any)
+        .eq("id", form.client_id);
+      if (error) throw error;
+      // sincroniza form com versão normalizada
+      setForm((f) => ({ ...f, anydesk: idDigits, anydesk_senha: senhaTrim }));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients-min"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["client", form.client_id] });
+      toast.success("AnyDesk salvo no perfil do cliente.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const create = useMutation({
     mutationFn: async () => {
@@ -500,18 +537,67 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               </Select>
             </div>
 
-            {/* AnyDesk (linha sozinha, depois data abertura/sla) */}
-            <div className="space-y-1">
-              <Label htmlFor="anydesk" className="text-xs">AnyDesk do Cliente</Label>
-              <Input
-                id="anydesk"
-                value={form.anydesk}
-                onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
-                placeholder="123 456 789"
-                className="h-9"
-                maxLength={50}
-              />
+            {/* AnyDesk (col-span-2 com ID + senha + indicador) */}
+            <div className="col-span-2 space-y-1.5 rounded-lg border border-border bg-surface-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-1.5 text-xs font-medium">
+                  <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                  AnyDesk do Cliente
+                </Label>
+                {form.client_id && (
+                  clientHasAnydesk ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-success">
+                      <Check className="h-3 w-3" /> Importado do perfil
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-warning">
+                      Cliente sem AnyDesk cadastrado
+                    </span>
+                  )
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  id="anydesk"
+                  value={form.anydesk}
+                  onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
+                  placeholder="ID (123 456 789)"
+                  className="h-9"
+                  inputMode="numeric"
+                  maxLength={50}
+                />
+                <Input
+                  id="anydesk_senha"
+                  value={form.anydesk_senha}
+                  onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
+                  placeholder="Senha"
+                  className="h-9"
+                  maxLength={50}
+                />
+              </div>
+              {form.client_id && !anydeskMatchesClient && (form.anydesk.trim() || form.anydesk_senha.trim()) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={
+                    saveAnydeskToClient.isPending ||
+                    !form.anydesk.trim() ||
+                    !form.anydesk_senha.trim()
+                  }
+                  onClick={() => saveAnydeskToClient.mutate()}
+                >
+                  {saveAnydeskToClient.isPending ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Save className="mr-1 h-3 w-3" />
+                  )}
+                  {clientHasAnydesk ? "Atualizar no perfil do cliente" : "Cadastrar no perfil do cliente"}
+                </Button>
+              )}
             </div>
+
             <div className="space-y-1">
               <Label htmlFor="opened" className="text-xs">
                 Data de Abertura <span className="text-destructive">*</span>
@@ -526,7 +612,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               />
             </div>
 
-            {/* Prazo SLA (full row pra alinhar) */}
+            {/* Prazo SLA */}
             <div className="space-y-1">
               <Label htmlFor="sla" className="text-xs">Prazo SLA</Label>
               <Input
@@ -537,7 +623,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 className="h-9"
               />
             </div>
-            <div />
 
             {/* Descrição (opcional, full width) */}
             <div className="col-span-2 space-y-1">
