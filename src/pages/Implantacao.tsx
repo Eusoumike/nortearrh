@@ -538,12 +538,38 @@ function ImplantacaoKanban({
   }
 
   return (
-    <div className="kanban-rail scrollbar-none">
-      <div className="kanban-rail-inner">
+    <div
+      style={{
+        width: "100%",
+        overflowX: "auto",
+        overflowY: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "inline-flex",
+          flexDirection: "row",
+          gap: "12px",
+          minWidth: "max-content",
+          height: "calc(100vh - 200px)",
+          alignItems: "flex-start",
+          padding: "0 16px 16px",
+        }}
+      >
         {stages.map((stage) => (
           <div
             key={stage.key}
-            className="kanban-column rounded-lg bg-surface-muted/60"
+            className="rounded-lg bg-surface-muted/60"
+            style={{
+              width: "280px",
+              minWidth: "280px",
+              maxWidth: "280px",
+              flexShrink: 0,
+              flexGrow: 0,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
@@ -575,7 +601,15 @@ function ImplantacaoKanban({
               </div>
             </div>
             {/* Cards (scroll fino) */}
-            <div className="kanban-column-body scrollbar-thin flex flex-col gap-2 px-2 pb-2">
+            <div
+              className="scrollbar-thin flex flex-col gap-2 px-2 pb-2"
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                overflowX: "hidden",
+                minHeight: "80px",
+              }}
+            >
               {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
                 <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
               )}
