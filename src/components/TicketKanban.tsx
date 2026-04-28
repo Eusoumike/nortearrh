@@ -66,7 +66,7 @@ function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   return Math.max(0, (now - new Date(t.current_stage_started_at).getTime()) / 1000);
 }
 
-function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: number; isOverlay?: boolean }) {
+const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: number; isOverlay?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const navigate = useNavigate();
   const elapsed = timeOnCurrentStage(t, now);
@@ -85,8 +85,9 @@ function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: numbe
           navigate(`/tickets/${t.id}`);
         }
       }}
+      style={{ contain: "layout paint", willChange: isDragging || isOverlay ? "transform" : undefined }}
       className={cn(
-        "group cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all duration-150 hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        "group cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-colors duration-150 hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         isDragging && !isOverlay && "opacity-30",
         isOverlay && "kanban-dragging shadow-lg",
       )}
@@ -109,7 +110,7 @@ function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: numbe
       />
     </div>
   );
-}
+});
 
 function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
