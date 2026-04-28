@@ -537,18 +537,67 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               </Select>
             </div>
 
-            {/* AnyDesk (linha sozinha, depois data abertura/sla) */}
-            <div className="space-y-1">
-              <Label htmlFor="anydesk" className="text-xs">AnyDesk do Cliente</Label>
-              <Input
-                id="anydesk"
-                value={form.anydesk}
-                onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
-                placeholder="123 456 789"
-                className="h-9"
-                maxLength={50}
-              />
+            {/* AnyDesk (col-span-2 com ID + senha + indicador) */}
+            <div className="col-span-2 space-y-1.5 rounded-lg border border-border bg-surface-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-1.5 text-xs font-medium">
+                  <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                  AnyDesk do Cliente
+                </Label>
+                {form.client_id && (
+                  clientHasAnydesk ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-success">
+                      <Check className="h-3 w-3" /> Importado do perfil
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-warning">
+                      Cliente sem AnyDesk cadastrado
+                    </span>
+                  )
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  id="anydesk"
+                  value={form.anydesk}
+                  onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
+                  placeholder="ID (123 456 789)"
+                  className="h-9"
+                  inputMode="numeric"
+                  maxLength={50}
+                />
+                <Input
+                  id="anydesk_senha"
+                  value={form.anydesk_senha}
+                  onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
+                  placeholder="Senha"
+                  className="h-9"
+                  maxLength={50}
+                />
+              </div>
+              {form.client_id && !anydeskMatchesClient && (form.anydesk.trim() || form.anydesk_senha.trim()) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={
+                    saveAnydeskToClient.isPending ||
+                    !form.anydesk.trim() ||
+                    !form.anydesk_senha.trim()
+                  }
+                  onClick={() => saveAnydeskToClient.mutate()}
+                >
+                  {saveAnydeskToClient.isPending ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Save className="mr-1 h-3 w-3" />
+                  )}
+                  {clientHasAnydesk ? "Atualizar no perfil do cliente" : "Cadastrar no perfil do cliente"}
+                </Button>
+              )}
             </div>
+
             <div className="space-y-1">
               <Label htmlFor="opened" className="text-xs">
                 Data de Abertura <span className="text-destructive">*</span>
@@ -563,7 +612,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               />
             </div>
 
-            {/* Prazo SLA (full row pra alinhar) */}
+            {/* Prazo SLA */}
             <div className="space-y-1">
               <Label htmlFor="sla" className="text-xs">Prazo SLA</Label>
               <Input
@@ -574,7 +623,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 className="h-9"
               />
             </div>
-            <div />
 
             {/* Descrição (opcional, full width) */}
             <div className="col-span-2 space-y-1">
