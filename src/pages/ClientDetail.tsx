@@ -213,29 +213,6 @@ export default function ClientDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Senha AnyDesk</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={form.anydesk_senha ?? ""}
-                    onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
-                    placeholder="Senha de acesso"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    disabled={!form.anydesk_senha?.trim()}
-                    onClick={() => {
-                      navigator.clipboard.writeText(form.anydesk_senha ?? "");
-                      toast.success("Senha copiada");
-                    }}
-                    title="Copiar senha"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Notas</Label>
