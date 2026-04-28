@@ -75,7 +75,12 @@ const groups: NavGroup[] = [
       { title: "NPS / Avaliações", url: "/nps" },
     ],
   },
-  { key: "crm", title: "CRM", icon: Briefcase, disabled: true },
+  {
+    key: "crm",
+    title: "CRM",
+    icon: Briefcase,
+    children: [{ title: "Pipeline", url: "/crm/pipeline" }],
+  },
   { key: "financeiro", title: "Financeiro", icon: DollarSign, disabled: true },
   {
     key: "performance",
