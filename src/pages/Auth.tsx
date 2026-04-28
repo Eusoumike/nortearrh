@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { NortearLogo } from "@/components/NortearLogo";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -61,21 +62,16 @@ export default function Auth() {
       {/* Brand panel */}
       <div className="relative hidden bg-gradient-brand lg:flex lg:flex-col lg:justify-between lg:p-12 overflow-hidden">
         <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_30%_20%,hsl(var(--primary-glow)/0.6),transparent_50%),radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.4),transparent_50%)]" />
-        <div className="relative flex items-center gap-2 text-primary-foreground">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/90 shadow-lg">
-            <Sparkles className="h-4 w-4 text-accent-foreground" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-tight">Hub</p>
-            <p className="text-[11px] uppercase tracking-wider opacity-70">Customer Success</p>
-          </div>
+        <div className="relative flex items-center gap-3 text-primary-foreground">
+          <NortearLogo size="md" textClassName="text-primary-foreground" />
+          <span className="text-[11px] uppercase tracking-wider opacity-70">Connect</span>
         </div>
         <div className="relative space-y-4 text-primary-foreground">
-          <h1 className="text-4xl font-semibold leading-tight tracking-tight text-balance">
+          <h1 className="font-display text-4xl font-normal leading-tight tracking-tight text-balance">
             A central de operações da sua equipe de sucesso do cliente.
           </h1>
           <p className="max-w-md text-sm leading-relaxed text-primary-foreground/75">
-            Tickets, SLAs, implantação, clientes e integrações reunidos em uma única plataforma calma — feita para times que prezam por profundidade.
+            Chamados, SLAs, implantação, clientes e integrações reunidos em uma única plataforma calma — feita para times que prezam por profundidade.
           </p>
         </div>
         <div className="relative grid grid-cols-3 gap-4 text-primary-foreground/80">
@@ -96,12 +92,7 @@ export default function Auth() {
       <div className="flex items-center justify-center p-6">
         <Card className="w-full max-w-md p-8 shadow-elevated">
           <div className="mb-6 lg:hidden">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <p className="text-lg font-semibold tracking-tight">Hub</p>
-            </div>
+            <NortearLogo size="md" textClassName="text-foreground" />
           </div>
 
           <Tabs defaultValue="login" className="w-full">
