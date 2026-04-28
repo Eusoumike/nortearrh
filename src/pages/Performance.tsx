@@ -1,35 +1,106 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { BarChart3, Clock, Trophy, Target, Loader2 } from "lucide-react";
+import { BarChart3, Clock, Trophy, Target, Loader2, FileText, Copy } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
 } from "recharts";
 import { TIMED_STAGES, SLA_PER_STAGE_HOURS, STATUS_LABEL, type TicketStatus } from "@/lib/constants";
 import { formatDuration } from "@/lib/formatters";
+import { toast } from "@/hooks/use-toast";
 
-const PERIOD_DAYS = 30;
+const PERIOD_OPTIONS = [
+  { value: "7", label: "Últimos 7 dias" },
+  { value: "30", label: "Últimos 30 dias" },
+  { value: "90", label: "Últimos 90 dias" },
+  { value: "180", label: "Últimos 180 dias" },
+  { value: "365", label: "Último ano" },
+  { value: "all", label: "Todos" },
+];
 
 export default function Performance() {
+  const [periodDays, setPeriodDays] = useState<string>("30");
+  const [topPeriodDays, setTopPeriodDays] = useState<string>("30");
+  const [materialFor, setMaterialFor] = useState<{ title: string; count: number } | null>(null);
+  const [materialText, setMaterialText] = useState("");
+
   const since = useMemo(() => {
+    if (periodDays === "all") return null;
     const d = new Date();
-    d.setDate(d.getDate() - PERIOD_DAYS);
+    d.setDate(d.getDate() - Number(periodDays));
     return d.toISOString();
-  }, []);
+  }, [periodDays]);
 
   const { data: tickets, isLoading: loadingTickets } = useQuery({
     queryKey: ["perf-tickets", since],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("tickets")
-        .select("id, status, priority, opened_at, resolved_at, assigned_to, assigned_name, sla_resolution_deadline, total_em_atendimento_seconds, total_aguardando_cliente_seconds, total_vera_n1_seconds, total_n2_seconds")
-        .gte("opened_at", since);
+        .select("id, status, priority, opened_at, resolved_at, assigned_to, assigned_name, sla_resolution_deadline, total_em_atendimento_seconds, total_aguardando_cliente_seconds, total_vera_n1_seconds, total_n2_seconds");
+      if (since) q = q.gte("opened_at", since);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  // === Top problemas recorrentes ===
+  const topSince = useMemo(() => {
+    if (topPeriodDays === "all") return null;
+    const d = new Date();
+    d.setDate(d.getDate() - Number(topPeriodDays));
+    return d.toISOString();
+  }, [topPeriodDays]);
+
+  const { data: topRows, isLoading: loadingTop } = useQuery({
+    queryKey: ["perf-top-titles", topSince],
+    queryFn: async () => {
+      let q = supabase
+        .from("tickets")
+        .select("id, title, opened_at, resolved_at");
+      if (topSince) q = q.gte("opened_at", topSince);
+      const { data, error } = await q.limit(5000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const topProblems = useMemo(() => {
+    if (!topRows) return [];
+    const map = new Map<string, { title: string; count: number; resolvedSec: number[]; }>();
+    topRows.forEach((t: any) => {
+      const titleKey = (t.title || "Sem título").trim();
+      if (!map.has(titleKey)) map.set(titleKey, { title: titleKey, count: 0, resolvedSec: [] });
+      const e = map.get(titleKey)!;
+      e.count += 1;
+      if (t.resolved_at && t.opened_at) {
+        const sec = Math.max(0, (new Date(t.resolved_at).getTime() - new Date(t.opened_at).getTime()) / 1000);
+        e.resolvedSec.push(sec);
+      }
+    });
+    const total = topRows.length || 1;
+    return Array.from(map.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+      .map((r) => ({
+        title: r.title,
+        count: r.count,
+        pct: Math.round((r.count / total) * 100),
+        avgResolution: r.resolvedSec.length
+          ? r.resolvedSec.reduce((a, b) => a + b, 0) / r.resolvedSec.length
+          : 0,
+      }));
+  }, [topRows]);
 
   const stageData = useMemo(() => {
     if (!tickets) return [];
@@ -104,11 +175,26 @@ export default function Performance() {
     );
   }
 
+  const periodLabel = PERIOD_OPTIONS.find((p) => p.value === periodDays)?.label ?? "";
+
   return (
     <div className="space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Performance</h1>
-        <p className="text-sm text-muted-foreground">Métricas dos últimos {PERIOD_DAYS} dias.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Performance</h1>
+          <p className="text-sm text-muted-foreground">{periodLabel}.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Período:</span>
+          <Select value={periodDays} onValueChange={setPeriodDays}>
+            <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PERIOD_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -180,6 +266,73 @@ export default function Performance() {
         </div>
       </Card>
 
+      {/* Top problemas recorrentes */}
+      <Card className="p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Top problemas recorrentes</h3>
+            <p className="text-[11px] text-muted-foreground">Títulos de chamado mais repetidos.</p>
+          </div>
+          <Select value={topPeriodDays} onValueChange={setTopPeriodDays}>
+            <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PERIOD_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {loadingTop ? (
+          <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Calculando…
+          </div>
+        ) : topProblems.length === 0 ? (
+          <p className="py-6 text-center text-xs text-muted-foreground">Sem dados no período.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <th className="py-2 pr-3 font-medium">#</th>
+                  <th className="py-2 pr-3 font-medium">Título</th>
+                  <th className="py-2 pr-3 text-right font-medium">Qtd</th>
+                  <th className="py-2 pr-3 text-right font-medium">% do total</th>
+                  <th className="py-2 pr-3 text-right font-medium">Tempo médio</th>
+                  <th className="py-2 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {topProblems.map((p, i) => (
+                  <tr key={p.title} className="border-b last:border-0">
+                    <td className="py-2 pr-3 text-muted-foreground">{i + 1}</td>
+                    <td className="py-2 pr-3 font-medium">{p.title}</td>
+                    <td className="py-2 pr-3 text-right">{p.count}</td>
+                    <td className="py-2 pr-3 text-right text-muted-foreground">{p.pct}%</td>
+                    <td className="py-2 pr-3 text-right">
+                      {p.avgResolution > 0 ? formatDuration(Math.round(p.avgResolution)) : "—"}
+                    </td>
+                    <td className="py-2 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setMaterialFor({ title: p.title, count: p.count });
+                          setMaterialText("");
+                        }}
+                      >
+                        <FileText className="mr-2 h-3.5 w-3.5" />
+                        Gerar material
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* Ranking de agentes */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5 space-y-3">
@@ -230,6 +383,52 @@ export default function Performance() {
           </div>
         </Card>
       </div>
+
+      {/* Material de apoio */}
+      <Dialog open={!!materialFor} onOpenChange={(o) => !o && setMaterialFor(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Material de apoio — {materialFor?.title}</DialogTitle>
+            <DialogDescription>
+              Anote o conteúdo do material de apoio que será criado para este problema recorrente
+              ({materialFor?.count} ocorrências). Você pode copiar o texto ao final.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={materialText}
+            onChange={(e) => setMaterialText(e.target.value)}
+            placeholder={`Estrutura sugerida:
+
+• Sintoma observado
+• Causa provável
+• Passo a passo da solução
+• Como prevenir / orientação ao cliente
+• Links / vídeos / capturas de tela`}
+            rows={14}
+            className="font-mono text-[13px]"
+          />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!materialText.trim()) return;
+                try {
+                  await navigator.clipboard.writeText(
+                    `# Material de apoio — ${materialFor?.title}\n\n${materialText.trim()}\n`,
+                  );
+                  toast({ title: "Texto copiado" });
+                } catch {
+                  toast({ title: "Erro ao copiar", variant: "destructive" });
+                }
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copiar texto
+            </Button>
+            <Button onClick={() => setMaterialFor(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
