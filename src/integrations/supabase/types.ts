@@ -223,6 +223,13 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       implantacao_eventos: {
@@ -434,6 +441,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "implantacoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "implantacoes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -563,6 +577,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1029,6 +1050,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tickets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tickets_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1084,7 +1112,105 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      clients_safe: {
+        Row: {
+          account_owner: string | null
+          address: string | null
+          anydesk_id: string | null
+          anydesk_senha: string | null
+          billing_email: string | null
+          cnpj: string | null
+          company: string | null
+          contact_name: string | null
+          created_at: string | null
+          created_by: string | null
+          document: string | null
+          email: string | null
+          health: Database["public"]["Enums"]["client_health"] | null
+          health_reason: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          nps_data: string | null
+          nps_score: number | null
+          nps_token: string | null
+          phone: string | null
+          pipedrive_person_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          account_owner?: string | null
+          address?: string | null
+          anydesk_id?: never
+          anydesk_senha?: never
+          billing_email?: string | null
+          cnpj?: string | null
+          company?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          health?: Database["public"]["Enums"]["client_health"] | null
+          health_reason?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
+          phone?: string | null
+          pipedrive_person_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          account_owner?: string | null
+          address?: string | null
+          anydesk_id?: never
+          anydesk_senha?: never
+          billing_email?: string | null
+          cnpj?: string | null
+          company?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          health?: Database["public"]["Enums"]["client_health"] | null
+          health_reason?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
+          phone?: string | null
+          pipedrive_person_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_account_owner_fkey"
+            columns: ["account_owner"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_remove_user_access: {
