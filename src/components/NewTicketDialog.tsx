@@ -100,7 +100,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
-    anydesk_senha: "",
     opened_at: openedDefault,
     sla_deadline: slaDefault,
   });
@@ -145,7 +144,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         ticket_type: "",
         phone: "",
         anydesk: "",
-        anydesk_senha: "",
         opened_at: n,
         sla_deadline: sla,
       });
@@ -182,32 +180,26 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const selectedAssignee = profiles?.find((p) => p.id === form.assigned_to);
 
   // AnyDesk state derivado: cliente já tem cadastro?
-  const clientHasAnydesk = Boolean(
-    (selectedClient as any)?.anydesk_id || (selectedClient as any)?.anydesk_senha,
-  );
+  const clientHasAnydesk = Boolean((selectedClient as any)?.anydesk_id);
   const anydeskMatchesClient =
     clientHasAnydesk &&
-    form.anydesk.trim() === ((selectedClient as any)?.anydesk_id ?? "") &&
-    form.anydesk_senha.trim() === ((selectedClient as any)?.anydesk_senha ?? "");
+    form.anydesk.trim() === ((selectedClient as any)?.anydesk_id ?? "");
 
   const saveAnydeskToClient = useMutation({
     mutationFn: async () => {
       if (!form.client_id) throw new Error("Selecione um cliente primeiro.");
       const idTrim = form.anydesk.trim();
-      const senhaTrim = form.anydesk_senha.trim();
       const idDigits = idTrim.replace(/[\s-]/g, "");
       if (!idTrim) throw new Error("Informe o ID do AnyDesk.");
       if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
       if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
-      if (!senhaTrim) throw new Error("Informe a senha do AnyDesk.");
-      if (senhaTrim.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
       const { error } = await supabase
         .from("clients")
-        .update({ anydesk_id: idDigits, anydesk_senha: senhaTrim } as any)
+        .update({ anydesk_id: idDigits, anydesk_senha: null } as any)
         .eq("id", form.client_id);
       if (error) throw error;
       // sincroniza form com versão normalizada
-      setForm((f) => ({ ...f, anydesk: idDigits, anydesk_senha: senhaTrim }));
+      setForm((f) => ({ ...f, anydesk: idDigits }));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients-min"] });
@@ -248,7 +240,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
           client_email: form.email.trim() || null,
           organization: form.organization.trim() || null,
           anydesk_id: form.anydesk.trim() || null,
-          anydesk_senha: form.anydesk_senha.trim() || null,
+          anydesk_senha: null,
           assigned_to: assignedTo,
           assigned_name: assignedName,
           created_by: user.id,
@@ -400,7 +392,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                                 email: c.email ?? prev.email,
                                 phone: c.phone ? maskPhone(c.phone) : prev.phone,
                                 anydesk: (c as any).anydesk_id ?? prev.anydesk,
-                                anydesk_senha: (c as any).anydesk_senha ?? prev.anydesk_senha,
                               }));
                               setClientPickerOpen(false);
                             }}
@@ -556,36 +547,22 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                   )
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  id="anydesk"
-                  value={form.anydesk}
-                  onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
-                  placeholder="ID (123 456 789)"
-                  className="h-9"
-                  inputMode="numeric"
-                  maxLength={50}
-                />
-                <Input
-                  id="anydesk_senha"
-                  value={form.anydesk_senha}
-                  onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
-                  placeholder="Senha"
-                  className="h-9"
-                  maxLength={50}
-                />
-              </div>
-              {form.client_id && !anydeskMatchesClient && (form.anydesk.trim() || form.anydesk_senha.trim()) && (
+              <Input
+                id="anydesk"
+                value={form.anydesk}
+                onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
+                placeholder="ID (123 456 789)"
+                className="h-9"
+                inputMode="numeric"
+                maxLength={50}
+              />
+              {form.client_id && !anydeskMatchesClient && form.anydesk.trim() && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  disabled={
-                    saveAnydeskToClient.isPending ||
-                    !form.anydesk.trim() ||
-                    !form.anydesk_senha.trim()
-                  }
+                  disabled={saveAnydeskToClient.isPending || !form.anydesk.trim()}
                   onClick={() => saveAnydeskToClient.mutate()}
                 >
                   {saveAnydeskToClient.isPending ? (

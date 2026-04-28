@@ -40,7 +40,6 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         health: (client.health ?? "saudavel") as ClientHealth,
         notes: client.notes ?? "",
         anydesk_id: client.anydesk_id ?? "",
-        anydesk_senha: client.anydesk_senha ?? "",
       });
     }
   }, [open, client]);
@@ -51,20 +50,14 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
       const company = form.company.trim();
       if (!company) throw new Error("Razão social / empresa é obrigatória.");
 
-      // Validação AnyDesk: se um dos dois for preenchido, ambos são obrigatórios
+      // Validação AnyDesk: apenas ID
       const adIdRaw = form.anydesk_id?.trim() ?? "";
-      const adSenhaRaw = form.anydesk_senha?.trim() ?? "";
       let anydeskIdValue: string | null = null;
-      let anydeskSenhaValue: string | null = null;
-      if (adIdRaw || adSenhaRaw) {
+      if (adIdRaw) {
         const idDigits = adIdRaw.replace(/[\s-]/g, "");
-        if (!adIdRaw) throw new Error("Informe o ID do AnyDesk.");
         if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
         if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
-        if (!adSenhaRaw) throw new Error("Informe a senha do AnyDesk.");
-        if (adSenhaRaw.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
         anydeskIdValue = idDigits;
-        anydeskSenhaValue = adSenhaRaw;
       }
 
       const { error } = await supabase
@@ -82,7 +75,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           health: form.health,
           notes: form.notes?.trim() || null,
           anydesk_id: anydeskIdValue,
-          anydesk_senha: anydeskSenhaValue,
+          anydesk_senha: null,
         } as any)
         .eq("id", client.id);
       if (error) throw error;
@@ -195,58 +188,34 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
                 <Monitor className="h-4 w-4 text-muted-foreground" />
                 Acesso Remoto
               </div>
-              {!form.anydesk_id?.trim() && !form.anydesk_senha?.trim() && (
+              {!form.anydesk_id?.trim() && (
                 <span className="text-xs font-normal text-muted-foreground">
                   Nenhum AnyDesk cadastrado — preencha abaixo
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>ID AnyDesk</Label>
-                <div className="flex gap-1.5">
-                  <Input
-                    value={form.anydesk_id}
-                    onChange={(e) => setForm({ ...form, anydesk_id: e.target.value })}
-                    placeholder="000 000 000"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    disabled={!form.anydesk_id?.trim()}
-                    onClick={() => {
-                      navigator.clipboard.writeText(form.anydesk_id);
-                      toast.success("ID copiado");
-                    }}
-                    title="Copiar ID"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Senha AnyDesk</Label>
-                <div className="flex gap-1.5">
-                  <Input
-                    value={form.anydesk_senha}
-                    onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
-                    placeholder="Senha de acesso"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    disabled={!form.anydesk_senha?.trim()}
-                    onClick={() => {
-                      navigator.clipboard.writeText(form.anydesk_senha);
-                      toast.success("Senha copiada");
-                    }}
-                    title="Copiar senha"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+            <div className="space-y-1.5">
+              <Label>ID AnyDesk</Label>
+              <div className="flex gap-1.5">
+                <Input
+                  value={form.anydesk_id}
+                  onChange={(e) => setForm({ ...form, anydesk_id: e.target.value })}
+                  placeholder="000 000 000"
+                  inputMode="numeric"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!form.anydesk_id?.trim()}
+                  onClick={() => {
+                    navigator.clipboard.writeText(form.anydesk_id);
+                    toast.success("ID copiado");
+                  }}
+                  title="Copiar ID"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
           </div>

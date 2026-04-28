@@ -102,19 +102,12 @@ export default function ClientDetail() {
   const save = useMutation({
     mutationFn: async () => {
       const idTrim = (form.anydesk_id ?? "").trim();
-      const senhaTrim = (form.anydesk_senha ?? "").trim();
       let anydeskIdValue: string | null = null;
-      let anydeskSenhaValue: string | null = null;
-      // Se algum dos dois for preenchido, validar ambos
-      if (idTrim || senhaTrim) {
+      if (idTrim) {
         const idDigits = idTrim.replace(/[\s-]/g, "");
-        if (!idTrim) throw new Error("Informe o ID do AnyDesk.");
         if (!/^\d+$/.test(idDigits)) throw new Error("ID do AnyDesk inválido: use apenas números.");
         if (idDigits.length < 6 || idDigits.length > 12) throw new Error("ID do AnyDesk inválido: deve ter entre 6 e 12 dígitos.");
-        if (!senhaTrim) throw new Error("Informe a senha do AnyDesk.");
-        if (senhaTrim.length < 4) throw new Error("Senha do AnyDesk muito curta (mínimo 4 caracteres).");
         anydeskIdValue = idDigits;
-        anydeskSenhaValue = senhaTrim;
       }
       const { error } = await supabase.from("clients").update({
         name: form.name,
@@ -125,7 +118,7 @@ export default function ClientDetail() {
         health_reason: form.health_reason || null,
         notes: form.notes || null,
         anydesk_id: anydeskIdValue,
-        anydesk_senha: anydeskSenhaValue,
+        anydesk_senha: null,
       }).eq("id", id!);
       if (error) throw error;
     },
@@ -220,29 +213,6 @@ export default function ClientDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Senha AnyDesk</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={form.anydesk_senha ?? ""}
-                    onChange={(e) => setForm({ ...form, anydesk_senha: e.target.value })}
-                    placeholder="Senha de acesso"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    disabled={!form.anydesk_senha?.trim()}
-                    onClick={() => {
-                      navigator.clipboard.writeText(form.anydesk_senha ?? "");
-                      toast.success("Senha copiada");
-                    }}
-                    title="Copiar senha"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Notas</Label>
@@ -264,38 +234,22 @@ export default function ClientDetail() {
               {client.company && <p className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {client.company}</p>}
               {client.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> <a href={`mailto:${client.email}`} className="hover:underline">{client.email}</a></p>}
               {client.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> <a href={`tel:${client.phone}`} className="hover:underline">{client.phone}</a></p>}
-              {(client.anydesk_id || client.anydesk_senha) && (
+              {client.anydesk_id && (
                 <div className="mt-3 space-y-1.5 border-t pt-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">AnyDesk</p>
-                  {client.anydesk_id && (
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="font-mono text-xs">{client.anydesk_id}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => { navigator.clipboard.writeText(client.anydesk_id!); toast.success("ID copiado"); }}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                  {client.anydesk_senha && (
-                    <div className="flex items-center gap-2">
-                      <span className="ml-5 font-mono text-xs">{client.anydesk_senha}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => { navigator.clipboard.writeText(client.anydesk_senha!); toast.success("Senha copiada"); }}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-mono text-xs">{client.anydesk_id}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => { navigator.clipboard.writeText(client.anydesk_id!); toast.success("ID copiado"); }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
