@@ -284,7 +284,7 @@ function Column({
       ref={setNodeRef}
       className={cn(
         "flex flex-col rounded-lg border bg-muted/30 transition-colors",
-        isMobile ? "w-full mb-3" : "w-[300px] min-w-[280px] max-w-[320px] flex-shrink-0",
+        isMobile ? "w-full mb-3" : "w-[280px] min-w-[280px] max-w-[280px] shrink-0 grow-0",
         isOver && "border-primary ring-2 ring-primary/30",
       )}
       style={{ height: isMobile ? "auto" : "100%" }}

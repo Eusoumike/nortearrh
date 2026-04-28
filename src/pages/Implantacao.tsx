@@ -543,7 +543,7 @@ function ImplantacaoKanban({
         {stages.map((stage) => (
           <div
             key={stage.key}
-            className="flex h-full min-h-0 w-[15rem] shrink-0 flex-col rounded-lg bg-surface-muted/60"
+            className="flex h-full min-h-0 w-[280px] min-w-[280px] max-w-[280px] shrink-0 grow-0 flex-col rounded-lg bg-surface-muted/60"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
