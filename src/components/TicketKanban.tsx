@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,8 @@ import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES
 import { formatDuration } from "@/lib/formatters";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 30;
 
 interface KanbanTicket {
   id: string;
