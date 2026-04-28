@@ -246,6 +246,15 @@ export default function Clients() {
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {c.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
                   {c.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.phone}</p>}
+                  {(c as any).anydesk_id ? (
+                    <p className="flex items-center gap-1.5 truncate text-success">
+                      <Monitor className="h-3 w-3 shrink-0" /> AnyDesk: <span className="font-mono">{(c as any).anydesk_id}</span>
+                    </p>
+                  ) : (
+                    <p className="flex items-center gap-1.5 text-warning/80">
+                      <MonitorOff className="h-3 w-3 shrink-0" /> Sem AnyDesk
+                    </p>
+                  )}
                 </div>
                 {c.health_reason && (
                   <p className="mt-2 line-clamp-2 border-t border-border pt-2 text-xs italic text-muted-foreground">"{c.health_reason}"</p>
