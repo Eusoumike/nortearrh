@@ -324,7 +324,7 @@ export default function Implantacao() {
       {/* Header (fixo) */}
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Implantação</h1>
+          <h1 className="font-display text-2xl font-normal tracking-tight md:text-3xl">Implantação</h1>
           <p className="text-xs text-muted-foreground md:text-sm">
             Onboarding de novos clientes com checklist e mensagens prontas para WhatsApp.
           </p>
