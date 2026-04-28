@@ -232,14 +232,32 @@ export default function CrmPipeline() {
       {/* Board */}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div
-          className={cn(
-            "flex-1 min-h-0",
+          className={cn("flex-1 min-h-0", isMobile && "overflow-y-auto p-3")}
+          style={
             isMobile
-              ? "overflow-y-auto p-3"
-              : "kanban-rail scrollbar-none px-4 py-4",
-          )}
+              ? undefined
+              : {
+                  width: "100%",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                }
+          }
         >
-          <div className={cn(!isMobile && "kanban-rail-inner")}>
+          <div
+            style={
+              isMobile
+                ? undefined
+                : {
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    gap: "12px",
+                    minWidth: "max-content",
+                    height: "calc(100vh - 200px)",
+                    alignItems: "flex-start",
+                    padding: "0 16px 16px",
+                  }
+            }
+          >
             {visibleStages.map((s) => (
               <Column
                 key={s.key}
@@ -288,9 +306,23 @@ function Column({
       ref={setNodeRef}
       className={cn(
         "rounded-lg border bg-muted/30 transition-colors",
-        isMobile ? "flex w-full flex-col mb-3" : "kanban-column",
+        isMobile && "flex w-full flex-col mb-3",
         isOver && "border-primary ring-2 ring-primary/30",
       )}
+      style={
+        isMobile
+          ? undefined
+          : {
+              width: "280px",
+              minWidth: "280px",
+              maxWidth: "280px",
+              flexShrink: 0,
+              flexGrow: 0,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }
+      }
     >
       <div className="kanban-column-header rounded-t-lg bg-background/95 backdrop-blur">
         <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
@@ -302,7 +334,19 @@ function Column({
           <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
         </div>
       </div>
-      <div className={cn("flex flex-col gap-2 p-2", !isMobile && "kanban-column-body scrollbar-thin")}>
+      <div
+        className={cn("flex flex-col gap-2 p-2", !isMobile && "scrollbar-thin")}
+        style={
+          isMobile
+            ? undefined
+            : {
+                flex: 1,
+                overflowY: "auto",
+                overflowX: "hidden",
+                minHeight: "80px",
+              }
+        }
+      >
         {deals.length === 0 ? (
           <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
             Sem negócios
