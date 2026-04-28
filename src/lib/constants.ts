@@ -97,11 +97,11 @@ export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   critica: "Urgente", // legado: tratado como urgente na UI
 };
 
-export const PRIORITY_TONE: Record<TicketPriority, "muted" | "info" | "warning" | "danger"> = {
-  baixa: "muted",
-  media: "info",
-  alta: "warning",
-  urgente: "danger",
+export const PRIORITY_TONE: Record<TicketPriority, "muted" | "info" | "warning" | "danger" | "accent"> = {
+  baixa: "muted",      // Stone
+  media: "info",       // Teal destaque
+  alta: "accent",      // Amber
+  urgente: "danger",   // Terracota
   critica: "danger",
 };
 
