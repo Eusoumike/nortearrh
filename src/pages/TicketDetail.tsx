@@ -345,7 +345,7 @@ export default function TicketDetail() {
 
   const isClosed = ["resolvido", "fechado"].includes(ticket.status);
   const interactionFormReady = newInt.summary.trim().length > 0;
-  const effectiveStatus: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
+  const effectiveStatusTyped: TicketStatus = ticket.status === "fechado" ? "resolvido" : ticket.status;
 
   const stageDurations = TIMED_STAGES.map((stage) => {
     const total = ((ticket as any)[stage.totalCol] as number) ?? 0;
