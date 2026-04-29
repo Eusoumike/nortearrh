@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,28 +112,12 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
   );
 });
 
-function ColumnHeader({ status, count }: { status: TicketStatus; count: number }) {
-  const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
-  return (
-    <div className="flex w-72 shrink-0 flex-col rounded-lg bg-surface-muted/60">
-      <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
-      <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
-        <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-          {STATUS_LABEL[status]}
-        </h3>
-        <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-          {count}
-        </span>
-      </div>
-    </div>
-  );
-}
-const MemoColumnHeader = memo(ColumnHeader);
-
-function ColumnBody({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
+function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
+  // Reset paginação quando o tamanho da lista muda significativamente
   useEffect(() => {
     setVisibleCount((prev) => Math.min(Math.max(prev, PAGE_SIZE), Math.max(tickets.length, PAGE_SIZE)));
   }, [tickets.length]);
@@ -151,15 +135,47 @@ function ColumnBody({ status, tickets, now }: { status: TicketStatus; tickets: K
 
   return (
     <div
-      ref={setNodeRef}
-      onScroll={onScroll}
-      className={cn(
-        "scrollbar-thin flex h-full w-72 shrink-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-surface-muted/60 transition-colors",
-        isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
-      )}
-      style={{ overscrollBehavior: "contain" }}
+      className="rounded-lg bg-surface-muted/60"
+      style={{
+        width: "280px",
+        minWidth: "280px",
+        maxWidth: "280px",
+        flexShrink: 0,
+        flexGrow: 0,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
-      <div className="flex min-h-[80px] flex-col gap-2 px-2 pb-2 pt-2">
+      {/* Barra colorida fina (3px) no topo + header sticky */}
+      <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
+        <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
+        <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
+          <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+            {STATUS_LABEL[status]}
+          </h3>
+          <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+            {tickets.length}
+          </span>
+        </div>
+      </div>
+      {/* Área de cards (scroll interno fino) */}
+      <div
+        ref={setNodeRef}
+        onScroll={onScroll}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          minHeight: "80px",
+          contain: "strict",
+          overscrollBehavior: "contain",
+        }}
+        className={cn(
+          "scrollbar-thin flex flex-col gap-2 px-2 pb-2 transition-colors",
+          isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
+        )}
+      >
         {tickets.length === 0 ? (
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
@@ -180,7 +196,7 @@ function ColumnBody({ status, tickets, now }: { status: TicketStatus; tickets: K
     </div>
   );
 }
-const MemoColumnBody = memo(ColumnBody);
+const MemoColumn = memo(Column);
 
 export function TicketKanban({ tickets }: Props) {
   const qc = useQueryClient();
@@ -238,39 +254,30 @@ export function TicketKanban({ tickets }: Props) {
     updateStatus.mutate({ id, status: newStatus });
   };
 
-  const headerScrollRef = useRef<HTMLDivElement | null>(null);
-  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
-
-  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const left = e.currentTarget.scrollLeft;
-    if (headerScrollRef.current && headerScrollRef.current.scrollLeft !== left) {
-      headerScrollRef.current.scrollLeft = left;
-    }
-  };
-
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex h-full min-h-0 flex-col">
-        {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado com o body */}
-        <div ref={headerScrollRef} className="w-full shrink-0 overflow-hidden px-4 mb-1">
-          <div className="flex flex-row gap-3 min-w-max">
-            {STATUS_FLOW.map((status) => (
-              <MemoColumnHeader key={status} status={status} count={grouped[status].length} />
-            ))}
-          </div>
-        </div>
-
-        {/* BODY DO KANBAN — scroll horizontal; colunas com scroll vertical próprio */}
+      {/* Rail horizontal compartilhado: colunas mantêm 280px sob qualquer zoom */}
+      <div
+        style={{
+          width: "100%",
+          overflowX: "auto",
+          overflowY: "hidden",
+        }}
+      >
         <div
-          ref={bodyScrollRef}
-          onScroll={handleBodyScroll}
-          className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden"
+          style={{
+            display: "inline-flex",
+            flexDirection: "row",
+            gap: "12px",
+            minWidth: "max-content",
+            height: "calc(100vh - 200px)",
+            alignItems: "flex-start",
+            padding: "0 16px 16px",
+          }}
         >
-          <div className="flex flex-row gap-3 min-w-max h-full items-stretch px-4 pb-4">
-            {STATUS_FLOW.map((status) => (
-              <MemoColumnBody key={status} status={status} tickets={grouped[status]} now={now} />
-            ))}
-          </div>
+          {STATUS_FLOW.map((status) => (
+            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
+          ))}
         </div>
       </div>
       <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -231,8 +231,33 @@ export default function CrmPipeline() {
 
       {/* Board */}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        {isMobile ? (
-          <div className="flex-1 min-h-0 overflow-y-auto p-3">
+        <div
+          className={cn("flex-1 min-h-0", isMobile && "overflow-y-auto p-3")}
+          style={
+            isMobile
+              ? undefined
+              : {
+                  width: "100%",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                }
+          }
+        >
+          <div
+            style={
+              isMobile
+                ? undefined
+                : {
+                    display: "inline-flex",
+                    flexDirection: "row",
+                    gap: "12px",
+                    minWidth: "max-content",
+                    height: "calc(100vh - 200px)",
+                    alignItems: "flex-start",
+                    padding: "0 16px 16px",
+                  }
+            }
+          >
             {visibleStages.map((s) => (
               <Column
                 key={s.key}
@@ -244,14 +269,7 @@ export default function CrmPipeline() {
               />
             ))}
           </div>
-        ) : (
-          <DesktopBoard
-            stages={STAGES}
-            byStage={byStage}
-            totals={totals}
-            onCardClick={(d) => { setEditing(d); setDialogOpen(true); }}
-          />
-        )}
+        </div>
 
         <DragOverlay>
           {activeDeal && (
@@ -268,89 +286,6 @@ export default function CrmPipeline() {
         deal={editing}
         onSaved={() => qc.invalidateQueries({ queryKey: ["deals"] })}
       />
-    </div>
-  );
-}
-
-function DesktopBoard({
-  stages, byStage, totals, onCardClick,
-}: {
-  stages: { key: DealStage; label: string; color: string }[];
-  byStage: Record<DealStage, Deal[]>;
-  totals: Record<DealStage, number>;
-  onCardClick: (d: Deal) => void;
-}) {
-  const headerScrollRef = useRef<HTMLDivElement | null>(null);
-  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const left = e.currentTarget.scrollLeft;
-    if (headerScrollRef.current && headerScrollRef.current.scrollLeft !== left) {
-      headerScrollRef.current.scrollLeft = left;
-    }
-  };
-
-  return (
-    <div className="flex flex-1 min-h-0 flex-col">
-      {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado */}
-      <div ref={headerScrollRef} className="w-full shrink-0 overflow-hidden px-4 mb-1">
-        <div className="flex flex-row gap-3 min-w-max">
-          {stages.map((stage) => (
-            <div key={stage.key} className="flex w-72 shrink-0 flex-col rounded-lg border bg-muted/30">
-              <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
-              <div className="px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="truncate text-sm font-semibold">{stage.label}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{(byStage[stage.key] ?? []).length} negócios</span>
-                </div>
-                <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(totals[stage.key])}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* BODY — scroll horizontal; cada coluna scroll vertical interno */}
-      <div onScroll={handleBodyScroll} className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-        <div className="flex flex-row gap-3 min-w-max h-full items-stretch px-4 pb-4">
-          {stages.map((stage) => (
-            <DesktopColumnBody
-              key={stage.key}
-              stage={stage}
-              deals={byStage[stage.key] ?? []}
-              onCardClick={onCardClick}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DesktopColumnBody({
-  stage, deals, onCardClick,
-}: {
-  stage: { key: DealStage; label: string; color: string };
-  deals: Deal[];
-  onCardClick: (d: Deal) => void;
-}) {
-  const { isOver, setNodeRef } = useDroppable({ id: stage.key });
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "scrollbar-thin flex h-full w-72 shrink-0 flex-col overflow-y-auto overflow-x-hidden rounded-lg border bg-muted/30 transition-colors",
-        isOver && "border-primary ring-2 ring-primary/30",
-      )}
-      style={{ overscrollBehavior: "contain" }}
-    >
-      <div className="flex flex-col gap-2 p-2">
-        {deals.length === 0 ? (
-          <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
-            Sem negócios
-          </div>
-        ) : (
-          deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
-        )}
-      </div>
     </div>
   );
 }
@@ -389,69 +324,37 @@ function Column({
             }
       }
     >
-      {isMobile ? (
-        <>
-          <div className="kanban-column-header rounded-t-lg bg-background/95 backdrop-blur">
-            <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
-            <div className="px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <span className="truncate text-sm font-semibold">{stage.label}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
-              </div>
-              <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
-            </div>
+      <div className="kanban-column-header rounded-t-lg bg-background/95 backdrop-blur">
+        <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
+        <div className="px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <span className="truncate text-sm font-semibold">{stage.label}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
           </div>
-          <div className="flex flex-col gap-2 p-2">
-            {deals.length === 0 ? (
-              <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
-                Sem negócios
-              </div>
-            ) : (
-              deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
-            )}
-          </div>
-        </>
-      ) : (
-        <div
-          className="scrollbar-thin flex flex-col"
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            overflowX: "hidden",
-            minHeight: "80px",
-          }}
-        >
-          <div
-            style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-              flexShrink: 0,
-              backgroundColor: "hsl(var(--background) / 0.95)",
-              backdropFilter: "blur(4px)",
-            }}
-            className="rounded-t-lg"
-          >
-            <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
-            <div className="px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <span className="truncate text-sm font-semibold">{stage.label}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
-              </div>
-              <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 p-2">
-            {deals.length === 0 ? (
-              <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
-                Sem negócios
-              </div>
-            ) : (
-              deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
-            )}
-          </div>
+          <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
         </div>
-      )}
+      </div>
+      <div
+        className={cn("flex flex-col gap-2 p-2", !isMobile && "scrollbar-thin")}
+        style={
+          isMobile
+            ? undefined
+            : {
+                flex: 1,
+                overflowY: "auto",
+                overflowX: "hidden",
+                minHeight: "80px",
+              }
+        }
+      >
+        {deals.length === 0 ? (
+          <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
+            Sem negócios
+          </div>
+        ) : (
+          deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
+        )}
+      </div>
     </div>
   );
 }

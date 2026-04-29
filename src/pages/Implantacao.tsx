@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -537,21 +537,56 @@ function ImplantacaoKanban({
     return <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>;
   }
 
-  const headerScrollRef = useRef<HTMLDivElement | null>(null);
-  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const left = e.currentTarget.scrollLeft;
-    if (headerScrollRef.current && headerScrollRef.current.scrollLeft !== left) {
-      headerScrollRef.current.scrollLeft = left;
-    }
-  };
-
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado com o body */}
-      <div ref={headerScrollRef} className="w-full shrink-0 overflow-hidden px-4 mb-1">
-        <div className="flex flex-row gap-3 min-w-max">
-          {stages.map((stage) => (
-            <div key={stage.key} className="flex w-72 shrink-0 flex-col rounded-lg bg-surface-muted/60">
+    <div
+      style={{
+        width: "100%",
+        overflowX: "auto",
+        overflowY: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "inline-flex",
+          flexDirection: "row",
+          gap: "12px",
+          minWidth: "max-content",
+          height: "calc(100vh - 200px)",
+          alignItems: "flex-start",
+          padding: "0 16px 16px",
+        }}
+      >
+        {stages.map((stage) => (
+          <div
+            key={stage.key}
+            className="rounded-lg bg-surface-muted/60"
+            style={{
+              width: "280px",
+              minWidth: "280px",
+              maxWidth: "280px",
+              flexShrink: 0,
+              flexGrow: 0,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const id = e.dataTransfer.getData("text/plain");
+              if (!id) return;
+              const found = (items ?? []).find((x: any) => x.id === id);
+              if (!found || found.etapa === stage.key) return;
+              setPendingMove({
+                id,
+                etapa: stage.key,
+                fromEtapa: found.etapa,
+                clientName: found.client_name,
+              });
+            }}
+          >
+            {/* Header sticky com barra colorida + título */}
+            <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
               <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
               <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
                 <h3
@@ -565,55 +600,36 @@ function ImplantacaoKanban({
                 </span>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* BODY DO KANBAN — scroll horizontal; cada coluna scroll vertical interno */}
-      <div onScroll={handleBodyScroll} className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-        <div className="flex flex-row gap-3 min-w-max h-full items-stretch px-4 pb-4">
-          {stages.map((stage) => (
+            {/* Cards (scroll fino) */}
             <div
-              key={stage.key}
-              className="scrollbar-thin flex h-full w-72 shrink-0 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-surface-muted/60"
-              style={{ overscrollBehavior: "contain" }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const id = e.dataTransfer.getData("text/plain");
-                if (!id) return;
-                const found = (items ?? []).find((x: any) => x.id === id);
-                if (!found || found.etapa === stage.key) return;
-                setPendingMove({
-                  id,
-                  etapa: stage.key,
-                  fromEtapa: found.etapa,
-                  clientName: found.client_name,
-                });
+              className="scrollbar-thin flex flex-col gap-2 px-2 pb-2"
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                overflowX: "hidden",
+                minHeight: "80px",
               }}
             >
-              <div className="flex min-h-[80px] flex-col gap-2 px-2 pb-2 pt-2">
-                {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
-                  <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
-                )}
-                {(grouped[stage.key] ?? []).map((it: any) => (
-                  <KanbanCard
-                    key={it.id}
-                    item={it}
-                    count={counts.get(it.id) ?? { done: 0, total: 0 }}
-                    lastActivity={lastActMap.get(it.id) ?? null}
-                    onClick={() => onOpenCard(it.id)}
-                    onDelete={() => {
-                      if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
-                        removeImpl.mutate(it.id);
-                      }
-                    }}
-                  />
-                ))}
-              </div>
+              {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
+                <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
+              )}
+              {(grouped[stage.key] ?? []).map((it: any) => (
+                <KanbanCard
+                  key={it.id}
+                  item={it}
+                  count={counts.get(it.id) ?? { done: 0, total: 0 }}
+                  lastActivity={lastActMap.get(it.id) ?? null}
+                  onClick={() => onOpenCard(it.id)}
+                  onDelete={() => {
+                    if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
+                      removeImpl.mutate(it.id);
+                    }
+                  }}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       <AlertDialog open={!!pendingMove} onOpenChange={(v) => !v && setPendingMove(null)}>
