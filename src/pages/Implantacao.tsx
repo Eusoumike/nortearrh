@@ -561,14 +561,12 @@ function ImplantacaoKanban({
             key={stage.key}
             className="rounded-lg bg-surface-muted/60"
             style={{
-              width: "280px",
-              minWidth: "280px",
-              maxWidth: "280px",
-              flexShrink: 0,
-              flexGrow: 0,
+              flex: "1 1 0",
+              minWidth: "150px",
               height: "100%",
               display: "flex",
               flexDirection: "column",
+              wordBreak: "break-word",
             }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
