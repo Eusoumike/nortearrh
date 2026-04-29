@@ -147,19 +147,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
         flexDirection: "column",
       }}
     >
-      {/* Barra colorida fina (3px) no topo + header sticky */}
-      <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
-        <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
-        <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
-          <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-            {STATUS_LABEL[status]}
-          </h3>
-          <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-            {tickets.length}
-          </span>
-        </div>
-      </div>
-      {/* Área de cards (scroll interno fino) */}
+      {/* Container único: header sticky + cards (scroll interno fino) */}
       <div
         ref={setNodeRef}
         onScroll={onScroll}
@@ -168,14 +156,36 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
           overflowY: "auto",
           overflowX: "hidden",
           minHeight: "80px",
-          contain: "strict",
           overscrollBehavior: "contain",
         }}
         className={cn(
-          "scrollbar-thin flex flex-col gap-2 px-2 pb-2 transition-colors",
+          "scrollbar-thin flex flex-col transition-colors rounded-lg",
           isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
         )}
       >
+        {/* Header sticky no topo do container que rola */}
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            flexShrink: 0,
+            backgroundColor: "hsl(var(--surface-muted) / 0.95)",
+            backdropFilter: "blur(4px)",
+          }}
+          className="rounded-t-lg"
+        >
+          <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
+          <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
+            <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+              {STATUS_LABEL[status]}
+            </h3>
+            <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+              {tickets.length}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
         {tickets.length === 0 ? (
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
@@ -192,6 +202,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

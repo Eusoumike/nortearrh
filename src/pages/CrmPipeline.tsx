@@ -324,37 +324,69 @@ function Column({
             }
       }
     >
-      <div className="kanban-column-header rounded-t-lg bg-background/95 backdrop-blur">
-        <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
-        <div className="px-3 py-2.5">
-          <div className="flex items-center justify-between">
-            <span className="truncate text-sm font-semibold">{stage.label}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
+      {isMobile ? (
+        <>
+          <div className="kanban-column-header rounded-t-lg bg-background/95 backdrop-blur">
+            <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
+            <div className="px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <span className="truncate text-sm font-semibold">{stage.label}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
+              </div>
+              <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
+            </div>
           </div>
-          <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
+          <div className="flex flex-col gap-2 p-2">
+            {deals.length === 0 ? (
+              <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
+                Sem negócios
+              </div>
+            ) : (
+              deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
+            )}
+          </div>
+        </>
+      ) : (
+        <div
+          className="scrollbar-thin flex flex-col"
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            minHeight: "80px",
+          }}
+        >
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              flexShrink: 0,
+              backgroundColor: "hsl(var(--background) / 0.95)",
+              backdropFilter: "blur(4px)",
+            }}
+            className="rounded-t-lg"
+          >
+            <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
+            <div className="px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <span className="truncate text-sm font-semibold">{stage.label}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{deals.length} negócios</span>
+              </div>
+              <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(total)}</div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 p-2">
+            {deals.length === 0 ? (
+              <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
+                Sem negócios
+              </div>
+            ) : (
+              deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
+            )}
+          </div>
         </div>
-      </div>
-      <div
-        className={cn("flex flex-col gap-2 p-2", !isMobile && "scrollbar-thin")}
-        style={
-          isMobile
-            ? undefined
-            : {
-                flex: 1,
-                overflowY: "auto",
-                overflowX: "hidden",
-                minHeight: "80px",
-              }
-        }
-      >
-        {deals.length === 0 ? (
-          <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
-            Sem negócios
-          </div>
-        ) : (
-          deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
-        )}
-      </div>
+      )}
     </div>
   );
 }
