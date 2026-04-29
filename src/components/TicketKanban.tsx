@@ -202,6 +202,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );
