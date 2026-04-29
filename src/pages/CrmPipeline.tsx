@@ -272,7 +272,131 @@ export default function CrmPipeline() {
   );
 }
 
-function Column({
+function DesktopBoard({
+  stages, byStage, totals, onCardClick,
+}: {
+  stages: { key: DealStage; label: string; color: string }[];
+  byStage: Record<DealStage, Deal[]>;
+  totals: Record<DealStage, number>;
+  onCardClick: (d: Deal) => void;
+}) {
+  const headerScrollRef = useRef<HTMLDivElement | null>(null);
+  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const left = e.currentTarget.scrollLeft;
+    if (headerScrollRef.current && headerScrollRef.current.scrollLeft !== left) {
+      headerScrollRef.current.scrollLeft = left;
+    }
+  };
+
+  return (
+    <div className="flex-1 min-h-0" style={{ display: "flex", flexDirection: "column" }}>
+      {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado */}
+      <div
+        ref={headerScrollRef}
+        style={{
+          flexShrink: 0,
+          overflowX: "hidden",
+          overflowY: "hidden",
+          padding: "0 16px",
+          marginBottom: "4px",
+        }}
+      >
+        <div style={{ display: "inline-flex", flexDirection: "row", gap: "12px", minWidth: "max-content" }}>
+          {stages.map((stage) => (
+            <div
+              key={stage.key}
+              className="rounded-lg border bg-muted/30"
+              style={{
+                width: "280px",
+                minWidth: "280px",
+                maxWidth: "280px",
+                flexShrink: 0,
+                flexGrow: 0,
+              }}
+            >
+              <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
+              <div className="px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="truncate text-sm font-semibold">{stage.label}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{(byStage[stage.key] ?? []).length} negócios</span>
+                </div>
+                <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{fmtBRL(totals[stage.key])}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BODY — scroll horizontal; cada coluna scroll vertical interno */}
+      <div
+        onScroll={handleBodyScroll}
+        style={{ flex: 1, minHeight: 0, overflowX: "auto", overflowY: "hidden" }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            flexDirection: "row",
+            gap: "12px",
+            minWidth: "max-content",
+            height: "100%",
+            alignItems: "stretch",
+            padding: "0 16px 16px",
+          }}
+        >
+          {stages.map((stage) => (
+            <DesktopColumnBody
+              key={stage.key}
+              stage={stage}
+              deals={byStage[stage.key] ?? []}
+              onCardClick={onCardClick}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesktopColumnBody({
+  stage, deals, onCardClick,
+}: {
+  stage: { key: DealStage; label: string; color: string };
+  deals: Deal[];
+  onCardClick: (d: Deal) => void;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: stage.key });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "scrollbar-thin rounded-lg border bg-muted/30 transition-colors",
+        isOver && "border-primary ring-2 ring-primary/30",
+      )}
+      style={{
+        width: "280px",
+        minWidth: "280px",
+        maxWidth: "280px",
+        flexShrink: 0,
+        flexGrow: 0,
+        height: "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
+        overscrollBehavior: "contain",
+      }}
+    >
+      <div className="flex flex-col gap-2 p-2">
+        {deals.length === 0 ? (
+          <div className="rounded-md border border-dashed py-6 text-center text-xs text-muted-foreground">
+            Sem negócios
+          </div>
+        ) : (
+          deals.map((d) => <DraggableCard key={d.id} deal={d} onClick={() => onCardClick(d)} />)
+        )}
+      </div>
+    </div>
+  );
+}
+
   stage, deals, total, onCardClick, isMobile,
 }: {
   stage: { key: DealStage; label: string; color: string };
