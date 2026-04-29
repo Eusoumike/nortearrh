@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,12 +112,37 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
   );
 });
 
-function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status });
+function ColumnHeader({ status, count }: { status: TicketStatus; count: number }) {
   const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
+  return (
+    <div
+      className="rounded-lg bg-surface-muted/60"
+      style={{
+        width: "280px",
+        minWidth: "280px",
+        maxWidth: "280px",
+        flexShrink: 0,
+        flexGrow: 0,
+      }}
+    >
+      <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
+      <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
+        <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+          {STATUS_LABEL[status]}
+        </h3>
+        <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+          {count}
+        </span>
+      </div>
+    </div>
+  );
+}
+const MemoColumnHeader = memo(ColumnHeader);
+
+function ColumnBody({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: status });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Reset paginação quando o tamanho da lista muda significativamente
   useEffect(() => {
     setVisibleCount((prev) => Math.min(Math.max(prev, PAGE_SIZE), Math.max(tickets.length, PAGE_SIZE)));
   }, [tickets.length]);
@@ -135,7 +160,8 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
 
   return (
     <div
-      className="rounded-lg bg-surface-muted/60"
+      ref={setNodeRef}
+      onScroll={onScroll}
       style={{
         width: "280px",
         minWidth: "280px",
@@ -143,49 +169,16 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
         flexShrink: 0,
         flexGrow: 0,
         height: "100%",
-        display: "flex",
-        flexDirection: "column",
+        overflowY: "auto",
+        overflowX: "hidden",
+        overscrollBehavior: "contain",
       }}
+      className={cn(
+        "scrollbar-thin rounded-lg bg-surface-muted/60 transition-colors",
+        isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
+      )}
     >
-      {/* Container único: header sticky + cards (scroll interno fino) */}
-      <div
-        ref={setNodeRef}
-        onScroll={onScroll}
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
-          minHeight: "80px",
-          overscrollBehavior: "contain",
-        }}
-        className={cn(
-          "scrollbar-thin flex flex-col transition-colors rounded-lg",
-          isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
-        )}
-      >
-        {/* Header sticky no topo do container que rola */}
-        <div
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            flexShrink: 0,
-            backgroundColor: "hsl(var(--surface-muted) / 0.95)",
-            backdropFilter: "blur(4px)",
-          }}
-          className="rounded-t-lg"
-        >
-          <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
-          <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
-            <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-              {STATUS_LABEL[status]}
-            </h3>
-            <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-              {tickets.length}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
+      <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
         {tickets.length === 0 ? (
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
@@ -202,12 +195,11 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
             )}
           </>
         )}
-        </div>
       </div>
     </div>
   );
 }
-const MemoColumn = memo(Column);
+const MemoColumnBody = memo(ColumnBody);
 
 export function TicketKanban({ tickets }: Props) {
   const qc = useQueryClient();
