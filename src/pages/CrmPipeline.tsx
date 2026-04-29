@@ -289,31 +289,12 @@ function DesktopBoard({
   };
 
   return (
-    <div className="flex-1 min-h-0" style={{ display: "flex", flexDirection: "column" }}>
+    <div className="flex flex-1 min-h-0 flex-col">
       {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado */}
-      <div
-        ref={headerScrollRef}
-        style={{
-          flexShrink: 0,
-          overflowX: "hidden",
-          overflowY: "hidden",
-          padding: "0 16px",
-          marginBottom: "4px",
-        }}
-      >
-        <div style={{ display: "inline-flex", flexDirection: "row", gap: "12px", minWidth: "max-content" }}>
+      <div ref={headerScrollRef} className="w-full shrink-0 overflow-hidden px-4 mb-1">
+        <div className="flex flex-row gap-3 min-w-max">
           {stages.map((stage) => (
-            <div
-              key={stage.key}
-              className="rounded-lg border bg-muted/30"
-              style={{
-                width: "280px",
-                minWidth: "280px",
-                maxWidth: "280px",
-                flexShrink: 0,
-                flexGrow: 0,
-              }}
-            >
+            <div key={stage.key} className="flex w-72 shrink-0 flex-col rounded-lg border bg-muted/30">
               <div className="h-[3px] rounded-t-lg" style={{ backgroundColor: stage.color }} />
               <div className="px-3 py-2.5">
                 <div className="flex items-center justify-between">
@@ -328,21 +309,8 @@ function DesktopBoard({
       </div>
 
       {/* BODY — scroll horizontal; cada coluna scroll vertical interno */}
-      <div
-        onScroll={handleBodyScroll}
-        style={{ flex: 1, minHeight: 0, overflowX: "auto", overflowY: "hidden" }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            flexDirection: "row",
-            gap: "12px",
-            minWidth: "max-content",
-            height: "100%",
-            alignItems: "stretch",
-            padding: "0 16px 16px",
-          }}
-        >
+      <div onScroll={handleBodyScroll} className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+        <div className="flex flex-row gap-3 min-w-max h-full items-stretch px-4 pb-4">
           {stages.map((stage) => (
             <DesktopColumnBody
               key={stage.key}
@@ -369,20 +337,10 @@ function DesktopColumnBody({
     <div
       ref={setNodeRef}
       className={cn(
-        "scrollbar-thin rounded-lg border bg-muted/30 transition-colors",
+        "scrollbar-thin flex h-full w-72 shrink-0 flex-col overflow-y-auto overflow-x-hidden rounded-lg border bg-muted/30 transition-colors",
         isOver && "border-primary ring-2 ring-primary/30",
       )}
-      style={{
-        width: "280px",
-        minWidth: "280px",
-        maxWidth: "280px",
-        flexShrink: 0,
-        flexGrow: 0,
-        height: "100%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        overscrollBehavior: "contain",
-      }}
+      style={{ overscrollBehavior: "contain" }}
     >
       <div className="flex flex-col gap-2 p-2">
         {deals.length === 0 ? (

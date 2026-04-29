@@ -546,38 +546,12 @@ function ImplantacaoKanban({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
+    <div className="flex h-full min-h-0 flex-col">
       {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado com o body */}
-      <div
-        ref={headerScrollRef}
-        style={{
-          flexShrink: 0,
-          overflowX: "hidden",
-          overflowY: "hidden",
-          padding: "0 16px",
-          marginBottom: "4px",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            flexDirection: "row",
-            gap: "12px",
-            minWidth: "max-content",
-          }}
-        >
+      <div ref={headerScrollRef} className="w-full shrink-0 overflow-hidden px-4 mb-1">
+        <div className="flex flex-row gap-3 min-w-max">
           {stages.map((stage) => (
-            <div
-              key={stage.key}
-              className="rounded-lg bg-surface-muted/60"
-              style={{
-                width: "280px",
-                minWidth: "280px",
-                maxWidth: "280px",
-                flexShrink: 0,
-                flexGrow: 0,
-              }}
-            >
+            <div key={stage.key} className="flex w-72 shrink-0 flex-col rounded-lg bg-surface-muted/60">
               <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
               <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
                 <h3
@@ -595,42 +569,14 @@ function ImplantacaoKanban({
         </div>
       </div>
 
-      {/* BODY DO KANBAN — scroll horizontal; cada coluna tem scroll vertical interno */}
-      <div
-        onScroll={handleBodyScroll}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowX: "auto",
-          overflowY: "hidden",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            flexDirection: "row",
-            gap: "12px",
-            minWidth: "max-content",
-            height: "100%",
-            alignItems: "stretch",
-            padding: "0 16px 16px",
-          }}
-        >
+      {/* BODY DO KANBAN — scroll horizontal; cada coluna scroll vertical interno */}
+      <div onScroll={handleBodyScroll} className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+        <div className="flex flex-row gap-3 min-w-max h-full items-stretch px-4 pb-4">
           {stages.map((stage) => (
             <div
               key={stage.key}
-              className="scrollbar-thin rounded-lg bg-surface-muted/60"
-              style={{
-                width: "280px",
-                minWidth: "280px",
-                maxWidth: "280px",
-                flexShrink: 0,
-                flexGrow: 0,
-                height: "100%",
-                overflowY: "auto",
-                overflowX: "hidden",
-                overscrollBehavior: "contain",
-              }}
+              className="scrollbar-thin flex h-full w-72 shrink-0 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-surface-muted/60"
+              style={{ overscrollBehavior: "contain" }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
@@ -646,7 +592,7 @@ function ImplantacaoKanban({
                 });
               }}
             >
-              <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
+              <div className="flex min-h-[80px] flex-col gap-2 px-2 pb-2 pt-2">
                 {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
                   <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
                 )}
