@@ -313,14 +313,12 @@ function Column({
         isMobile
           ? undefined
           : {
-              width: "280px",
-              minWidth: "280px",
-              maxWidth: "280px",
-              flexShrink: 0,
-              flexGrow: 0,
+              flex: "1 1 0",
+              minWidth: "150px",
               height: "100%",
               display: "flex",
               flexDirection: "column",
+              wordBreak: "break-word",
             }
       }
     >
