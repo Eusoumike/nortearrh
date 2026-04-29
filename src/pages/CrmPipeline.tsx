@@ -397,6 +397,7 @@ function DesktopColumnBody({
   );
 }
 
+function Column({
   stage, deals, total, onCardClick, isMobile,
 }: {
   stage: { key: DealStage; label: string; color: string };
