@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -537,88 +537,115 @@ function ImplantacaoKanban({
     return <p className="py-12 text-center text-sm text-muted-foreground">Carregando…</p>;
   }
 
+  const headerScrollRef = useRef<HTMLDivElement | null>(null);
+  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const left = e.currentTarget.scrollLeft;
+    if (headerScrollRef.current && headerScrollRef.current.scrollLeft !== left) {
+      headerScrollRef.current.scrollLeft = left;
+    }
+  };
+
   return (
-    <div
-      style={{
-        width: "100%",
-        overflowX: "auto",
-        overflowY: "hidden",
-      }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
+      {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado com o body */}
       <div
+        ref={headerScrollRef}
         style={{
-          display: "inline-flex",
-          flexDirection: "row",
-          gap: "12px",
-          minWidth: "max-content",
-          height: "calc(100vh - 200px)",
-          alignItems: "flex-start",
-          padding: "0 16px 16px",
+          flexShrink: 0,
+          overflowX: "hidden",
+          overflowY: "hidden",
+          padding: "0 16px",
+          marginBottom: "4px",
         }}
       >
-        {stages.map((stage) => (
-          <div
-            key={stage.key}
-            className="rounded-lg bg-surface-muted/60"
-            style={{
-              width: "280px",
-              minWidth: "280px",
-              maxWidth: "280px",
-              flexShrink: 0,
-              flexGrow: 0,
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const id = e.dataTransfer.getData("text/plain");
-              if (!id) return;
-              const found = (items ?? []).find((x: any) => x.id === id);
-              if (!found || found.etapa === stage.key) return;
-              setPendingMove({
-                id,
-                etapa: stage.key,
-                fromEtapa: found.etapa,
-                clientName: found.client_name,
-              });
-            }}
-          >
-            {/* Container único: header sticky + cards (scroll fino) */}
+        <div
+          style={{
+            display: "inline-flex",
+            flexDirection: "row",
+            gap: "12px",
+            minWidth: "max-content",
+          }}
+        >
+          {stages.map((stage) => (
             <div
-              className="scrollbar-thin flex flex-col"
+              key={stage.key}
+              className="rounded-lg bg-surface-muted/60"
               style={{
-                flex: 1,
-                overflowY: "auto",
-                overflowX: "hidden",
-                minHeight: "80px",
+                width: "280px",
+                minWidth: "280px",
+                maxWidth: "280px",
+                flexShrink: 0,
+                flexGrow: 0,
               }}
             >
-              <div
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 10,
-                  flexShrink: 0,
-                  backgroundColor: "hsl(var(--surface-muted) / 0.95)",
-                  backdropFilter: "blur(4px)",
-                }}
-                className="rounded-t-lg"
-              >
-                <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
-                <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
-                  <h3
-                    className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
-                    title={stage.label}
-                  >
-                    {stage.label}
-                  </h3>
-                  <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-                    {grouped[stage.key]?.length ?? 0}
-                  </span>
-                </div>
+              <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
+              <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
+                <h3
+                  className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
+                  title={stage.label}
+                >
+                  {stage.label}
+                </h3>
+                <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+                  {grouped[stage.key]?.length ?? 0}
+                </span>
               </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BODY DO KANBAN — scroll horizontal; cada coluna tem scroll vertical interno */}
+      <div
+        onScroll={handleBodyScroll}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowX: "auto",
+          overflowY: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            flexDirection: "row",
+            gap: "12px",
+            minWidth: "max-content",
+            height: "100%",
+            alignItems: "stretch",
+            padding: "0 16px 16px",
+          }}
+        >
+          {stages.map((stage) => (
+            <div
+              key={stage.key}
+              className="scrollbar-thin rounded-lg bg-surface-muted/60"
+              style={{
+                width: "280px",
+                minWidth: "280px",
+                maxWidth: "280px",
+                flexShrink: 0,
+                flexGrow: 0,
+                height: "100%",
+                overflowY: "auto",
+                overflowX: "hidden",
+                overscrollBehavior: "contain",
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData("text/plain");
+                if (!id) return;
+                const found = (items ?? []).find((x: any) => x.id === id);
+                if (!found || found.etapa === stage.key) return;
+                setPendingMove({
+                  id,
+                  etapa: stage.key,
+                  fromEtapa: found.etapa,
+                  clientName: found.client_name,
+                });
+              }}
+            >
               <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
                 {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
                   <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
@@ -639,8 +666,8 @@ function ImplantacaoKanban({
                 ))}
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <AlertDialog open={!!pendingMove} onOpenChange={(v) => !v && setPendingMove(null)}>
