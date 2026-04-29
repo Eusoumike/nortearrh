@@ -137,14 +137,12 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
     <div
       className="rounded-lg bg-surface-muted/60"
       style={{
-        width: "280px",
-        minWidth: "280px",
-        maxWidth: "280px",
-        flexShrink: 0,
-        flexGrow: 0,
+        flex: "1 1 0",
+        minWidth: "150px",
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        wordBreak: "break-word",
       }}
     >
       {/* Barra colorida fina (3px) no topo + header sticky */}
@@ -266,10 +264,10 @@ export function TicketKanban({ tickets }: Props) {
       >
         <div
           style={{
-            display: "inline-flex",
+            display: "flex",
             flexDirection: "row",
             gap: "12px",
-            minWidth: "max-content",
+            minWidth: "min-content",
             height: "100%",
             alignItems: "stretch",
             padding: "0 16px 16px",
