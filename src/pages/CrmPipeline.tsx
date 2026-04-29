@@ -248,10 +248,10 @@ export default function CrmPipeline() {
               isMobile
                 ? undefined
                 : {
-                    display: "inline-flex",
+                    display: "flex",
                     flexDirection: "row",
                     gap: "12px",
-                    minWidth: "max-content",
+                    minWidth: "min-content",
                     height: "100%",
                     alignItems: "stretch",
                     padding: "0 16px 16px",
