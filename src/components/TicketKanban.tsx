@@ -257,30 +257,71 @@ export function TicketKanban({ tickets }: Props) {
     updateStatus.mutate({ id, status: newStatus });
   };
 
+  const headerScrollRef = useRef<HTMLDivElement | null>(null);
+  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const left = e.currentTarget.scrollLeft;
+    if (headerScrollRef.current && headerScrollRef.current.scrollLeft !== left) {
+      headerScrollRef.current.scrollLeft = left;
+    }
+  };
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* Rail horizontal compartilhado: colunas mantêm 280px sob qualquer zoom */}
-      <div
-        style={{
-          width: "100%",
-          overflowX: "auto",
-          overflowY: "hidden",
-        }}
-      >
+      {/* Wrapper: linha de headers (fixa) + body do kanban (scroll horizontal sincronizado) */}
+      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
+        {/* LINHA DE HEADERS — fixa no topo, sincroniza scroll com o body */}
         <div
+          ref={headerScrollRef}
           style={{
-            display: "inline-flex",
-            flexDirection: "row",
-            gap: "12px",
-            minWidth: "max-content",
-            height: "calc(100vh - 200px)",
-            alignItems: "flex-start",
-            padding: "0 16px 16px",
+            flexShrink: 0,
+            overflowX: "hidden",
+            overflowY: "hidden",
+            padding: "0 16px",
+            marginBottom: "4px",
           }}
         >
-          {STATUS_FLOW.map((status) => (
-            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
-          ))}
+          <div
+            style={{
+              display: "inline-flex",
+              flexDirection: "row",
+              gap: "12px",
+              minWidth: "max-content",
+            }}
+          >
+            {STATUS_FLOW.map((status) => (
+              <MemoColumnHeader key={status} status={status} count={grouped[status].length} />
+            ))}
+          </div>
+        </div>
+
+        {/* BODY DO KANBAN — rola horizontalmente, colunas com scroll vertical próprio */}
+        <div
+          ref={bodyScrollRef}
+          onScroll={handleBodyScroll}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowX: "auto",
+            overflowY: "hidden",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              flexDirection: "row",
+              gap: "12px",
+              minWidth: "max-content",
+              height: "100%",
+              alignItems: "stretch",
+              padding: "0 16px 16px",
+            }}
+          >
+            {STATUS_FLOW.map((status) => (
+              <MemoColumnBody key={status} status={status} tickets={grouped[status]} now={now} />
+            ))}
+          </div>
         </div>
       </div>
       <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
