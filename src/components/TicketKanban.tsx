@@ -250,55 +250,23 @@ export function TicketKanban({ tickets }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* Wrapper: linha de headers (fixa) + body do kanban (scroll horizontal sincronizado) */}
-      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
-        {/* LINHA DE HEADERS — fixa no topo, sincroniza scroll com o body */}
-        <div
-          ref={headerScrollRef}
-          style={{
-            flexShrink: 0,
-            overflowX: "hidden",
-            overflowY: "hidden",
-            padding: "0 16px",
-            marginBottom: "4px",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              flexDirection: "row",
-              gap: "12px",
-              minWidth: "max-content",
-            }}
-          >
+      <div className="flex h-full min-h-0 flex-col">
+        {/* LINHA DE HEADERS — fixa, scroll horizontal sincronizado com o body */}
+        <div ref={headerScrollRef} className="w-full shrink-0 overflow-hidden px-4 mb-1">
+          <div className="flex flex-row gap-3 min-w-max">
             {STATUS_FLOW.map((status) => (
               <MemoColumnHeader key={status} status={status} count={grouped[status].length} />
             ))}
           </div>
         </div>
 
-        {/* BODY DO KANBAN — rola horizontalmente, colunas com scroll vertical próprio */}
+        {/* BODY DO KANBAN — scroll horizontal; colunas com scroll vertical próprio */}
         <div
           ref={bodyScrollRef}
           onScroll={handleBodyScroll}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflowX: "auto",
-            overflowY: "hidden",
-          }}
+          className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden"
         >
-          <div
-            style={{
-              display: "inline-flex",
-              flexDirection: "row",
-              gap: "12px",
-              minWidth: "max-content",
-              height: "100%",
-              alignItems: "stretch",
-              padding: "0 16px 16px",
-            }}
-          >
+          <div className="flex flex-row gap-3 min-w-max h-full items-stretch px-4 pb-4">
             {STATUS_FLOW.map((status) => (
               <MemoColumnBody key={status} status={status} tickets={grouped[status]} now={now} />
             ))}
