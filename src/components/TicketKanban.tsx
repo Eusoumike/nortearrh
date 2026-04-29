@@ -115,16 +115,7 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
 function ColumnHeader({ status, count }: { status: TicketStatus; count: number }) {
   const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
   return (
-    <div
-      className="rounded-lg bg-surface-muted/60"
-      style={{
-        width: "280px",
-        minWidth: "280px",
-        maxWidth: "280px",
-        flexShrink: 0,
-        flexGrow: 0,
-      }}
-    >
+    <div className="flex w-72 shrink-0 flex-col rounded-lg bg-surface-muted/60">
       <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
       <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
         <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
@@ -162,23 +153,13 @@ function ColumnBody({ status, tickets, now }: { status: TicketStatus; tickets: K
     <div
       ref={setNodeRef}
       onScroll={onScroll}
-      style={{
-        width: "280px",
-        minWidth: "280px",
-        maxWidth: "280px",
-        flexShrink: 0,
-        flexGrow: 0,
-        height: "100%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        overscrollBehavior: "contain",
-      }}
       className={cn(
-        "scrollbar-thin rounded-lg bg-surface-muted/60 transition-colors",
+        "scrollbar-thin flex h-full w-72 shrink-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-surface-muted/60 transition-colors",
         isOver && "bg-primary/5 ring-2 ring-inset ring-primary/40",
       )}
+      style={{ overscrollBehavior: "contain" }}
     >
-      <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
+      <div className="flex min-h-[80px] flex-col gap-2 px-2 pb-2 pt-2">
         {tickets.length === 0 ? (
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
