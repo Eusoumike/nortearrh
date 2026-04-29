@@ -585,24 +585,9 @@ function ImplantacaoKanban({
               });
             }}
           >
-            {/* Header sticky com barra colorida + título */}
-            <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
-              <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
-              <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
-                <h3
-                  className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
-                  title={stage.label}
-                >
-                  {stage.label}
-                </h3>
-                <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-                  {grouped[stage.key]?.length ?? 0}
-                </span>
-              </div>
-            </div>
-            {/* Cards (scroll fino) */}
+            {/* Container único: header sticky + cards (scroll fino) */}
             <div
-              className="scrollbar-thin flex flex-col gap-2 px-2 pb-2"
+              className="scrollbar-thin flex flex-col"
               style={{
                 flex: 1,
                 overflowY: "auto",
@@ -610,23 +595,49 @@ function ImplantacaoKanban({
                 minHeight: "80px",
               }}
             >
-              {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
-                <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
-              )}
-              {(grouped[stage.key] ?? []).map((it: any) => (
-                <KanbanCard
-                  key={it.id}
-                  item={it}
-                  count={counts.get(it.id) ?? { done: 0, total: 0 }}
-                  lastActivity={lastActMap.get(it.id) ?? null}
-                  onClick={() => onOpenCard(it.id)}
-                  onDelete={() => {
-                    if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
-                      removeImpl.mutate(it.id);
-                    }
-                  }}
-                />
-              ))}
+              <div
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                  flexShrink: 0,
+                  backgroundColor: "hsl(var(--surface-muted) / 0.95)",
+                  backdropFilter: "blur(4px)",
+                }}
+                className="rounded-t-lg"
+              >
+                <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
+                <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
+                  <h3
+                    className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
+                    title={stage.label}
+                  >
+                    {stage.label}
+                  </h3>
+                  <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+                    {grouped[stage.key]?.length ?? 0}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 px-2 pb-2 pt-2">
+                {(!grouped[stage.key] || grouped[stage.key].length === 0) && (
+                  <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
+                )}
+                {(grouped[stage.key] ?? []).map((it: any) => (
+                  <KanbanCard
+                    key={it.id}
+                    item={it}
+                    count={counts.get(it.id) ?? { done: 0, total: 0 }}
+                    lastActivity={lastActMap.get(it.id) ?? null}
+                    onClick={() => onOpenCard(it.id)}
+                    onDelete={() => {
+                      if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
+                        removeImpl.mutate(it.id);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         ))}
