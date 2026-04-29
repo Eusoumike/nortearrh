@@ -256,12 +256,12 @@ export function TicketKanban({ tickets }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* Rail horizontal compartilhado: colunas mantêm 280px sob qualquer zoom */}
+      {/* Rail horizontal estilo Pipedrive: wrapper width:100%/height:100% + overflow:auto */}
       <div
         style={{
           width: "100%",
-          overflowX: "auto",
-          overflowY: "hidden",
+          height: "100%",
+          overflow: "auto",
         }}
       >
         <div
@@ -270,8 +270,8 @@ export function TicketKanban({ tickets }: Props) {
             flexDirection: "row",
             gap: "12px",
             minWidth: "max-content",
-            height: "calc(100vh - 200px)",
-            alignItems: "flex-start",
+            height: "100%",
+            alignItems: "stretch",
             padding: "0 16px 16px",
           }}
         >

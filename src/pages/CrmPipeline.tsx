@@ -238,8 +238,8 @@ export default function CrmPipeline() {
               ? undefined
               : {
                   width: "100%",
-                  overflowX: "auto",
-                  overflowY: "hidden",
+                  height: "100%",
+                  overflow: "auto",
                 }
           }
         >
@@ -252,8 +252,8 @@ export default function CrmPipeline() {
                     flexDirection: "row",
                     gap: "12px",
                     minWidth: "max-content",
-                    height: "calc(100vh - 200px)",
-                    alignItems: "flex-start",
+                    height: "100%",
+                    alignItems: "stretch",
                     padding: "0 16px 16px",
                   }
             }
