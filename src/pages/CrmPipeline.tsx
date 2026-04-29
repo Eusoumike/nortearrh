@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -231,33 +231,8 @@ export default function CrmPipeline() {
 
       {/* Board */}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <div
-          className={cn("flex-1 min-h-0", isMobile && "overflow-y-auto p-3")}
-          style={
-            isMobile
-              ? undefined
-              : {
-                  width: "100%",
-                  overflowX: "auto",
-                  overflowY: "hidden",
-                }
-          }
-        >
-          <div
-            style={
-              isMobile
-                ? undefined
-                : {
-                    display: "inline-flex",
-                    flexDirection: "row",
-                    gap: "12px",
-                    minWidth: "max-content",
-                    height: "calc(100vh - 200px)",
-                    alignItems: "flex-start",
-                    padding: "0 16px 16px",
-                  }
-            }
-          >
+        {isMobile ? (
+          <div className="flex-1 min-h-0 overflow-y-auto p-3">
             {visibleStages.map((s) => (
               <Column
                 key={s.key}
@@ -269,7 +244,14 @@ export default function CrmPipeline() {
               />
             ))}
           </div>
-        </div>
+        ) : (
+          <DesktopBoard
+            stages={STAGES}
+            byStage={byStage}
+            totals={totals}
+            onCardClick={(d) => { setEditing(d); setDialogOpen(true); }}
+          />
+        )}
 
         <DragOverlay>
           {activeDeal && (
