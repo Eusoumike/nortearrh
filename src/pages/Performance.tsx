@@ -11,11 +11,12 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { BarChart3, Clock, Trophy, Target, Loader2, FileText, Copy, Star, ArrowRight } from "lucide-react";
+import { BarChart3, Clock, Trophy, Target, Loader2, FileText, Copy, Star, ArrowRight, TrendingUp, Flame, Timer } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+  ComposedChart, Line, LineChart, Area, AreaChart,
 } from "recharts";
 import { TIMED_STAGES, SLA_PER_STAGE_HOURS, STATUS_LABEL, type TicketStatus } from "@/lib/constants";
 import { formatDuration } from "@/lib/formatters";
