@@ -207,7 +207,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       qc.invalidateQueries({ queryKey: ["client", form.client_id] });
       toast.success("AnyDesk salvo no perfil do cliente.");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const create = useMutation({
@@ -261,7 +261,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       onOpenChange(false);
       navigate(`/tickets/${data.id}`);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const requiredOk =

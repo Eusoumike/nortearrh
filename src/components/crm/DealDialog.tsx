@@ -10,8 +10,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
-import { Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Deal, DealProduct, DealStage } from "@/pages/CrmPipeline";
 
@@ -54,7 +54,6 @@ export function DealDialog({ open, onOpenChange, deal, onSaved }: Props) {
   const [expectedCloseDate, setExpectedCloseDate] = useState("");
   const [notes, setNotes] = useState("");
   const [companyOpen, setCompanyOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-for-deals"],
@@ -88,41 +87,54 @@ export function DealDialog({ open, onOpenChange, deal, onSaved }: Props) {
     }
   }, [open, deal]);
 
-  const handleSave = async () => {
-    if (!title.trim()) { toast.error("Informe o nome do negócio"); return; }
-    if (!companyName.trim()) { toast.error("Informe a empresa"); return; }
-    setSaving(true);
-    const payload = {
-      title: title.trim(),
-      company_name: companyName.trim(),
-      client_id: clientId,
-      contact_name: contactName.trim() || null,
-      contact_email: contactEmail.trim() || null,
-      contact_phone: contactPhone.trim() || null,
-      value: value ? Number(value) : 0,
-      product: product || null,
-      stage,
-      expected_close_date: expectedCloseDate || null,
-      notes: notes.trim() || null,
-    };
-    const { error } = isEdit
-      ? await supabase.from("deals").update(payload).eq("id", deal!.id)
-      : await supabase.from("deals").insert({ ...payload, created_by: user?.id, owner_id: user?.id });
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(isEdit ? "Negócio atualizado" : "Negócio criado");
-    onSaved();
-    onOpenChange(false);
-  };
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!title.trim()) throw new Error("Informe o nome do negócio");
+      if (!companyName.trim()) throw new Error("Informe a empresa");
+      const payload = {
+        title: title.trim(),
+        company_name: companyName.trim(),
+        client_id: clientId,
+        contact_name: contactName.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        contact_phone: contactPhone.trim() || null,
+        value: value ? Number(value) : 0,
+        product: product || null,
+        stage,
+        expected_close_date: expectedCloseDate || null,
+        notes: notes.trim() || null,
+      };
+      const { error } = isEdit
+        ? await supabase.from("deals").update(payload).eq("id", deal!.id)
+        : await supabase.from("deals").insert({ ...payload, created_by: user?.id, owner_id: user?.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(isEdit ? "Negócio atualizado" : "Negócio criado");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
+  });
 
-  const handleDelete = async () => {
+  const remove = useMutation({
+    mutationFn: async () => {
+      if (!deal) return;
+      const { error } = await supabase.from("deals").delete().eq("id", deal.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Negócio excluído");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao excluir. Tente novamente."),
+  });
+
+  const handleDelete = () => {
     if (!deal) return;
     if (!confirm("Excluir este negócio?")) return;
-    const { error } = await supabase.from("deals").delete().eq("id", deal.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Negócio excluído");
-    onSaved();
-    onOpenChange(false);
+    remove.mutate();
   };
 
   return (
@@ -244,14 +256,24 @@ export function DealDialog({ open, onOpenChange, deal, onSaved }: Props) {
         <DialogFooter className="flex-row justify-between sm:justify-between">
           <div>
             {isEdit && canDelete && (
-              <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4" /> Excluir
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={remove.isPending || save.isPending}
+                className="text-destructive hover:text-destructive"
+              >
+                {remove.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Excluir
               </Button>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={save.isPending}>Cancelar</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {save.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

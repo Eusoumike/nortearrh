@@ -88,7 +88,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
       toast.success("Cliente atualizado.");
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   if (!form) return null;

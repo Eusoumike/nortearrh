@@ -152,7 +152,7 @@ export function EditTaskDialog({
       invalidate();
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const remove = useMutation({
@@ -166,7 +166,7 @@ export function EditTaskDialog({
       invalidate();
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   if (!task) return null;
