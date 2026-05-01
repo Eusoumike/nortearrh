@@ -11,6 +11,7 @@ import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing
 import { Link } from "react-router-dom";
 import { timeAgo, formatDuration, formatBrazilDateTime } from "@/lib/formatters";
 import { CHANNEL_LABEL, STATUS_LABEL, TIMED_STAGES, type TicketStatus } from "@/lib/constants";
+import { isOpenStatus, isSlaOverdue, isSlaApproaching, isSlaAlerting } from "@/lib/sla";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
 import { exportTicketsCsv, exportTicketsPdf, type ExportTicket } from "@/lib/exporters";
@@ -94,21 +95,11 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     if (!tickets) return null;
     const now = Date.now();
-    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
-    const open = tickets.filter((t) => isOpen(t.status)).length;
-    const overdue = tickets.filter((t) => t.sla_resolution_deadline && new Date(t.sla_resolution_deadline).getTime() < now && isOpen(t.status)).length;
+    const open = tickets.filter((t) => isOpenStatus(t.status)).length;
+    const overdue = tickets.filter((t) => isSlaOverdue(t, now)).length;
 
     // P5 — tickets approaching SLA: open, not overdue, ≥80% consumed
-    const approachingSla = tickets.filter((t) => {
-      if (!isOpen(t.status) || !t.sla_resolution_deadline) return false;
-      const created = new Date(t.created_at).getTime();
-      const deadline = new Date(t.sla_resolution_deadline).getTime();
-      const total = deadline - created;
-      if (total <= 0) return false;
-      const consumed = now - created;
-      const ratio = consumed / total;
-      return ratio >= 0.8 && now < deadline;
-    });
+    const approachingSla = tickets.filter((t) => isSlaApproaching(t, now));
 
     const resolvedThisWeek = tickets.filter((t) => t.resolved_at && new Date(t.resolved_at) > new Date(now - 7 * 86400000)).length;
     const avgResponseSec = tickets
@@ -190,17 +181,8 @@ export default function Dashboard() {
   const slaAlerts = useMemo(() => {
     if (!tickets) return [] as any[];
     const now = Date.now();
-    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
     return tickets
-      .filter((t: any) => {
-        if (!isOpen(t.status) || !t.sla_resolution_deadline) return false;
-        const deadline = new Date(t.sla_resolution_deadline).getTime();
-        if (now >= deadline) return true; // estourado
-        const created = new Date(t.created_at).getTime();
-        const total = deadline - created;
-        if (total <= 0) return false;
-        return (now - created) / total >= 0.8; // ≥80% consumido
-      })
+      .filter((t: any) => isSlaAlerting(t, now))
       .sort((a: any, b: any) => new Date(a.sla_resolution_deadline).getTime() - new Date(b.sla_resolution_deadline).getTime());
   }, [tickets]);
 
