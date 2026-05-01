@@ -385,7 +385,18 @@ export default function Nps() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  if (isLoading) {
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("nps_responses").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Avaliação excluída.");
+      qc.invalidateQueries({ queryKey: ["nps-responses"] });
+      setDeleting(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
     return (
       <div className="space-y-4 p-4 md:p-6">
         <Skeleton className="h-8 w-64" />
