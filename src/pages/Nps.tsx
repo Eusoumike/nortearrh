@@ -397,6 +397,8 @@ export default function Nps() {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  if (isLoading) {
     return (
       <div className="space-y-4 p-4 md:p-6">
         <Skeleton className="h-8 w-64" />
