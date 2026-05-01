@@ -783,7 +783,15 @@ export default function Nps() {
                       )}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-end">
+                  <div className="mt-3 flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleting(r)}
+                    >
+                      <Trash2 className="h-3 w-3" /> Excluir
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
