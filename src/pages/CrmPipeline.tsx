@@ -88,7 +88,7 @@ export default function CrmPipeline() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*")
+        .select("id, title, company_name, contact_name, value, product, stage, expected_close_date, created_at, position, owner_id, client_id")
         .order("position", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;

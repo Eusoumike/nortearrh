@@ -427,7 +427,7 @@ function ImplantacaoKanban({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("implantacoes")
-        .select("*, responsavel:profiles!responsavel_id(full_name, avatar_url)")
+        .select("id, client_id, client_name, cnpj, etapa, produto, ordem, data_inicio, data_go_live, responsavel_id, metodo_registro, observacoes, created_at, updated_at, responsavel:profiles!responsavel_id(full_name, avatar_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
