@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Filter, X } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
+import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban } from "@/components/TicketKanban";
 
 export default function Tickets() {
@@ -77,25 +78,11 @@ export default function Tickets() {
     const list = tickets ?? [];
     if (!hasSpecialFilter) return list;
     const now = Date.now();
-    const isOpen = (s: string) => !["resolvido", "fechado"].includes(s);
     const clientNeedle = clientFilter?.trim().toLowerCase() ?? "";
     return list.filter((t: any) => {
-      if (openOnly && !isOpen(t.status)) return false;
-      if (slaMode === "overdue") {
-        if (!t.sla_resolution_deadline) return false;
-        if (!isOpen(t.status)) return false;
-        if (new Date(t.sla_resolution_deadline).getTime() >= now) return false;
-      }
-      if (slaMode === "approaching") {
-        if (!t.sla_resolution_deadline) return false;
-        if (!isOpen(t.status)) return false;
-        const created = new Date(t.created_at).getTime();
-        const deadline = new Date(t.sla_resolution_deadline).getTime();
-        const total = deadline - created;
-        if (total <= 0) return false;
-        const ratio = (now - created) / total;
-        if (!(ratio >= 0.8 && now < deadline)) return false;
-      }
+      if (openOnly && !isOpenStatus(t.status)) return false;
+      if (slaMode === "overdue" && !isSlaOverdue(t, now)) return false;
+      if (slaMode === "approaching" && !isSlaApproaching(t, now)) return false;
       if (resolvedWindow === "7d") {
         if (!t.resolved_at) return false;
         if (new Date(t.resolved_at).getTime() < now - 7 * 86400000) return false;
