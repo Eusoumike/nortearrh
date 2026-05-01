@@ -256,14 +256,24 @@ export function DealDialog({ open, onOpenChange, deal, onSaved }: Props) {
         <DialogFooter className="flex-row justify-between sm:justify-between">
           <div>
             {isEdit && canDelete && (
-              <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4" /> Excluir
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={remove.isPending || save.isPending}
+                className="text-destructive hover:text-destructive"
+              >
+                {remove.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Excluir
               </Button>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={save.isPending}>Cancelar</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {save.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
