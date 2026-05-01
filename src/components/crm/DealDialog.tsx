@@ -10,8 +10,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
-import { Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Trash2, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Deal, DealProduct, DealStage } from "@/pages/CrmPipeline";
 
@@ -54,7 +54,6 @@ export function DealDialog({ open, onOpenChange, deal, onSaved }: Props) {
   const [expectedCloseDate, setExpectedCloseDate] = useState("");
   const [notes, setNotes] = useState("");
   const [companyOpen, setCompanyOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-for-deals"],
@@ -88,41 +87,54 @@ export function DealDialog({ open, onOpenChange, deal, onSaved }: Props) {
     }
   }, [open, deal]);
 
-  const handleSave = async () => {
-    if (!title.trim()) { toast.error("Informe o nome do negócio"); return; }
-    if (!companyName.trim()) { toast.error("Informe a empresa"); return; }
-    setSaving(true);
-    const payload = {
-      title: title.trim(),
-      company_name: companyName.trim(),
-      client_id: clientId,
-      contact_name: contactName.trim() || null,
-      contact_email: contactEmail.trim() || null,
-      contact_phone: contactPhone.trim() || null,
-      value: value ? Number(value) : 0,
-      product: product || null,
-      stage,
-      expected_close_date: expectedCloseDate || null,
-      notes: notes.trim() || null,
-    };
-    const { error } = isEdit
-      ? await supabase.from("deals").update(payload).eq("id", deal!.id)
-      : await supabase.from("deals").insert({ ...payload, created_by: user?.id, owner_id: user?.id });
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(isEdit ? "Negócio atualizado" : "Negócio criado");
-    onSaved();
-    onOpenChange(false);
-  };
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!title.trim()) throw new Error("Informe o nome do negócio");
+      if (!companyName.trim()) throw new Error("Informe a empresa");
+      const payload = {
+        title: title.trim(),
+        company_name: companyName.trim(),
+        client_id: clientId,
+        contact_name: contactName.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        contact_phone: contactPhone.trim() || null,
+        value: value ? Number(value) : 0,
+        product: product || null,
+        stage,
+        expected_close_date: expectedCloseDate || null,
+        notes: notes.trim() || null,
+      };
+      const { error } = isEdit
+        ? await supabase.from("deals").update(payload).eq("id", deal!.id)
+        : await supabase.from("deals").insert({ ...payload, created_by: user?.id, owner_id: user?.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(isEdit ? "Negócio atualizado" : "Negócio criado");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
+  });
 
-  const handleDelete = async () => {
+  const remove = useMutation({
+    mutationFn: async () => {
+      if (!deal) return;
+      const { error } = await supabase.from("deals").delete().eq("id", deal.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Negócio excluído");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao excluir. Tente novamente."),
+  });
+
+  const handleDelete = () => {
     if (!deal) return;
     if (!confirm("Excluir este negócio?")) return;
-    const { error } = await supabase.from("deals").delete().eq("id", deal.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Negócio excluído");
-    onSaved();
-    onOpenChange(false);
+    remove.mutate();
   };
 
   return (
