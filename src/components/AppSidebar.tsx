@@ -96,10 +96,7 @@ const groups: NavGroup[] = [
     key: "performance",
     title: "Performance",
     icon: TrendingUp,
-    children: [
-      { title: "KPIs de Suporte", url: "/performance" },
-      { title: "Relatórios", url: "/performance?view=relatorios" },
-    ],
+    url: "/performance",
   },
 ];
 
