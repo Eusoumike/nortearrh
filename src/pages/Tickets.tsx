@@ -122,46 +122,41 @@ export default function Tickets() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
-      {/* Header (fixo) */}
-      <div className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      {/* Header com filtros à direita */}
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
           <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <Select value={statusFilter} onValueChange={updateStatus}>
+            <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={updatePriority}>
+            <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas prioridades</SelectItem>
+              {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Filtros (fixo) */}
-      <Card className="shrink-0 p-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="flex flex-1 items-center gap-2">
-            <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={updateStatus}>
-              <SelectTrigger className="h-9 flex-1 sm:w-[200px] sm:flex-none"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={updatePriority}>
-              <SelectTrigger className="h-9 flex-1 sm:w-[160px] sm:flex-none"><SelectValue placeholder="Prioridade" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas prioridades</SelectItem>
-                {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+      {specialLabel && (
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+            Filtro: {specialLabel}
+            <button onClick={clearSpecialFilters} className="rounded-full p-0.5 hover:bg-primary/20" aria-label="Remover filtro">
+              <X className="h-3 w-3" />
+            </button>
+          </span>
         </div>
-        {specialLabel && (
-          <div className="mt-2 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
-              Filtro: {specialLabel}
-              <button onClick={clearSpecialFilters} className="rounded-full p-0.5 hover:bg-primary/20" aria-label="Remover filtro">
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          </div>
-        )}
-      </Card>
+      )}
 
       {/* Kanban (preenche restante) */}
       <div className="min-h-0 flex-1">

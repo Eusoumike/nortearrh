@@ -33,7 +33,18 @@ import {
   ThumbsDown,
   ArrowUpRight,
   Search,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBrazilDateTime, formatBrazilDate } from "@/lib/formatters";
 import {
@@ -191,6 +202,7 @@ export default function Nps() {
   const [period, setPeriod] = useState<Period>("90");
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<NpsRow | null>(null);
+  const [deleting, setDeleting] = useState<NpsRow | null>(null);
 
   // Filtros da listagem de feedbacks
   const [listPeriod, setListPeriod] = useState<ListPeriod>("all");
@@ -369,6 +381,19 @@ export default function Nps() {
       toast.success(`${count} registro(s) importado(s) com sucesso.`);
       qc.invalidateQueries({ queryKey: ["nps-responses"] });
       setImportOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("nps_responses").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Avaliação excluída.");
+      qc.invalidateQueries({ queryKey: ["nps-responses"] });
+      setDeleting(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -758,7 +783,15 @@ export default function Nps() {
                       )}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-end">
+                  <div className="mt-3 flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleting(r)}
+                    >
+                      <Trash2 className="h-3 w-3" /> Excluir
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -801,6 +834,30 @@ export default function Nps() {
           {selected && <ResponseDetails row={selected} />}
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir avaliação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleting && (
+                <>Esta ação não pode ser desfeita. A avaliação de <strong>{deleting.nome}</strong>
+                {deleting.empresa ? <> ({deleting.empresa})</> : null} será permanentemente removida.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleting && deleteMut.mutate(deleting.id)}
+              disabled={deleteMut.isPending}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

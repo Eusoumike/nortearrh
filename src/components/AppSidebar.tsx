@@ -8,6 +8,7 @@ import {
   DollarSign,
   TrendingUp,
   CheckSquare,
+  LayoutDashboard,
   Lock,
   ChevronDown,
   LucideIcon,
@@ -51,14 +52,24 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
+    key: "dashboard",
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    url: "/",
+  },
+  {
     key: "suporte",
     title: "Suporte",
     icon: Headphones,
     children: [
       { title: "Chamados", url: "/tickets" },
-      { title: "Tarefas", url: "/tarefas" },
-      { title: "KPIs de Suporte", url: "/performance" },
     ],
+  },
+  {
+    key: "tarefas",
+    title: "Tarefas",
+    icon: CheckSquare,
+    url: "/tarefas",
   },
   {
     key: "clientes",
@@ -72,7 +83,6 @@ const groups: NavGroup[] = [
     icon: Rocket,
     children: [
       { title: "Implantação", url: "/implantacao" },
-      { title: "NPS / Avaliações", url: "/nps" },
     ],
   },
   {
@@ -86,7 +96,10 @@ const groups: NavGroup[] = [
     key: "performance",
     title: "Performance",
     icon: TrendingUp,
-    url: "/performance",
+    children: [
+      { title: "KPIs de Suporte", url: "/performance" },
+      { title: "Relatórios", url: "/performance?view=relatorios" },
+    ],
   },
 ];
 
