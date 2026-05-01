@@ -496,7 +496,7 @@ function ImplantacaoKanban({
       qc.invalidateQueries({ queryKey: ["implantacoes"] });
       qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const removeImpl = useMutation({
@@ -509,7 +509,7 @@ function ImplantacaoKanban({
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
       toast.success("Implantação removida.");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const grouped = useMemo(() => {
@@ -848,7 +848,7 @@ function NewImplantacaoDialog({
       });
       setClientSearch("");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const pickClient = (c: any) => {
@@ -1217,7 +1217,7 @@ function DadosTab({
       qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
       toast.success("Atualizado.");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const remove = useMutation({
@@ -1231,7 +1231,7 @@ function DadosTab({
       toast.success("Implantação removida.");
       onClose();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const [confirmStage, setConfirmStage] = useState(false);
@@ -1639,7 +1639,7 @@ function ChecklistTab({
       qc.invalidateQueries({ queryKey: ["impl-eventos", item.id] });
       qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const addItem = useMutation({
@@ -1657,7 +1657,7 @@ function ChecklistTab({
       qc.invalidateQueries({ queryKey: ["checklist-summary", item.id] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const removeItem = useMutation({
@@ -1670,7 +1670,7 @@ function ChecklistTab({
       qc.invalidateQueries({ queryKey: ["checklist-summary", item.id] });
       qc.invalidateQueries({ queryKey: ["checklist-counts"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   // Agrupa itens por etapa
@@ -1833,7 +1833,7 @@ function ChecklistStageSection({
       qc.invalidateQueries({ queryKey: ["impl-last-activity"] });
       toast.success("Pendências salvas.");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   return (
@@ -2098,7 +2098,7 @@ function CustomizeStagesDialog({
       toast.success("Etapas atualizadas.");
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const removeCustom = useMutation({
@@ -2114,7 +2114,7 @@ function CustomizeStagesDialog({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["impl-stage-configs", userId] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
   const addCustom = () => {
