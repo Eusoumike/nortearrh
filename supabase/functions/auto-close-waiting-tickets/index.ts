@@ -17,26 +17,32 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Aceita cron secret OU JWT autenticado (mesmo padrão de check-sla-alerts)
+  // Aceita: cron secret, JWT autenticado, OU anon key (para chamadas de cron via pg_net)
   const cronSecret = Deno.env.get("SLA_CRON_SECRET");
   const providedSecret = req.headers.get("x-cron-secret");
   const authHeader = req.headers.get("Authorization");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
   let authorized = false;
   if (cronSecret && providedSecret && providedSecret === cronSecret) {
     authorized = true;
   } else if (authHeader?.startsWith("Bearer ")) {
-    try {
-      const userClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } },
-      );
-      const token = authHeader.replace("Bearer ", "");
-      const { data, error } = await userClient.auth.getClaims(token);
-      if (!error && data?.claims?.sub) authorized = true;
-    } catch (_) {
-      // unauthorized
+    const token = authHeader.replace("Bearer ", "");
+    // Permite chamadas via anon key (cron interno)
+    if (anonKey && token === anonKey) {
+      authorized = true;
+    } else {
+      try {
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } },
+        );
+        const { data, error } = await userClient.auth.getClaims(token);
+        if (!error && data?.claims?.sub) authorized = true;
+      } catch (_) {
+        // unauthorized
+      }
     }
   }
 
