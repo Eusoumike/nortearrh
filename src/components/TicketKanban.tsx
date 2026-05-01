@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -237,20 +237,29 @@ export function TicketKanban({ tickets }: Props) {
     return map;
   }, [tickets]);
 
-  const activeTicket = activeId ? tickets.find((t) => t.id === activeId) : null;
+  const activeTicket = useMemo(
+    () => (activeId ? tickets.find((t) => t.id === activeId) : null),
+    [activeId, tickets],
+  );
 
-  const handleDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
-  const handleDragEnd = (e: DragEndEvent) => {
-    setActiveId(null);
-    if (!e.over) return;
-    const id = String(e.active.id);
-    const newStatus = e.over.id as TicketStatus;
-    const ticket = tickets.find((t) => t.id === id);
-    if (!ticket) return;
-    const currentEffective = ticket.status === "fechado" ? "resolvido" : ticket.status;
-    if (currentEffective === newStatus) return;
-    updateStatus.mutate({ id, status: newStatus });
-  };
+  const handleDragStart = useCallback((e: DragStartEvent) => {
+    setActiveId(String(e.active.id));
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      setActiveId(null);
+      if (!e.over) return;
+      const id = String(e.active.id);
+      const newStatus = e.over.id as TicketStatus;
+      const ticket = tickets.find((t) => t.id === id);
+      if (!ticket) return;
+      const currentEffective = ticket.status === "fechado" ? "resolvido" : ticket.status;
+      if (currentEffective === newStatus) return;
+      updateStatus.mutate({ id, status: newStatus });
+    },
+    [tickets, updateStatus],
+  );
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
