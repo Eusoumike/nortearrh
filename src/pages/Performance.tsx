@@ -203,8 +203,9 @@ export default function Performance() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Visão geral</TabsTrigger>
-          <TabsTrigger value="tickets">Chamados</TabsTrigger>
-          <TabsTrigger value="nps">NPS</TabsTrigger>
+          <TabsTrigger value="pareto">Pareto</TabsTrigger>
+          <TabsTrigger value="heatmap">Mapa de calor</TabsTrigger>
+          <TabsTrigger value="frt">Tempo de resposta</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
