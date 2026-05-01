@@ -306,118 +306,21 @@ export default function Performance() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="tickets" className="space-y-4">
-          {/* Top problemas recorrentes */}
-          <Card className="p-5 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold">Top problemas recorrentes</h3>
-                <p className="text-[11px] text-muted-foreground">Títulos de chamado mais repetidos.</p>
-              </div>
-              <Select value={topPeriodDays} onValueChange={setTopPeriodDays}>
-                <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PERIOD_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {loadingTop ? (
-              <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Calculando…
-              </div>
-            ) : topProblems.length === 0 ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">Sem dados no período.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                      <th className="py-2 pr-3 font-medium">#</th>
-                      <th className="py-2 pr-3 font-medium">Título</th>
-                      <th className="py-2 pr-3 text-right font-medium">Qtd</th>
-                      <th className="py-2 pr-3 text-right font-medium">% do total</th>
-                      <th className="py-2 pr-3 text-right font-medium">Tempo médio</th>
-                      <th className="py-2 font-medium"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProblems.map((p, i) => (
-                      <tr key={p.title} className="border-b last:border-0">
-                        <td className="py-2 pr-3 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 pr-3 font-medium">{p.title}</td>
-                        <td className="py-2 pr-3 text-right">{p.count}</td>
-                        <td className="py-2 pr-3 text-right text-muted-foreground">{p.pct}%</td>
-                        <td className="py-2 pr-3 text-right">
-                          {p.avgResolution > 0 ? formatDuration(Math.round(p.avgResolution)) : "—"}
-                        </td>
-                        <td className="py-2 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setMaterialFor({ title: p.title, count: p.count });
-                              setMaterialText("");
-                            }}
-                          >
-                            <FileText className="mr-2 h-3.5 w-3.5" />
-                            Gerar material
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-
-          {/* Distribuição por status */}
-          <Card className="p-5 space-y-3">
-            <h3 className="text-sm font-semibold">Distribuição por status</h3>
-            <div className="h-64">
-              <ResponsiveContainer>
-                <BarChart data={statusDist} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 80 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={80} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 6,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+        <TabsContent value="pareto" className="space-y-4">
+          <ParetoTab
+            onMaterial={(title, count) => {
+              setMaterialFor({ title, count });
+              setMaterialText("");
+            }}
+          />
         </TabsContent>
 
-        <TabsContent value="nps" className="space-y-4">
-          <Card className="p-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Star className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold">Métricas de satisfação (NPS)</h3>
-                <p className="text-sm text-muted-foreground">
-                  As métricas de NPS estão disponíveis na seção de Onboarding, junto às avaliações dos clientes.
-                </p>
-              </div>
-            </div>
-            <Button asChild>
-              <Link to="/nps">
-                Abrir NPS / Avaliações
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </Card>
+        <TabsContent value="heatmap" className="space-y-4">
+          <HeatmapTab />
+        </TabsContent>
+
+        <TabsContent value="frt" className="space-y-4">
+          <FrtTab />
         </TabsContent>
       </Tabs>
 
