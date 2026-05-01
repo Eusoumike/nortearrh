@@ -85,7 +85,7 @@ export default function TicketDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tickets")
-        .select("*, client:clients(id, name, email, company, phone, health, anydesk_id, anydesk_senha), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
+        .select("*, client:clients!fk_tickets_client(id, name, email, company, phone, health, anydesk_id, anydesk_senha), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)")
         .eq("id", id!)
         .single();
       if (error) throw error;

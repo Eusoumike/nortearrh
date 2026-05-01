@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "implantacoes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_checklist_implantacao"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       clients: {
@@ -265,6 +272,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_eventos_implantacao"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "implantacao_eventos_implantacao_id_fkey"
             columns: ["implantacao_id"]
             isOneToOne: false
@@ -302,6 +316,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_pendencias_implantacao"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "implantacao_pendencias_implantacao_id_fkey"
             columns: ["implantacao_id"]
@@ -705,6 +726,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_tasks_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_ticket"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
@@ -810,6 +852,13 @@ export type Database = {
           type?: Database["public"]["Enums"]["interaction_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_interactions_ticket"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ticket_interactions_author_id_fkey"
             columns: ["author_id"]
@@ -1035,6 +1084,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_tickets_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tickets_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_assigned_to_fkey"
             columns: ["assigned_to"]

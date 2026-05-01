@@ -114,7 +114,7 @@ export function TopBar() {
       const numeric = safe.replace(/^#/, "");
       const { data, error } = await supabase
         .from("tickets")
-        .select("id, ticket_number, title, status, client_name, organization, client:clients(name, company)")
+        .select("id, ticket_number, title, status, client_name, organization, client:clients!fk_tickets_client(name, company)")
         .or(
           `title.ilike.%${safe}%,ticket_number.ilike.%${numeric}%,client_name.ilike.%${safe}%,organization.ilike.%${safe}%`,
         )
