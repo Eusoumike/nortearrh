@@ -7,10 +7,11 @@ import { Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Financeiro() {
-  const { role, loading } = useAuth();
+  const { user, role, loading } = useAuth();
   const [tab, setTab] = useState("visao-geral");
 
-  if (loading) {
+  // Aguarda tanto a sessão quanto a role serem resolvidas antes de decidir
+  if (loading || (user && role === null)) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
