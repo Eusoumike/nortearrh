@@ -55,17 +55,11 @@ export default function Financeiro() {
         </TabsContent>
 
         <TabsContent value="vr" className="mt-4">
-          <PlaceholderCard
-            title="VR Benefícios"
-            description="Lançamentos de comissões VR por competência, com fidelidade e percentuais."
-          />
+          <VrTab />
         </TabsContent>
 
         <TabsContent value="ponto" className="mt-4">
-          <PlaceholderCard
-            title="RH Digital — PontoMais"
-            description="Lançamentos de mensalidade e comissão Nortear por cliente."
-          />
+          <PontoTab />
         </TabsContent>
 
         <TabsContent value="documentos" className="mt-4">
