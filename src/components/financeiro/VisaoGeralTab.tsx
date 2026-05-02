@@ -101,12 +101,18 @@ export function VisaoGeralTab() {
     queryKey: ["financeiro-ponto", queryStart, queryEnd],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lancamentos_ponto")
-        .select("client_id, cliente_nome, competencia, valor_nortear, fidelidade_vencimento")
+        .from("parcelas_rh_digital")
+        .select("client_id, cliente_nome, competencia, valor_nortear")
         .gte("competencia", queryStart)
         .lte("competencia", queryEnd);
       if (error) throw error;
-      return (data ?? []) as LancPonto[];
+      return (data ?? []).map((r: any) => ({
+        client_id: r.client_id,
+        cliente_nome: r.cliente_nome,
+        competencia: r.competencia,
+        valor_nortear: Number(r.valor_nortear),
+        fidelidade_vencimento: null,
+      })) as LancPonto[];
     },
   });
 
@@ -123,8 +129,9 @@ export function VisaoGeralTab() {
           .not("fidelidade_vencimento", "is", null)
           .lte("fidelidade_vencimento", limit),
         supabase
-          .from("lancamentos_ponto")
+          .from("contratos_rh_digital")
           .select("id, cliente_nome, fidelidade_vencimento")
+          .eq("ativo", true)
           .not("fidelidade_vencimento", "is", null)
           .lte("fidelidade_vencimento", limit),
       ]);
