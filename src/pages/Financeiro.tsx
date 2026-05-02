@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { VisaoGeralTab } from "@/components/financeiro/VisaoGeralTab";
+import { VrTab } from "@/components/financeiro/VrTab";
+import { PontoTab } from "@/components/financeiro/PontoTab";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
@@ -33,7 +35,7 @@ export default function Financeiro() {
             Comissões VR Benefícios, RH Digital, documentos e configurações.
           </p>
         </div>
-        <Button onClick={() => setTab("lancamentos")} className="gap-1.5">
+        <Button onClick={() => setTab("vr")} className="gap-1.5">
           <Plus className="h-4 w-4" />
           Novo lançamento
         </Button>
@@ -53,17 +55,11 @@ export default function Financeiro() {
         </TabsContent>
 
         <TabsContent value="vr" className="mt-4">
-          <PlaceholderCard
-            title="VR Benefícios"
-            description="Lançamentos de comissões VR por competência, com fidelidade e percentuais."
-          />
+          <VrTab />
         </TabsContent>
 
         <TabsContent value="ponto" className="mt-4">
-          <PlaceholderCard
-            title="RH Digital — PontoMais"
-            description="Lançamentos de mensalidade e comissão Nortear por cliente."
-          />
+          <PontoTab />
         </TabsContent>
 
         <TabsContent value="documentos" className="mt-4">
