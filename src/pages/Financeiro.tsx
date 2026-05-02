@@ -35,7 +35,7 @@ export default function Financeiro() {
             Comissões VR Benefícios, RH Digital, documentos e configurações.
           </p>
         </div>
-        <Button onClick={() => setTab("lancamentos")} className="gap-1.5">
+        <Button onClick={() => setTab("vr")} className="gap-1.5">
           <Plus className="h-4 w-4" />
           Novo lançamento
         </Button>
