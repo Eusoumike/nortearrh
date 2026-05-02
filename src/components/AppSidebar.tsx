@@ -48,6 +48,7 @@ type NavGroup = {
   children?: NavChild[];
   url?: string;
   disabled?: boolean;
+  adminOnly?: boolean;
 };
 
 const groups: NavGroup[] = [
@@ -123,6 +124,8 @@ export function AppSidebar() {
     );
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(initialOpen);
+
+  const visibleGroups = groups.filter((g) => !g.adminOnly || role === "admin");
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
