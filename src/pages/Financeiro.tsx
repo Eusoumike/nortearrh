@@ -49,10 +49,7 @@ export default function Financeiro() {
         </TabsList>
 
         <TabsContent value="visao-geral" className="mt-4">
-          <PlaceholderCard
-            title="Visão geral"
-            description="KPIs de MRR, gráfico de 12 meses, alertas de fidelidade e ranking de clientes."
-          />
+          <VisaoGeralTab />
         </TabsContent>
 
         <TabsContent value="vr" className="mt-4">
