@@ -18,6 +18,7 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
 import Settings from "./pages/Settings";
+import Financeiro from "./pages/Financeiro";
 import Nps from "./pages/Nps";
 import NpsForm from "./pages/NpsForm";
 import NotFound from "./pages/NotFound.tsx";
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/crm" element={<CrmPipeline />} />
             <Route path="/crm/pipeline" element={<CrmPipeline />} />
             <Route path="/nps" element={<Nps />} />
+            <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />

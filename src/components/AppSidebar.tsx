@@ -148,7 +148,7 @@ export function AppSidebar() {
           {!collapsed && <SidebarGroupLabel>Navegação</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {groups.map((g) => {
+              {visibleGroups.map((g) => {
                 if (g.disabled) {
                   return (
                     <SidebarMenuItem key={g.key}>
