@@ -91,7 +91,13 @@ const groups: NavGroup[] = [
     icon: Briefcase,
     children: [{ title: "Pipeline", url: "/crm/pipeline" }],
   },
-  { key: "financeiro", title: "Financeiro", icon: DollarSign, disabled: true },
+  {
+    key: "financeiro",
+    title: "Financeiro",
+    icon: DollarSign,
+    url: "/financeiro",
+    adminOnly: true,
+  },
   {
     key: "performance",
     title: "Performance",
