@@ -48,6 +48,7 @@ type NavGroup = {
   children?: NavChild[];
   url?: string;
   disabled?: boolean;
+  adminOnly?: boolean;
 };
 
 const groups: NavGroup[] = [
@@ -91,7 +92,13 @@ const groups: NavGroup[] = [
     icon: Briefcase,
     children: [{ title: "Pipeline", url: "/crm/pipeline" }],
   },
-  { key: "financeiro", title: "Financeiro", icon: DollarSign, disabled: true },
+  {
+    key: "financeiro",
+    title: "Financeiro",
+    icon: DollarSign,
+    url: "/financeiro",
+    adminOnly: true,
+  },
   {
     key: "performance",
     title: "Performance",
@@ -118,6 +125,8 @@ export function AppSidebar() {
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(initialOpen);
 
+  const visibleGroups = groups.filter((g) => !g.adminOnly || role === "admin");
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -139,7 +148,7 @@ export function AppSidebar() {
           {!collapsed && <SidebarGroupLabel>Navegação</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {groups.map((g) => {
+              {visibleGroups.map((g) => {
                 if (g.disabled) {
                   return (
                     <SidebarMenuItem key={g.key}>
