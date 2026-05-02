@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { VisaoGeralTab } from "@/components/financeiro/VisaoGeralTab";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
