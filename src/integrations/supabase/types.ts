@@ -206,6 +206,63 @@ export type Database = {
           },
         ]
       }
+      contratos_rh_digital: {
+        Row: {
+          ativo: boolean
+          client_id: string | null
+          cliente_nome: string
+          cnpj: string | null
+          created_at: string
+          created_by: string | null
+          data_inicio: string
+          fidelidade_meses: number
+          fidelidade_vencimento: string | null
+          id: string
+          notificar_vencimento: boolean
+          observacoes: string | null
+          percentual_nortear: number
+          updated_at: string
+          valor_mensalidade: number
+          valor_nortear: number
+        }
+        Insert: {
+          ativo?: boolean
+          client_id?: string | null
+          cliente_nome: string
+          cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_inicio: string
+          fidelidade_meses: number
+          fidelidade_vencimento?: string | null
+          id?: string
+          notificar_vencimento?: boolean
+          observacoes?: string | null
+          percentual_nortear?: number
+          updated_at?: string
+          valor_mensalidade?: number
+          valor_nortear?: number
+        }
+        Update: {
+          ativo?: boolean
+          client_id?: string | null
+          cliente_nome?: string
+          cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_inicio?: string
+          fidelidade_meses?: number
+          fidelidade_vencimento?: string | null
+          id?: string
+          notificar_vencimento?: boolean
+          observacoes?: string | null
+          percentual_nortear?: number
+          updated_at?: string
+          valor_mensalidade?: number
+          valor_nortear?: number
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           client_id: string | null
@@ -866,6 +923,62 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcelas_rh_digital: {
+        Row: {
+          client_id: string | null
+          cliente_nome: string
+          competencia: string
+          contrato_id: string
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          observacoes: string | null
+          percentual_nortear: number
+          status: Database["public"]["Enums"]["parcela_rh_status"]
+          updated_at: string
+          valor_mensalidade: number
+          valor_nortear: number
+        }
+        Insert: {
+          client_id?: string | null
+          cliente_nome: string
+          competencia: string
+          contrato_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          percentual_nortear?: number
+          status?: Database["public"]["Enums"]["parcela_rh_status"]
+          updated_at?: string
+          valor_mensalidade?: number
+          valor_nortear?: number
+        }
+        Update: {
+          client_id?: string | null
+          cliente_nome?: string
+          competencia?: string
+          contrato_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          percentual_nortear?: number
+          status?: Database["public"]["Enums"]["parcela_rh_status"]
+          updated_at?: string
+          valor_mensalidade?: number
+          valor_nortear?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_rh_digital_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_rh_digital"
             referencedColumns: ["id"]
           },
         ]
@@ -1593,6 +1706,7 @@ export type Database = {
         | "reuniao"
         | "mudanca_status"
       lancamento_vr_tipo: "primeira_carga" | "recorrencia"
+      parcela_rh_status: "pendente" | "pago" | "inadimplente"
       ticket_channel:
         | "email"
         | "whatsapp"
@@ -1786,6 +1900,7 @@ export const Constants = {
         "mudanca_status",
       ],
       lancamento_vr_tipo: ["primeira_carga", "recorrencia"],
+      parcela_rh_status: ["pendente", "pago", "inadimplente"],
       ticket_channel: [
         "email",
         "whatsapp",
