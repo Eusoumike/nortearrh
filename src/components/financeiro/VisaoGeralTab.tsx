@@ -129,8 +129,9 @@ export function VisaoGeralTab() {
           .not("fidelidade_vencimento", "is", null)
           .lte("fidelidade_vencimento", limit),
         supabase
-          .from("lancamentos_ponto")
+          .from("contratos_rh_digital")
           .select("id, cliente_nome, fidelidade_vencimento")
+          .eq("ativo", true)
           .not("fidelidade_vencimento", "is", null)
           .lte("fidelidade_vencimento", limit),
       ]);
