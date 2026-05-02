@@ -161,6 +161,51 @@ export type Database = {
           },
         ]
       }
+      config_comissoes: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          percentual_ponto: number
+          percentual_vr_primeira_carga: number
+          percentual_vr_recorrencia: number
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          percentual_ponto?: number
+          percentual_vr_primeira_carga?: number
+          percentual_vr_recorrencia?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          percentual_ponto?: number
+          percentual_vr_primeira_carga?: number
+          percentual_vr_recorrencia?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_comissoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "config_comissoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           client_id: string | null
@@ -232,6 +277,75 @@ export type Database = {
           },
           {
             foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentos_financeiros: {
+        Row: {
+          arquivo_nome: string | null
+          arquivo_url: string | null
+          client_id: string | null
+          cliente_nome: string | null
+          competencia: string
+          created_at: string
+          created_by: string | null
+          data_pagamento: string | null
+          descricao: string | null
+          id: string
+          observacoes: string | null
+          status_pagamento: Database["public"]["Enums"]["documento_financeiro_status"]
+          tipo: Database["public"]["Enums"]["documento_financeiro_tipo"]
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
+          client_id?: string | null
+          cliente_nome?: string | null
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          data_pagamento?: string | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          status_pagamento?: Database["public"]["Enums"]["documento_financeiro_status"]
+          tipo?: Database["public"]["Enums"]["documento_financeiro_tipo"]
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
+          client_id?: string | null
+          cliente_nome?: string | null
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          data_pagamento?: string | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          status_pagamento?: Database["public"]["Enums"]["documento_financeiro_status"]
+          tipo?: Database["public"]["Enums"]["documento_financeiro_tipo"]
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_financeiros_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_financeiros_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients_safe"
@@ -480,6 +594,153 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos_ponto: {
+        Row: {
+          client_id: string | null
+          cliente_nome: string
+          cnpj: string | null
+          competencia: string
+          created_at: string
+          created_by: string | null
+          fidelidade_inicio: string | null
+          fidelidade_meses: number | null
+          fidelidade_vencimento: string | null
+          id: string
+          notificar_vencimento: boolean
+          observacoes: string | null
+          percentual_nortear: number
+          updated_at: string
+          valor_mensalidade: number
+          valor_nortear: number
+        }
+        Insert: {
+          client_id?: string | null
+          cliente_nome: string
+          cnpj?: string | null
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          fidelidade_inicio?: string | null
+          fidelidade_meses?: number | null
+          fidelidade_vencimento?: string | null
+          id?: string
+          notificar_vencimento?: boolean
+          observacoes?: string | null
+          percentual_nortear?: number
+          updated_at?: string
+          valor_mensalidade?: number
+          valor_nortear?: number
+        }
+        Update: {
+          client_id?: string | null
+          cliente_nome?: string
+          cnpj?: string | null
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          fidelidade_inicio?: string | null
+          fidelidade_meses?: number | null
+          fidelidade_vencimento?: string | null
+          id?: string
+          notificar_vencimento?: boolean
+          observacoes?: string | null
+          percentual_nortear?: number
+          updated_at?: string
+          valor_mensalidade?: number
+          valor_nortear?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_ponto_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_ponto_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos_vr: {
+        Row: {
+          client_id: string | null
+          cliente_nome: string
+          cnpj: string | null
+          competencia: string
+          created_at: string
+          created_by: string | null
+          fidelidade_inicio: string | null
+          fidelidade_meses: number | null
+          fidelidade_vencimento: string | null
+          id: string
+          notificar_vencimento: boolean
+          observacoes: string | null
+          percentual_comissao: number
+          tipo: Database["public"]["Enums"]["lancamento_vr_tipo"]
+          updated_at: string
+          valor_base: number
+          valor_comissao: number
+        }
+        Insert: {
+          client_id?: string | null
+          cliente_nome: string
+          cnpj?: string | null
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          fidelidade_inicio?: string | null
+          fidelidade_meses?: number | null
+          fidelidade_vencimento?: string | null
+          id?: string
+          notificar_vencimento?: boolean
+          observacoes?: string | null
+          percentual_comissao?: number
+          tipo?: Database["public"]["Enums"]["lancamento_vr_tipo"]
+          updated_at?: string
+          valor_base?: number
+          valor_comissao?: number
+        }
+        Update: {
+          client_id?: string | null
+          cliente_nome?: string
+          cnpj?: string | null
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          fidelidade_inicio?: string | null
+          fidelidade_meses?: number | null
+          fidelidade_vencimento?: string | null
+          id?: string
+          notificar_vencimento?: boolean
+          observacoes?: string | null
+          percentual_comissao?: number
+          tipo?: Database["public"]["Enums"]["lancamento_vr_tipo"]
+          updated_at?: string
+          valor_base?: number
+          valor_comissao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_vr_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_vr_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1310,6 +1571,8 @@ export type Database = {
         | "negociacao"
         | "fechado_ganho"
         | "fechado_perdido"
+      documento_financeiro_status: "pendente" | "pago"
+      documento_financeiro_tipo: "nota_fiscal" | "boleto" | "outro"
       implantacao_etapa:
         | "novo_cliente"
         | "boas_vindas"
@@ -1329,6 +1592,7 @@ export type Database = {
         | "whatsapp"
         | "reuniao"
         | "mudanca_status"
+      lancamento_vr_tipo: "primeira_carga" | "recorrencia"
       ticket_channel:
         | "email"
         | "whatsapp"
@@ -1497,6 +1761,8 @@ export const Constants = {
         "fechado_ganho",
         "fechado_perdido",
       ],
+      documento_financeiro_status: ["pendente", "pago"],
+      documento_financeiro_tipo: ["nota_fiscal", "boleto", "outro"],
       implantacao_etapa: [
         "novo_cliente",
         "boas_vindas",
@@ -1519,6 +1785,7 @@ export const Constants = {
         "reuniao",
         "mudanca_status",
       ],
+      lancamento_vr_tipo: ["primeira_carga", "recorrencia"],
       ticket_channel: [
         "email",
         "whatsapp",
