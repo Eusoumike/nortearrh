@@ -86,6 +86,8 @@ export function RhDigitalTab() {
   const [pagandoParcela, setPagandoParcela] = useState<ParcelaSummary | null>(null);
   const [marcarInad, setMarcarInad] = useState<Parcela | null>(null);
   const [encerrarContrato, setEncerrarContrato] = useState<Contrato | null>(null);
+  const [excluirParcela, setExcluirParcela] = useState<Parcela | null>(null);
+  const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
