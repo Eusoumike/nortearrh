@@ -576,6 +576,15 @@ export function RhDigitalTab() {
                         ) : (
                           c.cliente_nome
                         )}
+                        {c.tipo_cobranca === "anual" ? (
+                          <Badge className="ml-2 border-transparent bg-purple-500/15 text-purple-600 hover:bg-purple-500/20">
+                            Anual
+                          </Badge>
+                        ) : (
+                          <Badge className="ml-2 border-transparent bg-teal-500/15 text-teal-600 hover:bg-teal-500/20">
+                            Mensal
+                          </Badge>
+                        )}
                         {!c.ativo && (
                           <Badge className="ml-2 border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20">
                             Encerrado
@@ -592,7 +601,9 @@ export function RhDigitalTab() {
                         {BRL.format(Number(c.valor_nortear))}
                       </TableCell>
                       <TableCell className="text-sm">{formatBRDate(c.data_inicio)}</TableCell>
-                      <TableCell>{c.fidelidade_meses} meses</TableCell>
+                      <TableCell>
+                        {c.tipo_cobranca === "anual" ? "Anual (12 meses)" : `${c.fidelidade_meses} meses`}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={cn(
@@ -606,7 +617,9 @@ export function RhDigitalTab() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm tabular-nums">
-                        {pagas}/{c.fidelidade_meses}
+                        {c.tipo_cobranca === "anual"
+                          ? (pagas > 0 ? "Pago" : "Pendente")
+                          : `${pagas}/${c.fidelidade_meses}`}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
