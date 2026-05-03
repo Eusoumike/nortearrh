@@ -91,6 +91,9 @@ export function RhDigitalTab() {
   const [encerrarContrato, setEncerrarContrato] = useState<Contrato | null>(null);
   const [excluirParcela, setExcluirParcela] = useState<Parcela | null>(null);
   const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
+  const [showEncerrados, setShowEncerrados] = useState(false);
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
