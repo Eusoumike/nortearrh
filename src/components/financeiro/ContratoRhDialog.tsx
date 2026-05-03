@@ -247,7 +247,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
-            <ClientCombobox value={client?.id ?? null} onSelect={setClient} />
+            <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
             {client?.cnpj && (
               <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>
             )}
