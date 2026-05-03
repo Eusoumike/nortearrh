@@ -1035,6 +1035,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          percentual_ponto: number
+          percentual_vr_primeira_carga: number
+          percentual_vr_recorrencia: number
           pipedrive_api_token: string | null
           pipedrive_connected_at: string | null
           pipedrive_user_name: string | null
@@ -1045,6 +1048,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          percentual_ponto?: number
+          percentual_vr_primeira_carga?: number
+          percentual_vr_recorrencia?: number
           pipedrive_api_token?: string | null
           pipedrive_connected_at?: string | null
           pipedrive_user_name?: string | null
@@ -1055,6 +1061,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          percentual_ponto?: number
+          percentual_vr_primeira_carga?: number
+          percentual_vr_recorrencia?: number
           pipedrive_api_token?: string | null
           pipedrive_connected_at?: string | null
           pipedrive_user_name?: string | null
