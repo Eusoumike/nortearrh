@@ -202,6 +202,43 @@ export function RhDigitalTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro"),
   });
 
+  const excluirParcelaMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("parcelas_rh_digital").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Parcela excluída com sucesso");
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
+      setExcluirParcela(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro"),
+  });
+
+  const excluirContratoMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error: e1 } = await supabase
+        .from("parcelas_rh_digital")
+        .delete()
+        .eq("contrato_id", id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("contratos_rh_digital").delete().eq("id", id);
+      if (e2) throw e2;
+    },
+    onSuccess: () => {
+      toast.success("Contrato excluído com sucesso");
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
+      setExcluirContrato(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro"),
+  });
+
   const openNovoContrato = () => {
     setEditingContrato(null);
     setContratoDialog(true);
