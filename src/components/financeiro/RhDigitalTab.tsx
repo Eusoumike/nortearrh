@@ -383,6 +383,8 @@ export function RhDigitalTab() {
               <TableBody>
                 {parcelas.map((p) => {
                   const customPerc = Number(p.percentual_nortear) !== PADRAO_PERC;
+                  const contratoP = contratos.find((c) => c.id === p.contrato_id);
+                  const isAnual = contratoP?.tipo_cobranca === "anual";
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
@@ -398,7 +400,17 @@ export function RhDigitalTab() {
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {BRL.format(Number(p.valor_mensalidade))}
+                        <div className="flex items-center justify-end gap-2">
+                          {isAnual && (
+                            <Badge
+                              title="Contrato anual — pagamento único"
+                              className="border-transparent bg-purple-500/15 text-purple-600 hover:bg-purple-500/20"
+                            >
+                              Anual
+                            </Badge>
+                          )}
+                          {BRL.format(Number(p.valor_mensalidade))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {customPerc ? (
