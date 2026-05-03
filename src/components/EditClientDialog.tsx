@@ -189,6 +189,41 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             </div>
           </div>
 
+          <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+            <div className="text-sm font-medium">Produto(s) contratado(s)</div>
+            <div className="flex flex-wrap gap-4">
+              {[
+                { id: "rh_digital", label: "RH Digital (Ponto)" },
+                { id: "vr_beneficios", label: "VR Benefícios" },
+              ].map((p) => {
+                const checked = (form.products ?? []).includes(p.id);
+                return (
+                  <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        const set = new Set<string>(form.products ?? []);
+                        if (v) set.add(p.id); else set.delete(p.id);
+                        setForm({ ...form, products: Array.from(set) });
+                      }}
+                    />
+                    {p.label}
+                  </label>
+                );
+              })}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor de contrato (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.contract_value}
+                onChange={(e) => setForm({ ...form, contract_value: e.target.value })}
+                placeholder="0,00"
+              />
+            </div>
+          </div>
 
           <div className="space-y-2 rounded-lg border border-border bg-surface-muted/30 p-3">
             <div className="flex items-center justify-between gap-2 text-sm font-medium">
