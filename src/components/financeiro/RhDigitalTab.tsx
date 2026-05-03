@@ -667,6 +667,54 @@ export function RhDigitalTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!excluirParcela} onOpenChange={(v) => !v && setExcluirParcela(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir parcela?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluirParcela &&
+                `Excluir esta parcela de ${excluirParcela.cliente_nome} referente a ${format(new Date(excluirParcela.competencia), "MM/yyyy")}? Esta ação não pode ser desfeita.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluirParcela) excluirParcelaMut.mutate(excluirParcela.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!excluirContrato} onOpenChange={(v) => !v && setExcluirContrato(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluirContrato &&
+                `Excluir o contrato de ${excluirContrato.cliente_nome}? Todas as parcelas pendentes serão removidas. Esta ação não pode ser desfeita.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluirContrato) excluirContratoMut.mutate(excluirContrato.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
