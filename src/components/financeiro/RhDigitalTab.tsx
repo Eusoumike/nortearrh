@@ -234,7 +234,7 @@ export function RhDigitalTab() {
       if (e2) throw e2;
     },
     onSuccess: () => {
-      toast.success("Contrato excluído com sucesso");
+      toast.success("Contrato excluído permanentemente");
       qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
       qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
       qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
@@ -242,7 +242,14 @@ export function RhDigitalTab() {
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
       setExcluirContrato(null);
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro"),
+    onError: (e: any) => {
+      const msg = String(e?.message ?? "");
+      if (/permission|policy|denied|row-level/i.test(msg)) {
+        toast.error("Apenas administradores podem excluir contratos");
+      } else {
+        toast.error(msg || "Erro ao excluir contrato");
+      }
+    },
   });
 
   const openNovoContrato = () => {
