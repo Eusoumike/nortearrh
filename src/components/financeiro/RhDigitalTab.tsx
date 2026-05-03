@@ -729,10 +729,10 @@ export function RhDigitalTab() {
       <AlertDialog open={!!excluirContrato} onOpenChange={(v) => !v && setExcluirContrato(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir contrato encerrado?</AlertDialogTitle>
             <AlertDialogDescription>
               {excluirContrato &&
-                `Excluir o contrato de ${excluirContrato.cliente_nome}? Todas as parcelas pendentes serão removidas. Esta ação não pode ser desfeita.`}
+                `Excluir definitivamente o contrato encerrado de ${excluirContrato.cliente_nome}? Todo o histórico de parcelas será removido permanentemente. Esta ação não pode ser desfeita.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -744,7 +744,7 @@ export function RhDigitalTab() {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir
+              Excluir definitivamente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
