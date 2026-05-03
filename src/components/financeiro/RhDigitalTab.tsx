@@ -39,9 +39,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
