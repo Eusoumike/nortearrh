@@ -491,19 +491,38 @@ export function RhDigitalTab() {
       {/* View: Contratos */}
       {view === "contratos" && (
         <Card className="overflow-hidden">
+          <div className="flex items-center justify-end gap-2 border-b px-4 py-2">
+            <Label htmlFor="show-encerrados" className="text-sm text-muted-foreground">
+              Mostrar encerrados
+            </Label>
+            <Switch
+              id="show-encerrados"
+              checked={showEncerrados}
+              onCheckedChange={setShowEncerrados}
+            />
+          </div>
           {contratosQuery.isLoading ? (
             <div className="flex h-48 items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : contratos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
-              <p className="text-sm text-muted-foreground">Nenhum contrato cadastrado.</p>
-              <Button size="sm" onClick={openNovoContrato} className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Novo contrato
-              </Button>
-            </div>
-          ) : (
+          ) : (() => {
+            const contratosFiltrados = showEncerrados ? contratos : contratos.filter((c) => c.ativo);
+            if (contratosFiltrados.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {contratos.length === 0
+                      ? "Nenhum contrato cadastrado."
+                      : "Nenhum contrato ativo."}
+                  </p>
+                  <Button size="sm" onClick={openNovoContrato} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Novo contrato
+                  </Button>
+                </div>
+              );
+            }
+            return (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -519,7 +538,7 @@ export function RhDigitalTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contratos.map((c) => {
+                {contratosFiltrados.map((c) => {
                   const tone = vencimentoTone(c.fidelidade_vencimento);
                   const pagas = pagasQuery.data?.get(c.id) ?? 0;
                   return (
@@ -536,7 +555,7 @@ export function RhDigitalTab() {
                           c.cliente_nome
                         )}
                         {!c.ativo && (
-                          <Badge variant="outline" className="ml-2">
+                          <Badge className="ml-2 border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20">
                             Encerrado
                           </Badge>
                         )}
@@ -577,7 +596,7 @@ export function RhDigitalTab() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          {c.ativo && (
+                          {c.ativo ? (
                             <Button
                               size="icon"
                               variant="ghost"
@@ -587,17 +606,18 @@ export function RhDigitalTab() {
                             >
                               <X className="h-4 w-4" />
                             </Button>
-                          )}
-                          {(pagasQuery.data?.get(c.id) ?? 0) === 0 && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Excluir contrato"
-                              onClick={() => setExcluirContrato(c)}
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          ) : (
+                            isAdmin && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                title="Excluir contrato"
+                                onClick={() => setExcluirContrato(c)}
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )
                           )}
                         </div>
                       </TableCell>
