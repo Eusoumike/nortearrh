@@ -97,18 +97,28 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
     if (tipoCobranca === "anual") setFidMeses("12");
   }, [tipoCobranca]);
 
-  // Buscar percentual personalizado por cliente (somente em criação)
+  // Buscar percentual personalizado por cliente, com fallback nos padrões globais
   useEffect(() => {
     if (!open || isEdit || !client?.id) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("config_comissoes")
-        .select("percentual_ponto")
-        .eq("client_id", client.id)
-        .maybeSingle();
+      const [cfgRes, sysRes] = await Promise.all([
+        supabase
+          .from("config_comissoes")
+          .select("percentual_ponto")
+          .eq("client_id", client.id)
+          .maybeSingle(),
+        supabase
+          .from("system_settings")
+          .select("percentual_ponto")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
-      setPercentual(data ? String(data.percentual_ponto) : "40");
+      setPercentual(
+        String(cfgRes.data?.percentual_ponto ?? sysRes.data?.percentual_ponto ?? 40),
+      );
     })();
     return () => {
       cancelled = true;
