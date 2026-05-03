@@ -78,6 +78,8 @@ type Contrato = {
   notificar_vencimento: boolean;
   ativo: boolean;
   observacoes: string | null;
+  tipo_cobranca: "mensal" | "anual";
+  valor_anual: number;
 };
 
 export function RhDigitalTab() {
@@ -122,7 +124,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("contratos_rh_digital")
         .select(
-          "id, client_id, cliente_nome, cnpj, valor_mensalidade, percentual_nortear, valor_nortear, data_inicio, fidelidade_meses, fidelidade_vencimento, notificar_vencimento, ativo, observacoes",
+          "id, client_id, cliente_nome, cnpj, valor_mensalidade, percentual_nortear, valor_nortear, data_inicio, fidelidade_meses, fidelidade_vencimento, notificar_vencimento, ativo, observacoes, tipo_cobranca, valor_anual",
         )
         .order("ativo", { ascending: false })
         .order("cliente_nome");
@@ -269,6 +271,7 @@ export function RhDigitalTab() {
       fidelidade_meses: c.fidelidade_meses,
       notificar_vencimento: c.notificar_vencimento,
       observacoes: c.observacoes,
+      tipo_cobranca: c.tipo_cobranca,
     });
     setContratoDialog(true);
   };
@@ -380,6 +383,8 @@ export function RhDigitalTab() {
               <TableBody>
                 {parcelas.map((p) => {
                   const customPerc = Number(p.percentual_nortear) !== PADRAO_PERC;
+                  const contratoP = contratos.find((c) => c.id === p.contrato_id);
+                  const isAnual = contratoP?.tipo_cobranca === "anual";
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
@@ -395,7 +400,17 @@ export function RhDigitalTab() {
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {BRL.format(Number(p.valor_mensalidade))}
+                        <div className="flex items-center justify-end gap-2">
+                          {isAnual && (
+                            <Badge
+                              title="Contrato anual — pagamento único"
+                              className="border-transparent bg-purple-500/15 text-purple-600 hover:bg-purple-500/20"
+                            >
+                              Anual
+                            </Badge>
+                          )}
+                          {BRL.format(Number(p.valor_mensalidade))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {customPerc ? (
@@ -561,6 +576,15 @@ export function RhDigitalTab() {
                         ) : (
                           c.cliente_nome
                         )}
+                        {c.tipo_cobranca === "anual" ? (
+                          <Badge className="ml-2 border-transparent bg-purple-500/15 text-purple-600 hover:bg-purple-500/20">
+                            Anual
+                          </Badge>
+                        ) : (
+                          <Badge className="ml-2 border-transparent bg-teal-500/15 text-teal-600 hover:bg-teal-500/20">
+                            Mensal
+                          </Badge>
+                        )}
                         {!c.ativo && (
                           <Badge className="ml-2 border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20">
                             Encerrado
@@ -577,7 +601,9 @@ export function RhDigitalTab() {
                         {BRL.format(Number(c.valor_nortear))}
                       </TableCell>
                       <TableCell className="text-sm">{formatBRDate(c.data_inicio)}</TableCell>
-                      <TableCell>{c.fidelidade_meses} meses</TableCell>
+                      <TableCell>
+                        {c.tipo_cobranca === "anual" ? "Anual (12 meses)" : `${c.fidelidade_meses} meses`}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={cn(
@@ -591,7 +617,9 @@ export function RhDigitalTab() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm tabular-nums">
-                        {pagas}/{c.fidelidade_meses}
+                        {c.tipo_cobranca === "anual"
+                          ? (pagas > 0 ? "Pago" : "Pendente")
+                          : `${pagas}/${c.fidelidade_meses}`}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
