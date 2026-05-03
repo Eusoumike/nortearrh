@@ -39,9 +39,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
@@ -88,6 +91,9 @@ export function RhDigitalTab() {
   const [encerrarContrato, setEncerrarContrato] = useState<Contrato | null>(null);
   const [excluirParcela, setExcluirParcela] = useState<Parcela | null>(null);
   const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
+  const [showEncerrados, setShowEncerrados] = useState(false);
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
@@ -228,7 +234,7 @@ export function RhDigitalTab() {
       if (e2) throw e2;
     },
     onSuccess: () => {
-      toast.success("Contrato excluído com sucesso");
+      toast.success("Contrato excluído permanentemente");
       qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
       qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
       qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
@@ -236,7 +242,14 @@ export function RhDigitalTab() {
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
       setExcluirContrato(null);
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro"),
+    onError: (e: any) => {
+      const msg = String(e?.message ?? "");
+      if (/permission|policy|denied|row-level/i.test(msg)) {
+        toast.error("Apenas administradores podem excluir contratos");
+      } else {
+        toast.error(msg || "Erro ao excluir contrato");
+      }
+    },
   });
 
   const openNovoContrato = () => {
@@ -485,19 +498,38 @@ export function RhDigitalTab() {
       {/* View: Contratos */}
       {view === "contratos" && (
         <Card className="overflow-hidden">
+          <div className="flex items-center justify-end gap-2 border-b px-4 py-2">
+            <Label htmlFor="show-encerrados" className="text-sm text-muted-foreground">
+              Mostrar encerrados
+            </Label>
+            <Switch
+              id="show-encerrados"
+              checked={showEncerrados}
+              onCheckedChange={setShowEncerrados}
+            />
+          </div>
           {contratosQuery.isLoading ? (
             <div className="flex h-48 items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : contratos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
-              <p className="text-sm text-muted-foreground">Nenhum contrato cadastrado.</p>
-              <Button size="sm" onClick={openNovoContrato} className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Novo contrato
-              </Button>
-            </div>
-          ) : (
+          ) : (() => {
+            const contratosFiltrados = showEncerrados ? contratos : contratos.filter((c) => c.ativo);
+            if (contratosFiltrados.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {contratos.length === 0
+                      ? "Nenhum contrato cadastrado."
+                      : "Nenhum contrato ativo."}
+                  </p>
+                  <Button size="sm" onClick={openNovoContrato} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Novo contrato
+                  </Button>
+                </div>
+              );
+            }
+            return (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -513,7 +545,7 @@ export function RhDigitalTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contratos.map((c) => {
+                {contratosFiltrados.map((c) => {
                   const tone = vencimentoTone(c.fidelidade_vencimento);
                   const pagas = pagasQuery.data?.get(c.id) ?? 0;
                   return (
@@ -530,7 +562,7 @@ export function RhDigitalTab() {
                           c.cliente_nome
                         )}
                         {!c.ativo && (
-                          <Badge variant="outline" className="ml-2">
+                          <Badge className="ml-2 border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20">
                             Encerrado
                           </Badge>
                         )}
@@ -571,7 +603,7 @@ export function RhDigitalTab() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          {c.ativo && (
+                          {c.ativo ? (
                             <Button
                               size="icon"
                               variant="ghost"
@@ -581,17 +613,18 @@ export function RhDigitalTab() {
                             >
                               <X className="h-4 w-4" />
                             </Button>
-                          )}
-                          {(pagasQuery.data?.get(c.id) ?? 0) === 0 && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Excluir contrato"
-                              onClick={() => setExcluirContrato(c)}
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          ) : (
+                            isAdmin && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                title="Excluir contrato"
+                                onClick={() => setExcluirContrato(c)}
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )
                           )}
                         </div>
                       </TableCell>
@@ -600,7 +633,8 @@ export function RhDigitalTab() {
                 })}
               </TableBody>
             </Table>
-          )}
+            );
+          })()}
         </Card>
       )}
 
@@ -695,10 +729,10 @@ export function RhDigitalTab() {
       <AlertDialog open={!!excluirContrato} onOpenChange={(v) => !v && setExcluirContrato(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir contrato encerrado?</AlertDialogTitle>
             <AlertDialogDescription>
               {excluirContrato &&
-                `Excluir o contrato de ${excluirContrato.cliente_nome}? Todas as parcelas pendentes serão removidas. Esta ação não pode ser desfeita.`}
+                `Excluir definitivamente o contrato encerrado de ${excluirContrato.cliente_nome}? Todo o histórico de parcelas será removido permanentemente. Esta ação não pode ser desfeita.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -710,7 +744,7 @@ export function RhDigitalTab() {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir
+              Excluir definitivamente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
