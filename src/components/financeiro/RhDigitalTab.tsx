@@ -271,6 +271,7 @@ export function RhDigitalTab() {
       fidelidade_meses: c.fidelidade_meses,
       notificar_vencimento: c.notificar_vencimento,
       observacoes: c.observacoes,
+      tipo_cobranca: c.tipo_cobranca,
     });
     setContratoDialog(true);
   };
