@@ -128,7 +128,9 @@ export default function Settings() {
       const { data: roles } = await supabase.from("user_roles").select("user_id, role");
       const byUser = new Map<string, AppRole>();
       (roles ?? []).forEach((r) => byUser.set(r.user_id, r.role));
-      return (profiles ?? []).map((p) => ({ ...p, role: byUser.get(p.id) ?? null }));
+      return (profiles ?? [])
+        .map((p) => ({ ...p, role: byUser.get(p.id) ?? null }))
+        .filter((p) => p.role !== null);
     },
   });
 
