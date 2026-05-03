@@ -582,6 +582,17 @@ export function RhDigitalTab() {
                               <X className="h-4 w-4" />
                             </Button>
                           )}
+                          {(pagasQuery.data?.get(c.id) ?? 0) === 0 && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Excluir contrato"
+                              onClick={() => setExcluirContrato(c)}
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
