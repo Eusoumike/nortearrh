@@ -79,6 +79,11 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           notes: form.notes?.trim() || null,
           anydesk_id: anydeskIdValue,
           anydesk_senha: null,
+          products: form.products ?? [],
+          contract_value:
+            form.contract_value === "" || form.contract_value == null
+              ? null
+              : Number(form.contract_value),
         } as any)
         .eq("id", client.id);
       if (error) throw error;
