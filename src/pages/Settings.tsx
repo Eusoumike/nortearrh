@@ -128,7 +128,9 @@ export default function Settings() {
       const { data: roles } = await supabase.from("user_roles").select("user_id, role");
       const byUser = new Map<string, AppRole>();
       (roles ?? []).forEach((r) => byUser.set(r.user_id, r.role));
-      return (profiles ?? []).map((p) => ({ ...p, role: byUser.get(p.id) ?? null }));
+      return (profiles ?? [])
+        .map((p) => ({ ...p, role: byUser.get(p.id) ?? null }))
+        .filter((p) => p.role !== null);
     },
   });
 
@@ -339,14 +341,19 @@ export default function Settings() {
 
   async function handleRemoveAccess() {
     if (!removeTarget) return;
+    const target = removeTarget;
     const { error } = await supabase.rpc("admin_remove_user_access", {
-      _target_user: removeTarget.id,
+      _target_user: target.id,
     });
     if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao remover acesso", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Acesso removido", description: removeTarget.name });
+    // Atualiza cache local imediatamente removendo o usuário da lista
+    qc.setQueryData<typeof team>(["team-list"], (prev) =>
+      (prev ?? []).filter((u) => u.id !== target.id),
+    );
+    toast({ title: "Usuário removido com sucesso", description: target.name });
     setRemoveTarget(null);
     qc.invalidateQueries({ queryKey: ["team-list"] });
   }
