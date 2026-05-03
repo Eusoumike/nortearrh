@@ -230,7 +230,9 @@ export type Database = {
           notificar_vencimento: boolean
           observacoes: string | null
           percentual_nortear: number
+          tipo_cobranca: Database["public"]["Enums"]["tipo_cobranca_rh"]
           updated_at: string
+          valor_anual: number
           valor_mensalidade: number
           valor_nortear: number
         }
@@ -248,7 +250,9 @@ export type Database = {
           notificar_vencimento?: boolean
           observacoes?: string | null
           percentual_nortear?: number
+          tipo_cobranca?: Database["public"]["Enums"]["tipo_cobranca_rh"]
           updated_at?: string
+          valor_anual?: number
           valor_mensalidade?: number
           valor_nortear?: number
         }
@@ -266,7 +270,9 @@ export type Database = {
           notificar_vencimento?: boolean
           observacoes?: string | null
           percentual_nortear?: number
+          tipo_cobranca?: Database["public"]["Enums"]["tipo_cobranca_rh"]
           updated_at?: string
+          valor_anual?: number
           valor_mensalidade?: number
           valor_nortear?: number
         }
@@ -1746,6 +1752,7 @@ export type Database = {
         | "upgrade"
         | "downgrade"
         | "financeiro"
+      tipo_cobranca_rh: "mensal" | "anual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1943,6 +1950,7 @@ export const Constants = {
         "downgrade",
         "financeiro",
       ],
+      tipo_cobranca_rh: ["mensal", "anual"],
     },
   },
 } as const
