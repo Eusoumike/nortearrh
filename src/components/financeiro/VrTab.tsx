@@ -88,7 +88,7 @@ export function VrTab() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Lançamento excluído.");
+      toast.success("Lançamento excluído com sucesso");
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
       qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
@@ -291,7 +291,9 @@ export function VrTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir lançamento VR?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
+              {toDelete
+                ? `Excluir este lançamento de ${toDelete.cliente_nome} referente a ${format(new Date(toDelete.competencia + "T00:00:00"), "MM/yyyy")}? Esta ação não pode ser desfeita.`
+                : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
