@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -50,6 +50,8 @@ export type LancamentoVR = {
   observacoes: string | null;
 };
 
+type TipoLancamentoVR = "primeira_carga" | "recorrencia";
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -63,7 +65,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
 
   const [client, setClient] = useState<ClientOption | null>(null);
   const [competencia, setCompetencia] = useState<string>(ymdFirst(defaultCompetencia));
-  const [tipo, setTipo] = useState<"primeira_carga" | "recorrencia">("recorrencia");
+  const [tipo, setTipo] = useState<TipoLancamentoVR>("recorrencia");
   const [valorBase, setValorBase] = useState<string>("0");
   const [percentual, setPercentual] = useState<string>("17.5");
   const [fidMeses, setFidMeses] = useState<string>("");
@@ -71,10 +73,74 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
   const [notificar, setNotificar] = useState(true);
   const [observacoes, setObservacoes] = useState<string>("");
   const [openFid, setOpenFid] = useState(false);
+  const percentualRequestRef = useRef(0);
+
+  const buscarPercentualVr = async (
+    clientId: string | null,
+    tipoAtual: TipoLancamentoVR,
+  ) => {
+    let config: {
+      percentual_vr_primeira_carga: number | null;
+      percentual_vr_recorrencia: number | null;
+    } | null = null;
+
+    if (clientId) {
+      const { data, error } = await supabase
+        .from("config_comissoes")
+        .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
+        .eq("client_id", clientId)
+        .maybeSingle();
+      if (error) throw error;
+      config = data;
+    }
+
+    const { data: settings, error: settingsError } = await supabase
+      .from("system_settings")
+      .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (settingsError) throw settingsError;
+
+    const valor =
+      tipoAtual === "primeira_carga"
+        ? config?.percentual_vr_primeira_carga ??
+          settings?.percentual_vr_primeira_carga ??
+          17.5
+        : config?.percentual_vr_recorrencia ?? settings?.percentual_vr_recorrencia ?? 17.5;
+
+    return String(valor);
+  };
+
+  const aplicarPercentualVr = async (
+    clientId: string | null,
+    tipoAtual: TipoLancamentoVR,
+  ) => {
+    const requestId = ++percentualRequestRef.current;
+    try {
+      const valor = await buscarPercentualVr(clientId, tipoAtual);
+      if (percentualRequestRef.current === requestId) setPercentual(valor);
+    } catch (e: any) {
+      if (percentualRequestRef.current === requestId) {
+        toast.error(e.message ?? "Erro ao buscar percentual configurado");
+      }
+    }
+  };
+
+  const handleClienteSelect = (selected: ClientOption | null) => {
+    setClient(selected);
+    if (!isEdit) void aplicarPercentualVr(selected?.id ?? null, tipo);
+  };
+
+  const handleTipoChange = (novoTipo: TipoLancamentoVR) => {
+    setTipo(novoTipo);
+    if (!isEdit) void aplicarPercentualVr(client?.id ?? null, novoTipo);
+  };
 
   // Reset/initialize on open
   useEffect(() => {
     if (!open) return;
+    percentualRequestRef.current += 1;
     if (initial) {
       setClient(
         initial.client_id
@@ -101,49 +167,14 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
       setNotificar(true);
       setObservacoes("");
       setOpenFid(false);
+      void aplicarPercentualVr(null, "recorrencia");
     }
   }, [open, initial, defaultCompetencia]);
-
-  // Buscar config_comissoes do cliente, com fallback nos padrões globais
-  useEffect(() => {
-    if (!open || isEdit || !client?.id) return;
-    let cancelled = false;
-    (async () => {
-      const [cfgRes, sysRes] = await Promise.all([
-        supabase
-          .from("config_comissoes")
-          .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
-          .eq("client_id", client.id)
-          .maybeSingle(),
-        supabase
-          .from("system_settings")
-          .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      if (cancelled) return;
-      const cfg = cfgRes.data;
-      const sys = sysRes.data;
-      if (tipo === "primeira_carga") {
-        setPercentual(
-          String(cfg?.percentual_vr_primeira_carga ?? sys?.percentual_vr_primeira_carga ?? 17.5),
-        );
-      } else {
-        setPercentual(
-          String(cfg?.percentual_vr_recorrencia ?? sys?.percentual_vr_recorrencia ?? 17.5),
-        );
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [client?.id, tipo, open, isEdit]);
 
   const valorComissao = useMemo(() => {
     const v = Number(valorBase || 0);
     const p = Number(percentual || 0);
-    return Math.round(v * p) / 100;
+    return Math.round(v * (p / 100) * 100) / 100;
   }, [valorBase, percentual]);
 
   const vencimentoCalc = useMemo(
@@ -192,6 +223,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
     onSuccess: () => {
       toast.success(isEdit ? "Lançamento VR atualizado!" : "Lançamento VR salvo com sucesso!");
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
       onOpenChange(false);
     },
@@ -212,7 +244,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
-            <ClientCombobox value={client?.id ?? null} onSelect={setClient} />
+            <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
             {client && (
               <p className="text-xs text-muted-foreground">
                 {client.cnpj ? `CNPJ: ${client.cnpj} · ` : ""}
@@ -250,7 +282,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
                   <button
                     key={opt.v}
                     type="button"
-                    onClick={() => setTipo(opt.v)}
+                    onClick={() => handleTipoChange(opt.v)}
                     className={`flex-1 rounded-sm px-2 py-1.5 text-xs font-medium transition-colors ${
                       tipo === opt.v
                         ? "bg-primary text-primary-foreground"

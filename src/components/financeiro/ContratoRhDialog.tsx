@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addMonths, format, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -64,9 +64,52 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
   const [tipoCobranca, setTipoCobranca] = useState<TipoCobrancaRh>("mensal");
   const [notificar, setNotificar] = useState(true);
   const [observacoes, setObservacoes] = useState<string>("");
+  const percentualRequestRef = useRef(0);
+
+  const buscarPercentualPonto = async (clientId: string | null) => {
+    let config: { percentual_ponto: number | null } | null = null;
+
+    if (clientId) {
+      const { data, error } = await supabase
+        .from("config_comissoes")
+        .select("percentual_ponto")
+        .eq("client_id", clientId)
+        .maybeSingle();
+      if (error) throw error;
+      config = data;
+    }
+
+    const { data: settings, error: settingsError } = await supabase
+      .from("system_settings")
+      .select("percentual_ponto")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (settingsError) throw settingsError;
+
+    return String(config?.percentual_ponto ?? settings?.percentual_ponto ?? 40);
+  };
+
+  const aplicarPercentualPonto = async (clientId: string | null) => {
+    const requestId = ++percentualRequestRef.current;
+    try {
+      const valor = await buscarPercentualPonto(clientId);
+      if (percentualRequestRef.current === requestId) setPercentual(valor);
+    } catch (e: any) {
+      if (percentualRequestRef.current === requestId) {
+        toast.error(e.message ?? "Erro ao buscar percentual configurado");
+      }
+    }
+  };
+
+  const handleClienteSelect = (selected: ClientOption | null) => {
+    setClient(selected);
+    if (!isEdit) void aplicarPercentualPonto(selected?.id ?? null);
+  };
 
   useEffect(() => {
     if (!open) return;
+    percentualRequestRef.current += 1;
     if (initial) {
       setClient(
         initial.client_id
@@ -89,6 +132,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setTipoCobranca("mensal");
       setNotificar(true);
       setObservacoes("");
+      void aplicarPercentualPonto(null);
     }
   }, [open, initial]);
 
@@ -97,39 +141,11 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
     if (tipoCobranca === "anual") setFidMeses("12");
   }, [tipoCobranca]);
 
-  // Buscar percentual personalizado por cliente, com fallback nos padrões globais
-  useEffect(() => {
-    if (!open || isEdit || !client?.id) return;
-    let cancelled = false;
-    (async () => {
-      const [cfgRes, sysRes] = await Promise.all([
-        supabase
-          .from("config_comissoes")
-          .select("percentual_ponto")
-          .eq("client_id", client.id)
-          .maybeSingle(),
-        supabase
-          .from("system_settings")
-          .select("percentual_ponto")
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      if (cancelled) return;
-      setPercentual(
-        String(cfgRes.data?.percentual_ponto ?? sysRes.data?.percentual_ponto ?? 40),
-      );
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [client?.id, open, isEdit]);
-
   const valorMensalNum = Number(valorMensalidade || 0);
   const percentualNum = Number(percentual || 0);
-  const valorNorteaMensal = Math.round(valorMensalNum * percentualNum) / 100;
+  const valorNorteaMensal = Math.round(valorMensalNum * (percentualNum / 100) * 100) / 100;
   const valorAnual = Math.round(valorMensalNum * 12 * 100) / 100;
-  const valorNorteaAnual = Math.round(valorAnual * percentualNum) / 100;
+  const valorNorteaAnual = Math.round(valorAnual * (percentualNum / 100) * 100) / 100;
 
   const meses = useMemo(() => {
     const m = Number(fidMeses || 0);
@@ -231,7 +247,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
-            <ClientCombobox value={client?.id ?? null} onSelect={setClient} />
+            <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
             {client?.cnpj && (
               <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>
             )}
