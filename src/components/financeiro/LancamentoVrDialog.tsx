@@ -104,25 +104,35 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
     }
   }, [open, initial, defaultCompetencia]);
 
-  // Buscar config_comissoes do cliente quando muda
+  // Buscar config_comissoes do cliente, com fallback nos padrões globais
   useEffect(() => {
     if (!open || isEdit || !client?.id) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("config_comissoes")
-        .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
-        .eq("client_id", client.id)
-        .maybeSingle();
+      const [cfgRes, sysRes] = await Promise.all([
+        supabase
+          .from("config_comissoes")
+          .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
+          .eq("client_id", client.id)
+          .maybeSingle(),
+        supabase
+          .from("system_settings")
+          .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
-      if (data) {
+      const cfg = cfgRes.data;
+      const sys = sysRes.data;
+      if (tipo === "primeira_carga") {
         setPercentual(
-          tipo === "primeira_carga"
-            ? String(data.percentual_vr_primeira_carga)
-            : String(data.percentual_vr_recorrencia),
+          String(cfg?.percentual_vr_primeira_carga ?? sys?.percentual_vr_primeira_carga ?? 17.5),
         );
       } else {
-        setPercentual(tipo === "primeira_carga" ? "17.5" : "17.5");
+        setPercentual(
+          String(cfg?.percentual_vr_recorrencia ?? sys?.percentual_vr_recorrencia ?? 17.5),
+        );
       }
     })();
     return () => {
