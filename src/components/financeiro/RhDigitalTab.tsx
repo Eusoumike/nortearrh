@@ -446,7 +446,15 @@ export function RhDigitalTab() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                        </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Excluir parcela"
+                            onClick={() => setExcluirParcela(p)}
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                       </TableCell>
                     </TableRow>
                   );
