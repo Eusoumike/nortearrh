@@ -223,6 +223,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
     onSuccess: () => {
       toast.success(isEdit ? "Lançamento VR atualizado!" : "Lançamento VR salvo com sucesso!");
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
       onOpenChange(false);
     },
