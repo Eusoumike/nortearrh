@@ -72,6 +72,7 @@ export type Database = {
           cnpj: string | null
           company: string | null
           contact_name: string | null
+          contract_value: number | null
           created_at: string
           created_by: string | null
           document: string | null
@@ -84,8 +85,10 @@ export type Database = {
           nps_data: string | null
           nps_score: number | null
           nps_token: string | null
+          onboarding_iniciado_em: string | null
           phone: string | null
           pipedrive_person_id: string | null
+          products: string[]
           tags: string[] | null
           updated_at: string
           whatsapp: string | null
@@ -99,6 +102,7 @@ export type Database = {
           cnpj?: string | null
           company?: string | null
           contact_name?: string | null
+          contract_value?: number | null
           created_at?: string
           created_by?: string | null
           document?: string | null
@@ -111,8 +115,10 @@ export type Database = {
           nps_data?: string | null
           nps_score?: number | null
           nps_token?: string | null
+          onboarding_iniciado_em?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          products?: string[]
           tags?: string[] | null
           updated_at?: string
           whatsapp?: string | null
@@ -126,6 +132,7 @@ export type Database = {
           cnpj?: string | null
           company?: string | null
           contact_name?: string | null
+          contract_value?: number | null
           created_at?: string
           created_by?: string | null
           document?: string | null
@@ -138,8 +145,10 @@ export type Database = {
           nps_data?: string | null
           nps_score?: number | null
           nps_token?: string | null
+          onboarding_iniciado_em?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          products?: string[]
           tags?: string[] | null
           updated_at?: string
           whatsapp?: string | null
