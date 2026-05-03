@@ -41,6 +41,8 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         health: (client.health ?? "saudavel") as ClientHealth,
         notes: client.notes ?? "",
         anydesk_id: client.anydesk_id ?? "",
+        products: (client.products ?? []) as string[],
+        contract_value: client.contract_value ?? "",
       });
     }
   }, [open, client]);
