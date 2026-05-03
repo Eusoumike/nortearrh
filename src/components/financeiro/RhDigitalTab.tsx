@@ -626,7 +626,8 @@ export function RhDigitalTab() {
                 })}
               </TableBody>
             </Table>
-          )}
+            );
+          })()}
         </Card>
       )}
 
