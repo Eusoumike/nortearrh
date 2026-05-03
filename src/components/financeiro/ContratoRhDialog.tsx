@@ -30,6 +30,8 @@ import { ClientCombobox, ClientOption } from "./ClientCombobox";
 import { BRL, ymdFirst } from "./financeiroUtils";
 import { supabase } from "@/integrations/supabase/client";
 
+export type TipoCobrancaRh = "mensal" | "anual";
+
 export type ContratoRh = {
   id: string;
   client_id: string | null;
@@ -41,6 +43,7 @@ export type ContratoRh = {
   fidelidade_meses: number;
   notificar_vencimento: boolean;
   observacoes: string | null;
+  tipo_cobranca?: TipoCobrancaRh;
 };
 
 interface Props {
@@ -58,6 +61,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
   const [percentual, setPercentual] = useState<string>("40");
   const [dataInicio, setDataInicio] = useState<string>(ymdFirst(new Date()));
   const [fidMeses, setFidMeses] = useState<string>("12");
+  const [tipoCobranca, setTipoCobranca] = useState<TipoCobrancaRh>("mensal");
   const [notificar, setNotificar] = useState(true);
   const [observacoes, setObservacoes] = useState<string>("");
 
@@ -73,6 +77,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setPercentual(String(initial.percentual_nortear));
       setDataInicio(initial.data_inicio);
       setFidMeses(String(initial.fidelidade_meses));
+      setTipoCobranca(initial.tipo_cobranca ?? "mensal");
       setNotificar(initial.notificar_vencimento);
       setObservacoes(initial.observacoes ?? "");
     } else {
@@ -81,10 +86,16 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setPercentual("40");
       setDataInicio(ymdFirst(new Date()));
       setFidMeses("12");
+      setTipoCobranca("mensal");
       setNotificar(true);
       setObservacoes("");
     }
   }, [open, initial]);
+
+  // Quando muda para anual, força fidelidade 12
+  useEffect(() => {
+    if (tipoCobranca === "anual") setFidMeses("12");
+  }, [tipoCobranca]);
 
   // Buscar percentual personalizado por cliente (somente em criação)
   useEffect(() => {
@@ -104,11 +115,11 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
     };
   }, [client?.id, open, isEdit]);
 
-  const valorNortear = useMemo(() => {
-    const v = Number(valorMensalidade || 0);
-    const p = Number(percentual || 0);
-    return Math.round(v * p) / 100;
-  }, [valorMensalidade, percentual]);
+  const valorMensalNum = Number(valorMensalidade || 0);
+  const percentualNum = Number(percentual || 0);
+  const valorNorteaMensal = Math.round(valorMensalNum * percentualNum) / 100;
+  const valorAnual = Math.round(valorMensalNum * 12 * 100) / 100;
+  const valorNorteaAnual = Math.round(valorAnual * percentualNum) / 100;
 
   const meses = useMemo(() => {
     const m = Number(fidMeses || 0);
@@ -166,7 +177,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           valor_mensalidade: Number(valorMensalidade),
           percentual_nortear: Number(percentual),
           data_inicio: dataInicio,
-          fidelidade_meses: Number(fidMeses),
+          fidelidade_meses: tipoCobranca === "anual" ? 12 : Number(fidMeses),
+          tipo_cobranca: tipoCobranca,
           notificar_vencimento: notificar,
           observacoes: observacoes.trim() || null,
           ativo: true,
@@ -179,6 +191,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       toast.success(
         isEdit
           ? "Contrato atualizado. Parcelas futuras pendentes foram sincronizadas."
+          : tipoCobranca === "anual"
+          ? "Contrato anual criado e parcela única gerada."
           : `Contrato criado e ${meses.length} parcelas geradas.`,
       );
       qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
@@ -198,6 +212,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           <DialogDescription>
             {isEdit
               ? "Apenas valor e percentual podem ser alterados. Parcelas pagas não serão afetadas."
+              : tipoCobranca === "anual"
+              ? "Contrato anual — uma única parcela referente ao ano inteiro."
               : "Contrato recorrente — as parcelas mensais são geradas automaticamente."}
           </DialogDescription>
         </DialogHeader>
@@ -239,12 +255,51 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
             </div>
           </div>
 
-          <div className="rounded-md border bg-primary/5 px-4 py-3 text-center">
-            <div className="text-xs text-muted-foreground">Valor mensal Nortear</div>
-            <div className="text-xl font-semibold tabular-nums">
-              = {BRL.format(valorNortear)} / mês
-            </div>
+          <div className="grid gap-1.5">
+            <Label>Tipo de cobrança *</Label>
+            <Select
+              value={tipoCobranca}
+              onValueChange={(v) => setTipoCobranca(v as TipoCobrancaRh)}
+              disabled={isEdit}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mensal">Mensal — gera parcelas todo mês</SelectItem>
+                <SelectItem value="anual">Anual — pagamento único anual</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {tipoCobranca === "mensal" ? (
+            <div className="rounded-md border bg-primary/5 px-4 py-3 text-center">
+              <div className="text-xs text-muted-foreground">Valor mensal Nortear</div>
+              <div className="text-xl font-semibold tabular-nums">
+                = {BRL.format(valorNorteaMensal)} / mês
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border bg-purple-500/5 px-4 py-3 text-center">
+              <div className="text-xs font-medium text-purple-600">Contrato anual — pagamento único</div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">
+                Valor total: {BRL.format(valorAnual)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ({BRL.format(valorMensalNum)} × 12 meses)
+              </div>
+              <div className="mt-2 text-sm">
+                Será gerada <strong>1 parcela</strong> de{" "}
+                <strong className="tabular-nums">{BRL.format(valorAnual)}</strong>
+                {dataInicio && vencimentoCalc && (
+                  <> referente ao período {format(new Date(dataInicio + "T00:00:00"), "MM/yyyy")} a {vencimentoCalc.slice(3)}</>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Comissão Nortear: {BRL.format(valorNorteaAnual)}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
@@ -257,18 +312,27 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 disabled={isEdit}
               />
             </div>
-            <div className="grid gap-1.5">
-              <Label>Período de fidelidade *</Label>
-              <Select value={fidMeses} onValueChange={setFidMeses} disabled={isEdit}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="6">6 meses</SelectItem>
-                  <SelectItem value="12">12 meses</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {tipoCobranca === "mensal" ? (
+              <div className="grid gap-1.5">
+                <Label>Período de fidelidade *</Label>
+                <Select value={fidMeses} onValueChange={setFidMeses} disabled={isEdit}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6 meses</SelectItem>
+                    <SelectItem value="12">12 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="grid gap-1.5">
+                <Label>Fidelidade</Label>
+                <div className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
+                  12 meses (anual)
+                </div>
+              </div>
+            )}
           </div>
 
           {vencimentoCalc && (
@@ -278,7 +342,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
             </div>
           )}
 
-          {!isEdit && meses.length > 0 && (
+          {!isEdit && tipoCobranca === "mensal" && meses.length > 0 && (
             <div className="rounded-md border p-3 text-sm">
               <div className="mb-1 font-medium">
                 Serão geradas {meses.length} parcelas:
@@ -315,7 +379,11 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           </Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEdit ? "Salvar alterações" : "Criar contrato e gerar parcelas"}
+            {isEdit
+              ? "Salvar alterações"
+              : tipoCobranca === "anual"
+              ? "Criar contrato anual"
+              : "Criar contrato e gerar parcelas"}
           </Button>
         </DialogFooter>
       </DialogContent>
