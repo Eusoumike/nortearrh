@@ -78,6 +78,8 @@ type Contrato = {
   notificar_vencimento: boolean;
   ativo: boolean;
   observacoes: string | null;
+  tipo_cobranca: "mensal" | "anual";
+  valor_anual: number;
 };
 
 export function RhDigitalTab() {
