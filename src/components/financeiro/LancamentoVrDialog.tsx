@@ -243,7 +243,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
-            <ClientCombobox value={client?.id ?? null} onSelect={setClient} />
+            <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
             {client && (
               <p className="text-xs text-muted-foreground">
                 {client.cnpj ? `CNPJ: ${client.cnpj} · ` : ""}
@@ -281,7 +281,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
                   <button
                     key={opt.v}
                     type="button"
-                    onClick={() => setTipo(opt.v)}
+                    onClick={() => handleTipoChange(opt.v)}
                     className={`flex-1 rounded-sm px-2 py-1.5 text-xs font-medium transition-colors ${
                       tipo === opt.v
                         ? "bg-primary text-primary-foreground"
