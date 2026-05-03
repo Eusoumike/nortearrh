@@ -88,7 +88,7 @@ export function VrTab() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Lançamento excluído.");
+      toast.success("Lançamento excluído com sucesso");
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
       qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
