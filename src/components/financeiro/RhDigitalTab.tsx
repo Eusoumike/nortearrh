@@ -12,6 +12,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -85,6 +86,8 @@ export function RhDigitalTab() {
   const [pagandoParcela, setPagandoParcela] = useState<ParcelaSummary | null>(null);
   const [marcarInad, setMarcarInad] = useState<Parcela | null>(null);
   const [encerrarContrato, setEncerrarContrato] = useState<Contrato | null>(null);
+  const [excluirParcela, setExcluirParcela] = useState<Parcela | null>(null);
+  const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
@@ -195,6 +198,43 @@ export function RhDigitalTab() {
       qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
       setEncerrarContrato(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro"),
+  });
+
+  const excluirParcelaMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("parcelas_rh_digital").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Parcela excluída com sucesso");
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
+      setExcluirParcela(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro"),
+  });
+
+  const excluirContratoMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error: e1 } = await supabase
+        .from("parcelas_rh_digital")
+        .delete()
+        .eq("contrato_id", id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("contratos_rh_digital").delete().eq("id", id);
+      if (e2) throw e2;
+    },
+    onSuccess: () => {
+      toast.success("Contrato excluído com sucesso");
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
+      setExcluirContrato(null);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro"),
   });
@@ -406,6 +446,15 @@ export function RhDigitalTab() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Excluir parcela"
+                            onClick={() => setExcluirParcela(p)}
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -533,6 +582,17 @@ export function RhDigitalTab() {
                               <X className="h-4 w-4" />
                             </Button>
                           )}
+                          {(pagasQuery.data?.get(c.id) ?? 0) === 0 && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Excluir contrato"
+                              onClick={() => setExcluirContrato(c)}
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -603,6 +663,54 @@ export function RhDigitalTab() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Encerrar contrato
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!excluirParcela} onOpenChange={(v) => !v && setExcluirParcela(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir parcela?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluirParcela &&
+                `Excluir esta parcela de ${excluirParcela.cliente_nome} referente a ${format(new Date(excluirParcela.competencia), "MM/yyyy")}? Esta ação não pode ser desfeita.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluirParcela) excluirParcelaMut.mutate(excluirParcela.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!excluirContrato} onOpenChange={(v) => !v && setExcluirContrato(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluirContrato &&
+                `Excluir o contrato de ${excluirContrato.cliente_nome}? Todas as parcelas pendentes serão removidas. Esta ação não pode ser desfeita.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluirContrato) excluirContratoMut.mutate(excluirContrato.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
