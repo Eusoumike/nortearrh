@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Copy, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import type { ClientHealth } from "@/lib/constants";
+import { VincularClienteDialog } from "@/components/financeiro/ParceirosTab";
 
 const STATUS_OPTIONS: { value: ClientHealth; label: string }[] = [
   { value: "saudavel", label: "Ativo" },
