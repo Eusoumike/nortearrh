@@ -1781,6 +1781,8 @@ export type Database = {
         | "whatsapp"
         | "reuniao"
         | "mudanca_status"
+        | "remoto"
+        | "anotacao"
       lancamento_vr_tipo: "primeira_carga" | "recorrencia"
       parcela_rh_status: "pendente" | "pago" | "inadimplente"
       ticket_channel:
@@ -1980,6 +1982,8 @@ export const Constants = {
         "whatsapp",
         "reuniao",
         "mudanca_status",
+        "remoto",
+        "anotacao",
       ],
       lancamento_vr_tipo: ["primeira_carga", "recorrencia"],
       parcela_rh_status: ["pendente", "pago", "inadimplente"],
