@@ -135,10 +135,12 @@ export const HEALTH_TONE: Record<ClientHealth, "success" | "warning" | "danger">
 
 export const INTERACTION_LABEL: Record<InteractionType, string> = {
   nota: "Nota interna",
+  anotacao: "Anotação",
   email: "E-mail",
   ligacao: "Ligação",
   whatsapp: "WhatsApp",
   reuniao: "Reunião",
+  remoto: "Atendimento remoto",
   mudanca_status: "Mudança de status",
 };
 
