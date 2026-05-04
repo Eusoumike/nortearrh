@@ -59,10 +59,12 @@ import { timeAgo, formatDuration, nowBrasilia, brazilInputToISO, formatBrazilDat
 
 const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: string }>> = {
   nota: FileText,
+  anotacao: FileText,
   email: Mail,
   ligacao: Phone,
   whatsapp: MessageSquare,
   reuniao: CalendarIcon,
+  remoto: MessageSquare,
   mudanca_status: FileText,
 };
 
