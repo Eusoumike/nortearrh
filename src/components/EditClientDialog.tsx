@@ -290,6 +290,39 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Fonte de indicação</Label>
+              <Input
+                value={form.fonte_indicacao}
+                onChange={(e) => setForm({ ...form, fonte_indicacao: e.target.value })}
+                placeholder="Como nos conheceu?"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Parceiro</Label>
+              <Select
+                value={form.parceiro_id || "none"}
+                onValueChange={(v) => {
+                  if (v === "none") {
+                    setForm({ ...form, parceiro_id: "" });
+                  } else {
+                    setForm({ ...form, parceiro_id: v });
+                    const p = parceiros.find((x: any) => x.id === v);
+                    if (p) setVincularParceiro(p);
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Sem parceiro" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem parceiro</SelectItem>
+                  {parceiros.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
