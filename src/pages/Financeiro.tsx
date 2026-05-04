@@ -8,6 +8,7 @@ import { VrTab } from "@/components/financeiro/VrTab";
 import { RhDigitalTab } from "@/components/financeiro/RhDigitalTab";
 import { LancamentosTab } from "@/components/financeiro/LancamentosTab";
 import { DocumentosTab } from "@/components/financeiro/DocumentosTab";
+import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
