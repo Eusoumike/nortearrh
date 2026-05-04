@@ -8,6 +8,7 @@ import { VrTab } from "@/components/financeiro/VrTab";
 import { RhDigitalTab } from "@/components/financeiro/RhDigitalTab";
 import { LancamentosTab } from "@/components/financeiro/LancamentosTab";
 import { DocumentosTab } from "@/components/financeiro/DocumentosTab";
+import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
@@ -41,6 +42,7 @@ export default function Financeiro() {
           <TabsTrigger value="vr">VR Benefícios</TabsTrigger>
           <TabsTrigger value="ponto">RH Digital</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
           <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
         </TabsList>
 
@@ -61,6 +63,10 @@ export default function Financeiro() {
             openUploadOnMount={openUpload}
             onConsumeOpenUpload={() => setOpenUpload(false)}
           />
+        </TabsContent>
+
+        <TabsContent value="parceiros" className="mt-4">
+          <ParceirosTab />
         </TabsContent>
 
         <TabsContent value="lancamentos" className="mt-4">

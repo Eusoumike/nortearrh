@@ -253,6 +253,18 @@ export default function ClientDetail() {
                   <dd className="font-medium">{brl(client.contract_value)}</dd>
                 </div>
               )}
+              {client.fonte_indicacao && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Fonte de indicação</dt>
+                  <dd>{client.fonte_indicacao}</dd>
+                </div>
+              )}
+              {client.parceiro_id && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground">Parceiro</dt>
+                  <dd><Badge variant="secondary">Indicado por parceiro</Badge></dd>
+                </div>
+              )}
             </dl>
           </Card>
 

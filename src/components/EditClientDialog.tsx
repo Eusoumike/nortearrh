@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Copy, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import type { ClientHealth } from "@/lib/constants";
+import { VincularClienteDialog } from "@/components/financeiro/ParceirosTab";
 
 const STATUS_OPTIONS: { value: ClientHealth; label: string }[] = [
   { value: "saudavel", label: "Ativo" },
@@ -43,9 +44,24 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         anydesk_id: client.anydesk_id ?? "",
         products: (client.products ?? []) as string[],
         contract_value: client.contract_value ?? "",
+        fonte_indicacao: client.fonte_indicacao ?? "",
+        parceiro_id: client.parceiro_id ?? "",
       });
     }
   }, [open, client]);
+
+  const { data: parceiros = [] } = useQuery({
+    queryKey: ["parceiros-ativos"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parceiros").select("id, nome, contato, ativo, observacoes")
+        .eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const [vincularParceiro, setVincularParceiro] = useState<any>(null);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -84,6 +100,8 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             form.contract_value === "" || form.contract_value == null
               ? null
               : Number(form.contract_value),
+          fonte_indicacao: form.fonte_indicacao?.trim() || null,
+          parceiro_id: form.parceiro_id || null,
         } as any)
         .eq("id", client.id);
       if (error) throw error;
@@ -272,6 +290,39 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Fonte de indicação</Label>
+              <Input
+                value={form.fonte_indicacao}
+                onChange={(e) => setForm({ ...form, fonte_indicacao: e.target.value })}
+                placeholder="Como nos conheceu?"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Parceiro</Label>
+              <Select
+                value={form.parceiro_id || "none"}
+                onValueChange={(v) => {
+                  if (v === "none") {
+                    setForm({ ...form, parceiro_id: "" });
+                  } else {
+                    setForm({ ...form, parceiro_id: v });
+                    const p = parceiros.find((x: any) => x.id === v);
+                    if (p) setVincularParceiro(p);
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Sem parceiro" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem parceiro</SelectItem>
+                  {parceiros.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
@@ -288,6 +339,12 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           </DialogFooter>
         </form>
       </DialogContent>
+      <VincularClienteDialog
+        open={!!vincularParceiro}
+        onOpenChange={(v) => !v && setVincularParceiro(null)}
+        parceiro={vincularParceiro}
+        defaultClient={client ? { id: client.id, name: client.name ?? client.company, cnpj: client.cnpj ?? null } : null}
+      />
     </Dialog>
   );
 }
