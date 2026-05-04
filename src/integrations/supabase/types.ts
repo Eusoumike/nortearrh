@@ -77,6 +77,7 @@ export type Database = {
           created_by: string | null
           document: string | null
           email: string | null
+          fonte_indicacao: string | null
           health: Database["public"]["Enums"]["client_health"]
           health_reason: string | null
           id: string
@@ -86,6 +87,7 @@ export type Database = {
           nps_score: number | null
           nps_token: string | null
           onboarding_iniciado_em: string | null
+          parceiro_id: string | null
           phone: string | null
           pipedrive_person_id: string | null
           products: string[]
@@ -107,6 +109,7 @@ export type Database = {
           created_by?: string | null
           document?: string | null
           email?: string | null
+          fonte_indicacao?: string | null
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
@@ -116,6 +119,7 @@ export type Database = {
           nps_score?: number | null
           nps_token?: string | null
           onboarding_iniciado_em?: string | null
+          parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
           products?: string[]
@@ -137,6 +141,7 @@ export type Database = {
           created_by?: string | null
           document?: string | null
           email?: string | null
+          fonte_indicacao?: string | null
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
@@ -146,6 +151,7 @@ export type Database = {
           nps_score?: number | null
           nps_token?: string | null
           onboarding_iniciado_em?: string | null
+          parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
           products?: string[]
@@ -166,6 +172,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_parceiro_id_fkey"
+            columns: ["parceiro_id"]
+            isOneToOne: false
+            referencedRelation: "parceiros"
             referencedColumns: ["id"]
           },
         ]
@@ -211,6 +224,53 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: true
             referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracoes_parceiro: {
+        Row: {
+          ativo: boolean
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          parceiro_id: string
+          percentual: number
+          produto: Database["public"]["Enums"]["produto_parceiro"]
+          tipo_repasse: Database["public"]["Enums"]["tipo_repasse_parceiro"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          parceiro_id: string
+          percentual?: number
+          produto: Database["public"]["Enums"]["produto_parceiro"]
+          tipo_repasse: Database["public"]["Enums"]["tipo_repasse_parceiro"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          parceiro_id?: string
+          percentual?: number
+          produto?: Database["public"]["Enums"]["produto_parceiro"]
+          tipo_repasse?: Database["public"]["Enums"]["tipo_repasse_parceiro"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracoes_parceiro_parceiro_id_fkey"
+            columns: ["parceiro_id"]
+            isOneToOne: false
+            referencedRelation: "parceiros"
             referencedColumns: ["id"]
           },
         ]
@@ -990,6 +1050,39 @@ export type Database = {
           },
         ]
       }
+      parceiros: {
+        Row: {
+          ativo: boolean
+          contato: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          contato?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          contato?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       parcelas_rh_digital: {
         Row: {
           client_id: string | null
@@ -1078,6 +1171,74 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      repasses_parceiro: {
+        Row: {
+          client_id: string | null
+          cliente_nome: string
+          competencia: string
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          observacoes: string | null
+          origem_id: string | null
+          parceiro_id: string
+          parceiro_nome: string
+          percentual: number
+          produto: Database["public"]["Enums"]["produto_parceiro"]
+          status: Database["public"]["Enums"]["status_repasse_parceiro"]
+          tipo_repasse: Database["public"]["Enums"]["tipo_repasse_parceiro"]
+          updated_at: string
+          valor_base: number
+          valor_repasse: number
+        }
+        Insert: {
+          client_id?: string | null
+          cliente_nome: string
+          competencia: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          origem_id?: string | null
+          parceiro_id: string
+          parceiro_nome: string
+          percentual?: number
+          produto: Database["public"]["Enums"]["produto_parceiro"]
+          status?: Database["public"]["Enums"]["status_repasse_parceiro"]
+          tipo_repasse: Database["public"]["Enums"]["tipo_repasse_parceiro"]
+          updated_at?: string
+          valor_base?: number
+          valor_repasse?: number
+        }
+        Update: {
+          client_id?: string | null
+          cliente_nome?: string
+          competencia?: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          origem_id?: string | null
+          parceiro_id?: string
+          parceiro_nome?: string
+          percentual?: number
+          produto?: Database["public"]["Enums"]["produto_parceiro"]
+          status?: Database["public"]["Enums"]["status_repasse_parceiro"]
+          tipo_repasse?: Database["public"]["Enums"]["tipo_repasse_parceiro"]
+          updated_at?: string
+          valor_base?: number
+          valor_repasse?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repasses_parceiro_parceiro_id_fkey"
+            columns: ["parceiro_id"]
+            isOneToOne: false
+            referencedRelation: "parceiros"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {
@@ -1785,6 +1946,8 @@ export type Database = {
         | "anotacao"
       lancamento_vr_tipo: "primeira_carga" | "recorrencia"
       parcela_rh_status: "pendente" | "pago" | "inadimplente"
+      produto_parceiro: "rh_digital" | "vr_beneficios"
+      status_repasse_parceiro: "pendente" | "pago"
       ticket_channel:
         | "email"
         | "whatsapp"
@@ -1816,6 +1979,10 @@ export type Database = {
         | "downgrade"
         | "financeiro"
       tipo_cobranca_rh: "mensal" | "anual"
+      tipo_repasse_parceiro:
+        | "primeira_mensalidade"
+        | "recorrencia"
+        | "primeira_carga_vr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1987,6 +2154,8 @@ export const Constants = {
       ],
       lancamento_vr_tipo: ["primeira_carga", "recorrencia"],
       parcela_rh_status: ["pendente", "pago", "inadimplente"],
+      produto_parceiro: ["rh_digital", "vr_beneficios"],
+      status_repasse_parceiro: ["pendente", "pago"],
       ticket_channel: [
         "email",
         "whatsapp",
@@ -2021,6 +2190,11 @@ export const Constants = {
         "financeiro",
       ],
       tipo_cobranca_rh: ["mensal", "anual"],
+      tipo_repasse_parceiro: [
+        "primeira_mensalidade",
+        "recorrencia",
+        "primeira_carga_vr",
+      ],
     },
   },
 } as const
