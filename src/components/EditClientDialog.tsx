@@ -100,6 +100,8 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             form.contract_value === "" || form.contract_value == null
               ? null
               : Number(form.contract_value),
+          fonte_indicacao: form.fonte_indicacao?.trim() || null,
+          parceiro_id: form.parceiro_id || null,
         } as any)
         .eq("id", client.id);
       if (error) throw error;
