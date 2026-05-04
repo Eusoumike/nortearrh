@@ -42,6 +42,7 @@ export default function Financeiro() {
           <TabsTrigger value="vr">VR Benefícios</TabsTrigger>
           <TabsTrigger value="ponto">RH Digital</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
           <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
         </TabsList>
 
