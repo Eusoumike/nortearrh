@@ -571,6 +571,9 @@ export default function Settings() {
       {/* Títulos de chamado */}
       <TicketTitlesManager />
 
+      {/* Histórico de Comissões — apenas admin */}
+      {isAdmin && <HistoricoComissoesSection />}
+
       {/* Aparência */}
       <Card>
         <CardHeader>
