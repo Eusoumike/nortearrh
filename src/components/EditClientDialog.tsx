@@ -44,9 +44,24 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         anydesk_id: client.anydesk_id ?? "",
         products: (client.products ?? []) as string[],
         contract_value: client.contract_value ?? "",
+        fonte_indicacao: client.fonte_indicacao ?? "",
+        parceiro_id: client.parceiro_id ?? "",
       });
     }
   }, [open, client]);
+
+  const { data: parceiros = [] } = useQuery({
+    queryKey: ["parceiros-ativos"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parceiros").select("id, nome, contato, ativo, observacoes")
+        .eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const [vincularParceiro, setVincularParceiro] = useState<any>(null);
 
   const save = useMutation({
     mutationFn: async () => {
