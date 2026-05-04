@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { History, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -17,9 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { formatBRDate, vencimentoTone } from "./financeiroUtils";
+import { EditarPercentualDialog } from "./EditarPercentualDialog";
 
 interface Props {
   open: boolean;
@@ -45,6 +47,13 @@ export function GerenciarFidelidadesDialog({
   onRenovarPonto,
 }: Props) {
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<{
+    clientId: string;
+    clienteNome: string;
+    produto: "vr_recorrencia" | "ponto";
+    produtoLabel: string;
+    perc: number | null;
+  } | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["financeiro-fidelidades-todos"],
@@ -170,196 +179,111 @@ export function GerenciarFidelidadesDialog({
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
   });
 
-  // Atualiza % Nortear (Ponto/RH Digital) para um cliente:
-  // 1) upsert config_comissoes
-  // 2) atualiza parcelas FUTURAS pendentes dos contratos ATIVOS desse cliente
-  const editarPercPonto = useMutation({
-    mutationFn: async ({ clientId, valor }: { clientId: string; valor: number }) => {
-      const existing = await supabase
-        .from("config_comissoes")
-        .select("id, percentual_vr_primeira_carga, percentual_vr_recorrencia")
-        .eq("client_id", clientId)
-        .maybeSingle();
-      if (existing.error) throw existing.error;
-
-      if (existing.data?.id) {
-        const { error } = await supabase
-          .from("config_comissoes")
-          .update({ percentual_ponto: valor })
-          .eq("id", existing.data.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("config_comissoes").insert({
-          client_id: clientId,
-          percentual_ponto: valor,
-          percentual_vr_primeira_carga: Number(pVrPrim) || 17.5,
-          percentual_vr_recorrencia: Number(pVrRec) || 17.5,
-        });
-        if (error) throw error;
-      }
-
-      // Contratos ativos do cliente
-      const contratos = await supabase
-        .from("contratos_rh_digital")
-        .select("id")
-        .eq("client_id", clientId)
-        .eq("ativo", true);
-      if (contratos.error) throw contratos.error;
-      const ids = (contratos.data ?? []).map((c) => c.id);
-      if (ids.length > 0) {
-        // Atualiza % no contrato (sync_parcelas_rh_on_update propaga para parcelas futuras pendentes)
-        const { error: cErr } = await supabase
-          .from("contratos_rh_digital")
-          .update({ percentual_nortear: valor })
-          .in("id", ids);
-        if (cErr) throw cErr;
-      }
-    },
-    onSuccess: () => {
-      toast.success("Percentual atualizado com sucesso!");
-      qc.invalidateQueries({ queryKey: ["financeiro-fidelidades-todos"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
-    },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar percentual"),
-  });
-
-  // Atualiza % VR para um cliente:
-  // 1) upsert config_comissoes (recorrência)
-  // 2) atualiza lancamentos_vr futuros (competencia >= mês atual)
-  const editarPercVR = useMutation({
-    mutationFn: async ({ clientId, valor }: { clientId: string; valor: number }) => {
-      const existing = await supabase
-        .from("config_comissoes")
-        .select("id, percentual_ponto")
-        .eq("client_id", clientId)
-        .maybeSingle();
-      if (existing.error) throw existing.error;
-
-      if (existing.data?.id) {
-        const { error } = await supabase
-          .from("config_comissoes")
-          .update({
-            percentual_vr_recorrencia: valor,
-            percentual_vr_primeira_carga: valor,
-          })
-          .eq("id", existing.data.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("config_comissoes").insert({
-          client_id: clientId,
-          percentual_vr_recorrencia: valor,
-          percentual_vr_primeira_carga: valor,
-          percentual_ponto: Number(pPonto) || 40,
-        });
-        if (error) throw error;
-      }
-
-      // Atualiza lancamentos VR futuros (competência >= mês atual)
-      const hoje = ymdFirst(new Date());
-      const { error: vErr } = await supabase
-        .from("lancamentos_vr")
-        .update({ percentual_comissao: valor })
-        .eq("client_id", clientId)
-        .gte("competencia", hoje);
-      if (vErr) throw vErr;
-    },
-    onSuccess: () => {
-      toast.success("Percentual atualizado com sucesso!");
-      qc.invalidateQueries({ queryKey: ["financeiro-fidelidades-todos"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
-    },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar percentual"),
-  });
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Gerenciar fidelidades</DialogTitle>
-          <DialogDescription>
-            Visualize todos os clientes com fidelidade ativa e ajuste percentuais.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gerenciar fidelidades</DialogTitle>
+            <DialogDescription>
+              Visualize todos os clientes com fidelidade ativa e ajuste percentuais.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid gap-3">
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : items.length === 0 ? (
-            <p className="rounded border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Nenhum cliente com fidelidade configurada.
-            </p>
-          ) : (
-            items.map((it) => (
-              <ClienteFidRow
-                key={it.client_id}
-                item={it}
-                savingVR={editarPercVR.isPending}
-                savingPonto={editarPercPonto.isPending}
-                onEditarVR={(v) => editarPercVR.mutate({ clientId: it.client_id, valor: v })}
-                onEditarPonto={(v) => editarPercPonto.mutate({ clientId: it.client_id, valor: v })}
-                onRenovarVR={onRenovarVR}
-                onRenovarPonto={onRenovarPonto}
-              />
-            ))
-          )}
-        </div>
-
-        <Card className="mt-4 grid gap-3 p-4">
-          <h3 className="text-sm font-semibold">Percentuais padrão globais</h3>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-vr-prim">% VR Primeira Carga</Label>
-              <Input id="p-vr-prim" type="number" step="0.01" value={pVrPrim} onChange={(e) => setPVrPrim(e.target.value)} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-vr-rec">% VR Recorrência</Label>
-              <Input id="p-vr-rec" type="number" step="0.01" value={pVrRec} onChange={(e) => setPVrRec(e.target.value)} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-ponto">% Nortear Ponto</Label>
-              <Input id="p-ponto" type="number" step="0.01" value={pPonto} onChange={(e) => setPPonto(e.target.value)} />
-            </div>
+          <div className="grid gap-3">
+            {isLoading ? (
+              <div className="flex h-32 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : items.length === 0 ? (
+              <p className="rounded border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Nenhum cliente com fidelidade configurada.
+              </p>
+            ) : (
+              items.map((it) => (
+                <ClienteFidRow
+                  key={it.client_id}
+                  item={it}
+                  onEditar={(produto, produtoLabel, perc) =>
+                    setEditing({
+                      clientId: it.client_id,
+                      clienteNome: it.cliente_nome,
+                      produto,
+                      produtoLabel,
+                      perc,
+                    })
+                  }
+                  onRenovarVR={onRenovarVR}
+                  onRenovarPonto={onRenovarPonto}
+                />
+              ))
+            )}
           </div>
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => salvarPadroes.mutate()} disabled={salvarPadroes.isPending}>
-              {salvarPadroes.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar padrões
-            </Button>
-          </div>
-        </Card>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Card className="mt-4 grid gap-3 p-4">
+            <h3 className="text-sm font-semibold">Percentuais padrão globais</h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-vr-prim">% VR Primeira Carga</Label>
+                <Input id="p-vr-prim" type="number" step="0.01" value={pVrPrim} onChange={(e) => setPVrPrim(e.target.value)} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-vr-rec">% VR Recorrência</Label>
+                <Input id="p-vr-rec" type="number" step="0.01" value={pVrRec} onChange={(e) => setPVrRec(e.target.value)} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-ponto">% Nortear Ponto</Label>
+                <Input id="p-ponto" type="number" step="0.01" value={pPonto} onChange={(e) => setPPonto(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => salvarPadroes.mutate()} disabled={salvarPadroes.isPending}>
+                {salvarPadroes.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar padrões
+              </Button>
+            </div>
+          </Card>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {editing && (
+        <EditarPercentualDialog
+          open={!!editing}
+          onOpenChange={(v) => !v && setEditing(null)}
+          clientId={editing.clientId}
+          clienteNome={editing.clienteNome}
+          produto={editing.produto}
+          produtoLabel={editing.produtoLabel}
+          percentualAtual={editing.perc}
+        />
+      )}
+    </>
   );
 }
 
 function ClienteFidRow({
   item,
-  savingVR,
-  savingPonto,
-  onEditarVR,
-  onEditarPonto,
+  onEditar,
   onRenovarVR,
   onRenovarPonto,
 }: {
   item: Item;
-  savingVR: boolean;
-  savingPonto: boolean;
-  onEditarVR: (v: number) => void;
-  onEditarPonto: (v: number) => void;
+  onEditar: (
+    produto: "vr_recorrencia" | "ponto",
+    produtoLabel: string,
+    perc: number | null,
+  ) => void;
   onRenovarVR?: (id: string) => void;
   onRenovarPonto?: (id: string) => void;
 }) {
   const toneVR = vencimentoTone(item.vencimentoVR);
   const tonePonto = vencimentoTone(item.vencimentoPonto);
   const produtos = Array.from(item.produtos).join(" + ");
+  const [showHist, setShowHist] = useState(false);
 
   return (
     <Card className="p-3">
@@ -370,15 +294,14 @@ function ClienteFidRow({
           </Link>
           <div className="text-xs text-muted-foreground">{produtos}</div>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {item.produtos.has("VR") && (
             <FidPill
               label="VR"
               tone={toneVR}
               vencimento={item.vencimentoVR}
               perc={item.percVR}
-              saving={savingVR}
-              onEditPerc={onEditarVR}
+              onEditar={() => onEditar("vr_recorrencia", "VR", item.percVR)}
               onRenovar={toneVR === "danger" && onRenovarVR ? () => onRenovarVR(item.client_id) : undefined}
             />
           )}
@@ -388,15 +311,114 @@ function ClienteFidRow({
               tone={tonePonto}
               vencimento={item.vencimentoPonto}
               perc={item.percPonto}
-              saving={savingPonto}
-              onEditPerc={onEditarPonto}
+              onEditar={() => onEditar("ponto", "Ponto", item.percPonto)}
               onRenovar={tonePonto === "danger" && onRenovarPonto ? () => onRenovarPonto(item.client_id) : undefined}
             />
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => setShowHist((v) => !v)}
+          >
+            <History className="h-3 w-3" />
+            {showHist ? "Ocultar histórico" : "Ver histórico"}
+          </Button>
         </div>
       </div>
+      <Collapsible open={showHist}>
+        <CollapsibleContent>
+          {showHist && <HistoricoCliente clientId={item.client_id} />}
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
+}
+
+function HistoricoCliente({ clientId }: { clientId: string }) {
+  const [showAll, setShowAll] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: ["historico-cliente", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historico_comissoes")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("data_alteracao", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="mt-3 flex justify-center py-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!data || data.length === 0) {
+    return <p className="mt-3 text-xs text-muted-foreground">Nenhuma alteração registrada.</p>;
+  }
+
+  const list = showAll ? data : data.slice(0, 5);
+
+  return (
+    <div className="mt-3 overflow-x-auto rounded-md border">
+      <table className="w-full text-xs">
+        <thead className="bg-muted/50">
+          <tr>
+            <th className="px-2 py-1 text-left">Data</th>
+            <th className="px-2 py-1 text-left">Produto</th>
+            <th className="px-2 py-1 text-right">% Anterior</th>
+            <th className="px-2 py-1 text-right">% Novo</th>
+            <th className="px-2 py-1 text-left">Vigência</th>
+            <th className="px-2 py-1 text-left">Alterado por</th>
+            <th className="px-2 py-1 text-left">Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((h) => (
+            <tr key={h.id} className="border-t">
+              <td className="px-2 py-1">{formatBRDate(h.data_alteracao)}</td>
+              <td className="px-2 py-1">{produtoLabel(h.produto)}</td>
+              <td className="px-2 py-1 text-right tabular-nums">
+                {h.percentual_anterior != null ? `${Number(h.percentual_anterior).toFixed(2)}%` : "—"}
+              </td>
+              <td className="px-2 py-1 text-right tabular-nums">{Number(h.percentual_novo).toFixed(2)}%</td>
+              <td className="px-2 py-1">
+                {formatBRDate(h.vigencia_a_partir)}
+                {h.retroativo && (
+                  <Badge variant="destructive" className="ml-1 px-1 py-0 text-[10px]">
+                    Retroativo
+                  </Badge>
+                )}
+              </td>
+              <td className="px-2 py-1">{h.alterado_por ?? "—"}</td>
+              <td className="px-2 py-1 max-w-[200px] truncate" title={h.motivo ?? ""}>
+                {h.motivo ?? "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {data.length > 5 && (
+        <div className="border-t p-2 text-center">
+          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? "Mostrar menos" : `Ver todas (${data.length})`}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function produtoLabel(p: string) {
+  if (p === "vr_primeira_carga") return "VR — Primeira Carga";
+  if (p === "vr_recorrencia") return "VR — Recorrência";
+  if (p === "ponto") return "Ponto";
+  return p;
 }
 
 function FidPill({
@@ -404,25 +426,16 @@ function FidPill({
   tone,
   vencimento,
   perc,
-  saving,
-  onEditPerc,
+  onEditar,
   onRenovar,
 }: {
   label: string;
   tone: "ok" | "warning" | "danger" | "muted";
   vencimento: string | null;
   perc: number | null;
-  saving: boolean;
-  onEditPerc: (v: number) => void;
+  onEditar: () => void;
   onRenovar?: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(perc != null ? String(perc) : "");
-
-  useEffect(() => {
-    setVal(perc != null ? String(perc) : "");
-  }, [perc]);
-
   const badgeClass = cn(
     "border-transparent",
     tone === "danger" && "bg-destructive/15 text-destructive",
@@ -431,53 +444,14 @@ function FidPill({
     tone === "muted" && "bg-muted text-muted-foreground",
   );
 
-  const handleSalvar = () => {
-    const num = Number(val);
-    if (!Number.isFinite(num) || num < 0 || num > 100) {
-      toast.error("Informe um percentual entre 0 e 100");
-      return;
-    }
-    onEditPerc(num);
-    setEditing(false);
-  };
-
   return (
     <div className="flex items-center gap-2 rounded-md border px-2 py-1">
       <Badge className={badgeClass}>{label}</Badge>
       <span className="text-xs text-muted-foreground">{formatBRDate(vencimento)}</span>
-      {editing ? (
-        <>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            max="100"
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            className="h-7 w-20"
-          />
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-7"
-            onClick={handleSalvar}
-            disabled={saving}
-          >
-            {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-            Salvar
-          </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditing(false)} disabled={saving}>
-            Cancelar
-          </Button>
-        </>
-      ) : (
-        <>
-          <span className="text-xs tabular-nums">{perc != null ? `${perc.toFixed(1)}%` : "—"}</span>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditing(true)}>
-            Editar %
-          </Button>
-        </>
-      )}
+      <span className="text-xs tabular-nums">{perc != null ? `${perc.toFixed(1)}%` : "—"}</span>
+      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onEditar}>
+        Editar %
+      </Button>
       {onRenovar && (
         <Button size="sm" variant="outline" className="h-7" onClick={onRenovar}>
           Renovar

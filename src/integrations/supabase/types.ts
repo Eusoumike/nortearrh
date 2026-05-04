@@ -425,6 +425,54 @@ export type Database = {
           },
         ]
       }
+      historico_comissoes: {
+        Row: {
+          alterado_por: string | null
+          alterado_por_id: string | null
+          client_id: string
+          cliente_nome: string
+          created_at: string
+          data_alteracao: string
+          id: string
+          motivo: string | null
+          percentual_anterior: number | null
+          percentual_novo: number
+          produto: Database["public"]["Enums"]["historico_comissao_produto"]
+          retroativo: boolean
+          vigencia_a_partir: string
+        }
+        Insert: {
+          alterado_por?: string | null
+          alterado_por_id?: string | null
+          client_id: string
+          cliente_nome: string
+          created_at?: string
+          data_alteracao?: string
+          id?: string
+          motivo?: string | null
+          percentual_anterior?: number | null
+          percentual_novo: number
+          produto: Database["public"]["Enums"]["historico_comissao_produto"]
+          retroativo?: boolean
+          vigencia_a_partir: string
+        }
+        Update: {
+          alterado_por?: string | null
+          alterado_por_id?: string | null
+          client_id?: string
+          cliente_nome?: string
+          created_at?: string
+          data_alteracao?: string
+          id?: string
+          motivo?: string | null
+          percentual_anterior?: number | null
+          percentual_novo?: number
+          produto?: Database["public"]["Enums"]["historico_comissao_produto"]
+          retroativo?: boolean
+          vigencia_a_partir?: string
+        }
+        Relationships: []
+      }
       implantacao_eventos: {
         Row: {
           autor_id: string | null
@@ -1710,6 +1758,10 @@ export type Database = {
         | "fechado_perdido"
       documento_financeiro_status: "pendente" | "pago"
       documento_financeiro_tipo: "nota_fiscal" | "boleto" | "outro"
+      historico_comissao_produto:
+        | "vr_primeira_carga"
+        | "vr_recorrencia"
+        | "ponto"
       implantacao_etapa:
         | "novo_cliente"
         | "boas_vindas"
@@ -1902,6 +1954,11 @@ export const Constants = {
       ],
       documento_financeiro_status: ["pendente", "pago"],
       documento_financeiro_tipo: ["nota_fiscal", "boleto", "outro"],
+      historico_comissao_produto: [
+        "vr_primeira_carga",
+        "vr_recorrencia",
+        "ponto",
+      ],
       implantacao_etapa: [
         "novo_cliente",
         "boas_vindas",

@@ -31,6 +31,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { TicketTitlesManager } from "@/components/settings/TicketTitlesManager";
+import { HistoricoComissoesSection } from "@/components/settings/HistoricoComissoesSection";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -569,6 +570,9 @@ export default function Settings() {
 
       {/* Títulos de chamado */}
       <TicketTitlesManager />
+
+      {/* Histórico de Comissões — apenas admin */}
+      {isAdmin && <HistoricoComissoesSection />}
 
       {/* Aparência */}
       <Card>
