@@ -65,6 +65,10 @@ export default function Financeiro() {
           />
         </TabsContent>
 
+        <TabsContent value="parceiros" className="mt-4">
+          <ParceirosTab />
+        </TabsContent>
+
         <TabsContent value="lancamentos" className="mt-4">
           <LancamentosTab
             onAbrirDocumentoUpload={() => {
