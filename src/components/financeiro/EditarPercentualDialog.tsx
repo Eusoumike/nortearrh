@@ -117,7 +117,11 @@ export function EditarPercentualDialog({
         .maybeSingle();
       if (existing.error) throw existing.error;
 
-      const upd: Record<string, number> = {};
+      const upd: {
+        percentual_ponto?: number;
+        percentual_vr_recorrencia?: number;
+        percentual_vr_primeira_carga?: number;
+      } = {};
       if (produto === "ponto") upd.percentual_ponto = valor;
       if (produto === "vr_recorrencia") upd.percentual_vr_recorrencia = valor;
       if (produto === "vr_primeira_carga") upd.percentual_vr_primeira_carga = valor;
