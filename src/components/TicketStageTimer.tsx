@@ -55,7 +55,7 @@ export function TicketStageTimer({ ticket }: Props) {
         .eq("ativo", true)
         .order("ordem", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as CustomStage[];
+      return (data ?? []) as unknown as CustomStage[];
     },
   });
 
