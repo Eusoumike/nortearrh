@@ -34,6 +34,7 @@ import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { TicketStageTimer } from "@/components/TicketStageTimer";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -873,34 +874,7 @@ export default function TicketDetail() {
 
           <TicketTasksSummary ticketId={id!} />
 
-          {/* Tempo por etapa — com barra de progresso */}
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tempo por etapa</p>
-            <div className="space-y-2.5">
-              {stageDurations.map((s) => {
-                const slaSec = SLA_PER_STAGE_HOURS[s.key] * 3600;
-                const overSla = s.seconds > slaSec;
-                const pct = Math.min(100, (s.seconds / slaSec) * 100);
-                const barColor = overSla ? "bg-danger" : s.isActive ? "bg-primary" : s.seconds > 0 ? "bg-success" : "bg-muted";
-                return (
-                  <div key={s.key} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={`flex items-center gap-1.5 truncate ${s.isActive ? "font-medium text-primary" : ""}`}>
-                        {s.isActive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />}
-                        {s.label}
-                      </span>
-                      <span className={`font-mono text-[11px] ${overSla ? "text-danger font-semibold" : s.isActive ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                        {s.seconds > 0 ? formatDuration(s.seconds) : "—"}
-                      </span>
-                    </div>
-                    <div className="h-1 overflow-hidden rounded-full bg-muted">
-                      <div className={`h-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <TicketStageTimer ticket={ticket} />
 
           {/* Detalhes */}
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3">
