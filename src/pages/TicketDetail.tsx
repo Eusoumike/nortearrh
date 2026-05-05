@@ -34,6 +34,7 @@ import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { TicketStageTimer } from "@/components/TicketStageTimer";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
