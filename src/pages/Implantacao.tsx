@@ -2101,9 +2101,17 @@ function CustomizeStagesDialog({
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
+  const [confirmDelete, setConfirmDelete] = useState<{ key: string; label: string; idx: number } | null>(null);
+
   const removeCustom = useMutation({
-    mutationFn: async (stageKey: string) => {
+    mutationFn: async ({ stageKey, fallbackKey }: { stageKey: string; fallbackKey: string }) => {
       if (!userId) throw new Error("Não autenticado");
+      // Mover implantações desta etapa para a etapa anterior
+      const { error: moveErr } = await supabase
+        .from("implantacoes")
+        .update({ etapa: fallbackKey as any })
+        .eq("etapa", stageKey as any);
+      if (moveErr) throw moveErr;
       const { error } = await supabase
         .from("implantacao_stage_configs")
         .delete()
@@ -2113,9 +2121,33 @@ function CustomizeStagesDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["impl-stage-configs", userId] });
+      qc.invalidateQueries({ queryKey: ["implantacoes"] });
+      toast.success("Etapa excluída com sucesso");
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
+    onError: (e: any) => toast.error(e?.message || "Erro ao excluir."),
   });
+
+  const handleDeleteRequest = (d: { key: string; label: string; isCustom: boolean }, idx: number) => {
+    if (!d.isCustom) return;
+    setConfirmDelete({ key: d.key, label: d.label, idx });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!confirmDelete) return;
+    const { key, idx } = confirmDelete;
+    // remove from local drafts
+    setDrafts(drafts.filter((x) => x.key !== key));
+    // se já está persistido (não é draft local recém-criado), aplica no banco
+    if (!key.startsWith("custom_")) {
+      // etapa anterior: stage visível anterior ou primeira disponível
+      const prev = drafts[idx - 1] ?? drafts.find((x) => x.key !== key);
+      const fallbackKey = prev?.key ?? "novo_cliente";
+      removeCustom.mutate({ stageKey: key, fallbackKey });
+    } else {
+      toast.success("Etapa removida");
+    }
+    setConfirmDelete(null);
+  };
 
   const addCustom = () => {
     if (!newLabel.trim()) return;
