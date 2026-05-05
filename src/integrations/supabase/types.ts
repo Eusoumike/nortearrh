@@ -338,6 +338,42 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_ticket_stages: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          ordem: number
+          sla_hours: number
+          stage_key: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          ordem?: number
+          sla_hours?: number
+          stage_key: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          ordem?: number
+          sla_hours?: number
+          stage_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           client_id: string | null
@@ -1482,6 +1518,33 @@ export type Database = {
           },
         ]
       }
+      ticket_stage_times: {
+        Row: {
+          created_at: string
+          id: string
+          stage_key: string
+          ticket_id: string
+          total_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          stage_key: string
+          ticket_id: string
+          total_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          stage_key?: string
+          ticket_id?: string
+          total_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ticket_status_history: {
         Row: {
           changed_by: string | null
@@ -1553,6 +1616,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          active_custom_stage_key: string | null
           anydesk_id: string | null
           anydesk_senha: string | null
           assigned_name: string | null
@@ -1567,6 +1631,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_stage_started_at: string
+          custom_stage_started_at: string | null
           description: string | null
           entered_aguardando_cliente_at: string | null
           entered_em_atendimento_at: string | null
@@ -1599,6 +1664,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
           assigned_name?: string | null
@@ -1613,6 +1679,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_stage_started_at?: string
+          custom_stage_started_at?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1645,6 +1712,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
           assigned_name?: string | null
@@ -1659,6 +1727,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_stage_started_at?: string
+          custom_stage_started_at?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
