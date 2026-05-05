@@ -2194,17 +2194,30 @@ function CustomizeStagesDialog({
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => {
-                    setDrafts(drafts.filter((x) => x.key !== d.key));
-                    if (!d.key.startsWith("custom_")) {
-                      removeCustom.mutate(d.key);
-                    }
-                  }}
+                  title="Excluir etapa"
+                  onClick={() => handleDeleteRequest(d, idx)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               ) : (
-                <ToneBadge tone="muted" size="sm">padrão</ToneBadge>
+                <>
+                  <ToneBadge tone="muted" size="sm">padrão</ToneBadge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground opacity-50"
+                          disabled
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Etapas padrão não podem ser excluídas</TooltipContent>
+                  </Tooltip>
+                </>
               )}
             </div>
           ))}
