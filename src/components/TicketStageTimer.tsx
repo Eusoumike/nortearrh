@@ -67,7 +67,7 @@ export function TicketStageTimer({ ticket }: Props) {
         .select("stage_key, total_seconds")
         .eq("ticket_id", ticket.id);
       if (error) throw error;
-      return (data ?? []) as StageTime[];
+      return (data ?? []) as unknown as StageTime[];
     },
   });
 
