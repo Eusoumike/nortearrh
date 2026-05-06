@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PriorityBadge } from "@/components/badges";
 import { toast } from "sonner";
@@ -15,18 +15,28 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES } from "@/lib/constants";
+import { type TicketStatus, TIMED_STAGES } from "@/lib/constants";
 import { formatDuration } from "@/lib/formatters";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 30;
 
+const SYSTEM_STAGE_KEYS = new Set<string>([
+  "novo",
+  "em_atendimento",
+  "aguardando_cliente",
+  "suporte_vera_n1",
+  "abertura_chamado_n2",
+  "resolvido",
+]);
+
 interface KanbanTicket {
   id: string;
   ticket_number: string;
   title: string;
   status: TicketStatus;
+  kanban_stage_key?: string | null;
   priority: any;
   client?: { name: string } | null;
   current_stage_started_at: string;
@@ -40,23 +50,19 @@ interface KanbanTicket {
   entered_n2_at: string | null;
 }
 
+interface StageDef {
+  id: string;
+  stage_key: string;
+  label: string;
+  color: string;
+  ordem: number;
+  is_system: boolean;
+}
+
 interface Props {
   tickets: KanbanTicket[];
 }
 
-// Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
-const STRIPE_BY_TONE: Record<string, string> = {
-  info: "bg-info",
-  warning: "bg-warning",
-  muted: "bg-muted-foreground/40",
-  success: "bg-success",
-  neutral: "bg-muted-foreground/40",
-  primary: "bg-primary",
-  accent: "bg-accent",
-  danger: "bg-danger",
-};
-
-// Para uma etapa cronometrada, calcula o tempo decorrido na etapa atual
 function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   const stage = TIMED_STAGES.find((s) => s.key === t.status);
   if (stage) {
@@ -112,12 +118,10 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
   );
 });
 
-function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status });
-  const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
+function Column({ stage, tickets, now }: { stage: StageDef; tickets: KanbanTicket[]; now: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage.stage_key });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Reset paginação quando o tamanho da lista muda significativamente
   useEffect(() => {
     setVisibleCount((prev) => Math.min(Math.max(prev, PAGE_SIZE), Math.max(tickets.length, PAGE_SIZE)));
   }, [tickets.length]);
@@ -145,19 +149,17 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
         wordBreak: "break-word",
       }}
     >
-      {/* Barra colorida fina (3px) no topo + header sticky */}
       <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
-        <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
+        <div className="h-[3px] w-full rounded-t-lg" style={{ backgroundColor: stage.color }} />
         <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
           <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-            {STATUS_LABEL[status]}
+            {stage.label}
           </h3>
           <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
             {tickets.length}
           </span>
         </div>
       </div>
-      {/* Área de cards (scroll interno fino) */}
       <div
         ref={setNodeRef}
         onScroll={onScroll}
@@ -206,36 +208,65 @@ export function TicketKanban({ tickets }: Props) {
     return () => clearInterval(i);
   }, []);
 
+  // Stages from DB (realtime-ish via invalidation)
+  const { data: stages = [] } = useQuery({
+    queryKey: ["kanban-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_ticket_stages")
+        .select("id, stage_key, label, color, ordem, is_system, ativo")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as StageDef[];
+    },
+  });
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("custom_ticket_stages_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "custom_ticket_stages" }, () => {
+        qc.invalidateQueries({ queryKey: ["kanban-stages"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: TicketStatus }) => {
-      const { error } = await supabase.from("tickets").update({ status }).eq("id", id);
+  const updateStage = useMutation({
+    mutationFn: async ({ id, stageKey }: { id: string; stageKey: string }) => {
+      const isSystem = SYSTEM_STAGE_KEYS.has(stageKey);
+      const update: any = { kanban_stage_key: stageKey };
+      if (isSystem) update.status = stageKey as TicketStatus;
+      const { error } = await supabase.from("tickets").update(update).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success(`Status alterado para ${STATUS_LABEL[vars.status]}.`);
+      const stage = stages.find((s) => s.stage_key === vars.stageKey);
+      toast.success(`Movido para ${stage?.label ?? vars.stageKey}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   const grouped = useMemo(() => {
-    const map: Record<TicketStatus, KanbanTicket[]> = {
-      novo: [],
-      em_atendimento: [],
-      aguardando_cliente: [],
-      suporte_vera_n1: [],
-      abertura_chamado_n2: [],
-      resolvido: [],
-      fechado: [],
-    };
+    const map = new Map<string, KanbanTicket[]>();
+    stages.forEach((s) => map.set(s.stage_key, []));
     tickets.forEach((t) => {
-      const key = t.status === "fechado" ? "resolvido" : t.status;
-      map[key].push(t);
+      let key = t.kanban_stage_key ?? (t.status === "fechado" ? "resolvido" : t.status);
+      if (!map.has(key)) {
+        // Stage was deleted — fallback
+        key = "em_atendimento";
+        if (!map.has(key)) key = stages[0]?.stage_key ?? key;
+      }
+      map.get(key)?.push(t);
     });
     return map;
-  }, [tickets]);
+  }, [tickets, stages]);
 
   const activeTicket = useMemo(
     () => (activeId ? tickets.find((t) => t.id === activeId) : null),
@@ -251,26 +282,19 @@ export function TicketKanban({ tickets }: Props) {
       setActiveId(null);
       if (!e.over) return;
       const id = String(e.active.id);
-      const newStatus = e.over.id as TicketStatus;
+      const newStageKey = String(e.over.id);
       const ticket = tickets.find((t) => t.id === id);
       if (!ticket) return;
-      const currentEffective = ticket.status === "fechado" ? "resolvido" : ticket.status;
-      if (currentEffective === newStatus) return;
-      updateStatus.mutate({ id, status: newStatus });
+      const currentKey = ticket.kanban_stage_key ?? (ticket.status === "fechado" ? "resolvido" : ticket.status);
+      if (currentKey === newStageKey) return;
+      updateStage.mutate({ id, stageKey: newStageKey });
     },
-    [tickets, updateStatus],
+    [tickets, updateStage],
   );
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* Rail horizontal estilo Pipedrive: wrapper width:100%/height:100% + overflow:auto */}
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          overflow: "auto",
-        }}
-      >
+      <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
         <div
           style={{
             display: "flex",
@@ -282,8 +306,8 @@ export function TicketKanban({ tickets }: Props) {
             padding: "0 16px 16px",
           }}
         >
-          {STATUS_FLOW.map((status) => (
-            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
+          {stages.map((stage) => (
+            <MemoColumn key={stage.id} stage={stage} tickets={grouped.get(stage.stage_key) ?? []} now={now} />
           ))}
         </div>
       </div>
