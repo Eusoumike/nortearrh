@@ -341,9 +341,11 @@ export type Database = {
       custom_ticket_stages: {
         Row: {
           ativo: boolean
+          color: string
           created_at: string
           created_by: string | null
           id: string
+          is_system: boolean
           label: string
           ordem: number
           sla_hours: number
@@ -352,9 +354,11 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          color?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_system?: boolean
           label: string
           ordem?: number
           sla_hours?: number
@@ -363,9 +367,11 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          color?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_system?: boolean
           label?: string
           ordem?: number
           sla_hours?: number
@@ -1639,6 +1645,7 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
+          kanban_stage_key: string | null
           opened_at: string
           organization: string | null
           pipedrive_deal_id: string | null
@@ -1687,6 +1694,7 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
@@ -1735,6 +1743,7 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
