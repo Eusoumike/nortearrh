@@ -240,8 +240,8 @@ export function TicketKanban({ tickets }: Props) {
   const updateStage = useMutation({
     mutationFn: async ({ id, stageKey }: { id: string; stageKey: string }) => {
       const isSystem = SYSTEM_STAGE_KEYS.has(stageKey);
-      const update: Record<string, any> = { kanban_stage_key: stageKey };
-      if (isSystem) update.status = stageKey;
+      const update: any = { kanban_stage_key: stageKey };
+      if (isSystem) update.status = stageKey as TicketStatus;
       const { error } = await supabase.from("tickets").update(update).eq("id", id);
       if (error) throw error;
     },
