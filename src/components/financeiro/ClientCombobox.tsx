@@ -57,7 +57,9 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
     return clients
       .filter(
         (c) =>
+          (c.company ?? "").toLowerCase().includes(term) ||
           c.name.toLowerCase().includes(term) ||
+          (c.contact_name ?? "").toLowerCase().includes(term) ||
           (c.cnpj ?? "").toLowerCase().includes(term),
       )
       .slice(0, 50);
