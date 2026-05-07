@@ -182,15 +182,33 @@ export default function TicketDetail() {
 
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
+  const { data: kanbanStages = [] } = useQuery({
+    queryKey: ["kanban-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_ticket_stages")
+        .select("id, stage_key, label, color, ordem, is_system, ativo")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const SYSTEM_KEYS = new Set(["novo","em_atendimento","aguardando_cliente","suporte_vera_n1","abertura_chamado_n2","resolvido"]);
+
   const updateStatus = useMutation({
-    mutationFn: async (status: TicketStatus) => {
-      const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
+    mutationFn: async (stageKey: string) => {
+      const isSystem = SYSTEM_KEYS.has(stageKey);
+      const update: any = { kanban_stage_key: stageKey };
+      if (isSystem) update.status = stageKey as TicketStatus;
+      const { error } = await supabase.from("tickets").update(update).eq("id", id!);
       if (error) throw error;
     },
-    onSuccess: (_d, status) => {
+    onSuccess: (_d, stageKey) => {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
+      const stage = kanbanStages.find((s: any) => s.stage_key === stageKey);
+      toast.success(`Status alterado para ${stage?.label ?? STATUS_LABEL[stageKey as TicketStatus] ?? stageKey}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -864,10 +882,17 @@ export default function TicketDetail() {
           {/* Status */}
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-            <Select value={effectiveStatusTyped} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
+            <Select value={(ticket as any).kanban_stage_key || effectiveStatusTyped} onValueChange={(v) => updateStatus.mutate(v)}>
               <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
+                {kanbanStages.map((s: any) => (
+                  <SelectItem key={s.stage_key} value={s.stage_key}>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+                      {s.label}
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
