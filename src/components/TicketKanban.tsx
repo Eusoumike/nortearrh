@@ -295,6 +295,43 @@ export function TicketKanban({ tickets }: Props) {
     [tickets, updateStage],
   );
 
+  // Criar etapa inline
+  const [showAddStage, setShowAddStage] = useState(false);
+  const [newStageName, setNewStageName] = useState("");
+  const [newStageColor, setNewStageColor] = useState("#0F7173");
+
+  const createStage = useMutation({
+    mutationFn: async () => {
+      const label = newStageName.trim();
+      if (!label) throw new Error("Informe o nome da etapa.");
+      const stage_key = "custom_" + label.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 40) + "_" + Date.now().toString(36);
+      // Inserir antes do "resolvido" (penúltima posição)
+      const resolvido = stages.find((s) => s.stage_key === "resolvido");
+      const targetOrdem = resolvido ? resolvido.ordem : (stages.at(-1)?.ordem ?? 0) + 1;
+      // Empurra resolvido pra frente
+      if (resolvido) {
+        await supabase.from("custom_ticket_stages").update({ ordem: targetOrdem + 1 }).eq("id", resolvido.id);
+      }
+      const { error } = await supabase.from("custom_ticket_stages").insert({
+        stage_key, label, color: newStageColor, ordem: targetOrdem, is_system: false, ativo: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kanban-stages"] });
+      qc.invalidateQueries({ queryKey: ["custom-ticket-stages"] });
+      toast.success("Etapa criada.");
+      setShowAddStage(false);
+      setNewStageName("");
+      setNewStageColor("#0F7173");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
@@ -312,6 +349,45 @@ export function TicketKanban({ tickets }: Props) {
           {stages.map((stage) => (
             <MemoColumn key={stage.id} stage={stage} tickets={grouped.get(stage.stage_key) ?? []} now={now} />
           ))}
+          <div style={{ flex: "0 0 220px", minWidth: 220, display: "flex", flexDirection: "column" }}>
+            {showAddStage ? (
+              <div className="rounded-lg border border-dashed border-primary/40 bg-surface-muted/40 p-3 space-y-2">
+                <Input
+                  autoFocus
+                  placeholder="Nome da etapa"
+                  value={newStageName}
+                  onChange={(e) => setNewStageName(e.target.value)}
+                  className="h-8 text-sm"
+                />
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-muted-foreground">Cor</label>
+                  <input
+                    type="color"
+                    value={newStageColor}
+                    onChange={(e) => setNewStageColor(e.target.value)}
+                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent"
+                  />
+                </div>
+                <div className="flex gap-1">
+                  <Button size="sm" className="h-7 flex-1 text-xs" onClick={() => createStage.mutate()} disabled={createStage.isPending}>
+                    {createStage.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    Salvar
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setShowAddStage(false); setNewStageName(""); }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddStage(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-surface-muted/30 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              >
+                <Plus className="h-3.5 w-3.5" /> Etapa
+              </button>
+            )}
+          </div>
         </div>
       </div>
       <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
