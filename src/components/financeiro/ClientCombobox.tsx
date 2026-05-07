@@ -79,7 +79,7 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
             className="w-full justify-between font-normal"
           >
             <span className={cn("truncate", !selected && "text-muted-foreground")}>
-              {selected ? selected.name : isLoading ? "Carregando…" : "Selecionar cliente"}
+              {selected ? (selected.company || selected.name) : isLoading ? "Carregando…" : "Selecionar cliente"}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -109,8 +109,11 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
                         value === c.id ? "opacity-100" : "opacity-0",
                       )}
                     />
-                    <div className="flex flex-col">
-                      <span className="text-sm">{c.name}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold truncate">{c.company || c.name}</span>
+                      {c.contact_name && c.contact_name !== (c.company || c.name) && (
+                        <span className="text-xs text-muted-foreground truncate">{c.contact_name}</span>
+                      )}
                       {c.cnpj && (
                         <span className="text-xs text-muted-foreground">{c.cnpj}</span>
                       )}
