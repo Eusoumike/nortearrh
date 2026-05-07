@@ -1,11 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PriorityBadge } from "@/components/badges";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -18,28 +15,18 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { type TicketStatus, TIMED_STAGES } from "@/lib/constants";
+import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES } from "@/lib/constants";
 import { formatDuration } from "@/lib/formatters";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 30;
 
-const SYSTEM_STAGE_KEYS = new Set<string>([
-  "novo",
-  "em_atendimento",
-  "aguardando_cliente",
-  "suporte_vera_n1",
-  "abertura_chamado_n2",
-  "resolvido",
-]);
-
 interface KanbanTicket {
   id: string;
   ticket_number: string;
   title: string;
   status: TicketStatus;
-  kanban_stage_key?: string | null;
   priority: any;
   client?: { name: string } | null;
   current_stage_started_at: string;
@@ -53,19 +40,23 @@ interface KanbanTicket {
   entered_n2_at: string | null;
 }
 
-interface StageDef {
-  id: string;
-  stage_key: string;
-  label: string;
-  color: string;
-  ordem: number;
-  is_system: boolean;
-}
-
 interface Props {
   tickets: KanbanTicket[];
 }
 
+// Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
+const STRIPE_BY_TONE: Record<string, string> = {
+  info: "bg-info",
+  warning: "bg-warning",
+  muted: "bg-muted-foreground/40",
+  success: "bg-success",
+  neutral: "bg-muted-foreground/40",
+  primary: "bg-primary",
+  accent: "bg-accent",
+  danger: "bg-danger",
+};
+
+// Para uma etapa cronometrada, calcula o tempo decorrido na etapa atual
 function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   const stage = TIMED_STAGES.find((s) => s.key === t.status);
   if (stage) {
@@ -121,10 +112,12 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
   );
 });
 
-function Column({ stage, tickets, now }: { stage: StageDef; tickets: KanbanTicket[]; now: number }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage.stage_key });
+function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: status });
+  const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
+  // Reset paginação quando o tamanho da lista muda significativamente
   useEffect(() => {
     setVisibleCount((prev) => Math.min(Math.max(prev, PAGE_SIZE), Math.max(tickets.length, PAGE_SIZE)));
   }, [tickets.length]);
@@ -152,17 +145,19 @@ function Column({ stage, tickets, now }: { stage: StageDef; tickets: KanbanTicke
         wordBreak: "break-word",
       }}
     >
+      {/* Barra colorida fina (3px) no topo + header sticky */}
       <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
-        <div className="h-[3px] w-full rounded-t-lg" style={{ backgroundColor: stage.color }} />
+        <div className={cn("h-[3px] w-full rounded-t-lg", stripe)} />
         <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
           <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-            {stage.label}
+            {STATUS_LABEL[status]}
           </h3>
           <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
             {tickets.length}
           </span>
         </div>
       </div>
+      {/* Área de cards (scroll interno fino) */}
       <div
         ref={setNodeRef}
         onScroll={onScroll}
@@ -211,65 +206,36 @@ export function TicketKanban({ tickets }: Props) {
     return () => clearInterval(i);
   }, []);
 
-  // Stages from DB (realtime-ish via invalidation)
-  const { data: stages = [] } = useQuery({
-    queryKey: ["kanban-stages"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("custom_ticket_stages")
-        .select("id, stage_key, label, color, ordem, is_system, ativo")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as StageDef[];
-    },
-  });
-
-  // Realtime subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel("custom_ticket_stages_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "custom_ticket_stages" }, () => {
-        qc.invalidateQueries({ queryKey: ["kanban-stages"] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [qc]);
-
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
-  const updateStage = useMutation({
-    mutationFn: async ({ id, stageKey }: { id: string; stageKey: string }) => {
-      const isSystem = SYSTEM_STAGE_KEYS.has(stageKey);
-      const update: any = { kanban_stage_key: stageKey };
-      if (isSystem) update.status = stageKey as TicketStatus;
-      const { error } = await supabase.from("tickets").update(update).eq("id", id);
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: TicketStatus }) => {
+      const { error } = await supabase.from("tickets").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      const stage = stages.find((s) => s.stage_key === vars.stageKey);
-      toast.success(`Movido para ${stage?.label ?? vars.stageKey}.`);
+      toast.success(`Status alterado para ${STATUS_LABEL[vars.status]}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   const grouped = useMemo(() => {
-    const map = new Map<string, KanbanTicket[]>();
-    stages.forEach((s) => map.set(s.stage_key, []));
+    const map: Record<TicketStatus, KanbanTicket[]> = {
+      novo: [],
+      em_atendimento: [],
+      aguardando_cliente: [],
+      suporte_vera_n1: [],
+      abertura_chamado_n2: [],
+      resolvido: [],
+      fechado: [],
+    };
     tickets.forEach((t) => {
-      let key = t.kanban_stage_key ?? (t.status === "fechado" ? "resolvido" : t.status);
-      if (!map.has(key)) {
-        // Stage was deleted — fallback
-        key = "em_atendimento";
-        if (!map.has(key)) key = stages[0]?.stage_key ?? key;
-      }
-      map.get(key)?.push(t);
+      const key = t.status === "fechado" ? "resolvido" : t.status;
+      map[key].push(t);
     });
     return map;
-  }, [tickets, stages]);
+  }, [tickets]);
 
   const activeTicket = useMemo(
     () => (activeId ? tickets.find((t) => t.id === activeId) : null),
@@ -285,56 +251,26 @@ export function TicketKanban({ tickets }: Props) {
       setActiveId(null);
       if (!e.over) return;
       const id = String(e.active.id);
-      const newStageKey = String(e.over.id);
+      const newStatus = e.over.id as TicketStatus;
       const ticket = tickets.find((t) => t.id === id);
       if (!ticket) return;
-      const currentKey = ticket.kanban_stage_key ?? (ticket.status === "fechado" ? "resolvido" : ticket.status);
-      if (currentKey === newStageKey) return;
-      updateStage.mutate({ id, stageKey: newStageKey });
+      const currentEffective = ticket.status === "fechado" ? "resolvido" : ticket.status;
+      if (currentEffective === newStatus) return;
+      updateStatus.mutate({ id, status: newStatus });
     },
-    [tickets, updateStage],
+    [tickets, updateStatus],
   );
-
-  // Criar etapa inline
-  const [showAddStage, setShowAddStage] = useState(false);
-  const [newStageName, setNewStageName] = useState("");
-  const [newStageColor, setNewStageColor] = useState("#0F7173");
-
-  const createStage = useMutation({
-    mutationFn: async () => {
-      const label = newStageName.trim();
-      if (!label) throw new Error("Informe o nome da etapa.");
-      const stage_key = "custom_" + label.toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "")
-        .slice(0, 40) + "_" + Date.now().toString(36);
-      // Inserir antes do "resolvido" (penúltima posição)
-      const resolvido = stages.find((s) => s.stage_key === "resolvido");
-      const targetOrdem = resolvido ? resolvido.ordem : (stages.at(-1)?.ordem ?? 0) + 1;
-      // Empurra resolvido pra frente
-      if (resolvido) {
-        await supabase.from("custom_ticket_stages").update({ ordem: targetOrdem + 1 }).eq("id", resolvido.id);
-      }
-      const { error } = await supabase.from("custom_ticket_stages").insert({
-        stage_key, label, color: newStageColor, ordem: targetOrdem, is_system: false, ativo: true,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kanban-stages"] });
-      qc.invalidateQueries({ queryKey: ["custom-ticket-stages"] });
-      toast.success("Etapa criada.");
-      setShowAddStage(false);
-      setNewStageName("");
-      setNewStageColor("#0F7173");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
+      {/* Rail horizontal estilo Pipedrive: wrapper width:100%/height:100% + overflow:auto */}
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          overflow: "auto",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -346,48 +282,9 @@ export function TicketKanban({ tickets }: Props) {
             padding: "0 16px 16px",
           }}
         >
-          {stages.map((stage) => (
-            <MemoColumn key={stage.id} stage={stage} tickets={grouped.get(stage.stage_key) ?? []} now={now} />
+          {STATUS_FLOW.map((status) => (
+            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
-          <div style={{ flex: "0 0 220px", minWidth: 220, display: "flex", flexDirection: "column" }}>
-            {showAddStage ? (
-              <div className="rounded-lg border border-dashed border-primary/40 bg-surface-muted/40 p-3 space-y-2">
-                <Input
-                  autoFocus
-                  placeholder="Nome da etapa"
-                  value={newStageName}
-                  onChange={(e) => setNewStageName(e.target.value)}
-                  className="h-8 text-sm"
-                />
-                <div className="flex items-center gap-2">
-                  <label className="text-[11px] text-muted-foreground">Cor</label>
-                  <input
-                    type="color"
-                    value={newStageColor}
-                    onChange={(e) => setNewStageColor(e.target.value)}
-                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent"
-                  />
-                </div>
-                <div className="flex gap-1">
-                  <Button size="sm" className="h-7 flex-1 text-xs" onClick={() => createStage.mutate()} disabled={createStage.isPending}>
-                    {createStage.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                    Salvar
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setShowAddStage(false); setNewStageName(""); }}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAddStage(true)}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-surface-muted/30 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-              >
-                <Plus className="h-3.5 w-3.5" /> Etapa
-              </button>
-            )}
-          </div>
         </div>
       </div>
       <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>

@@ -32,7 +32,6 @@ import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { TicketTitlesManager } from "@/components/settings/TicketTitlesManager";
 import { HistoricoComissoesSection } from "@/components/settings/HistoricoComissoesSection";
-import { EtapasChamadosSection } from "@/components/settings/EtapasChamadosSection";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -571,9 +570,6 @@ export default function Settings() {
 
       {/* Títulos de chamado */}
       <TicketTitlesManager />
-
-      {/* Etapas dos Chamados */}
-      <EtapasChamadosSection />
 
       {/* Histórico de Comissões — apenas admin */}
       {isAdmin && <HistoricoComissoesSection />}

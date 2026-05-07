@@ -26,7 +26,6 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ToneBadge } from "@/components/ui/tone-badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   Plus, Loader2, GripVertical, Copy, Trash2, Send, Settings2, Search, X, Eye, EyeOff,
@@ -2102,17 +2101,9 @@ function CustomizeStagesDialog({
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
-  const [confirmDelete, setConfirmDelete] = useState<{ key: string; label: string; idx: number } | null>(null);
-
   const removeCustom = useMutation({
-    mutationFn: async ({ stageKey, fallbackKey }: { stageKey: string; fallbackKey: string }) => {
+    mutationFn: async (stageKey: string) => {
       if (!userId) throw new Error("Não autenticado");
-      // Mover implantações desta etapa para a etapa anterior
-      const { error: moveErr } = await supabase
-        .from("implantacoes")
-        .update({ etapa: fallbackKey as any })
-        .eq("etapa", stageKey as any);
-      if (moveErr) throw moveErr;
       const { error } = await supabase
         .from("implantacao_stage_configs")
         .delete()
@@ -2122,33 +2113,9 @@ function CustomizeStagesDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["impl-stage-configs", userId] });
-      qc.invalidateQueries({ queryKey: ["implantacoes"] });
-      toast.success("Etapa excluída com sucesso");
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao excluir."),
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
-
-  const handleDeleteRequest = (d: { key: string; label: string; isCustom: boolean }, idx: number) => {
-    if (!d.isCustom) return;
-    setConfirmDelete({ key: d.key, label: d.label, idx });
-  };
-
-  const handleConfirmDelete = () => {
-    if (!confirmDelete) return;
-    const { key, idx } = confirmDelete;
-    // remove from local drafts
-    setDrafts(drafts.filter((x) => x.key !== key));
-    // se já está persistido (não é draft local recém-criado), aplica no banco
-    if (!key.startsWith("custom_")) {
-      // etapa anterior: stage visível anterior ou primeira disponível
-      const prev = drafts[idx - 1] ?? drafts.find((x) => x.key !== key);
-      const fallbackKey = prev?.key ?? "novo_cliente";
-      removeCustom.mutate({ stageKey: key, fallbackKey });
-    } else {
-      toast.success("Etapa removida");
-    }
-    setConfirmDelete(null);
-  };
 
   const addCustom = () => {
     if (!newLabel.trim()) return;
@@ -2195,30 +2162,17 @@ function CustomizeStagesDialog({
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  title="Excluir etapa"
-                  onClick={() => handleDeleteRequest(d, idx)}
+                  onClick={() => {
+                    setDrafts(drafts.filter((x) => x.key !== d.key));
+                    if (!d.key.startsWith("custom_")) {
+                      removeCustom.mutate(d.key);
+                    }
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               ) : (
-                <>
-                  <ToneBadge tone="muted" size="sm">padrão</ToneBadge>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span tabIndex={0}>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-muted-foreground opacity-50"
-                          disabled
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>Etapas padrão não podem ser excluídas</TooltipContent>
-                  </Tooltip>
-                </>
+                <ToneBadge tone="muted" size="sm">padrão</ToneBadge>
               )}
             </div>
           ))}
@@ -2247,27 +2201,6 @@ function CustomizeStagesDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      <AlertDialog open={!!confirmDelete} onOpenChange={(v) => !v && setConfirmDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir a etapa "{confirmDelete?.label}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se houver implantações nesta etapa, elas serão movidas para a etapa anterior.
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 }
