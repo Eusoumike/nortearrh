@@ -34,6 +34,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
       setForm({
         company: client.company ?? "",
         contact_name: client.contact_name ?? "",
+        cargo: client.cargo ?? "",
         cnpj: client.cnpj ?? "",
         email: client.email ?? "",
         phone: client.phone ?? "",
@@ -42,8 +43,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         health: (client.health ?? "saudavel") as ClientHealth,
         notes: client.notes ?? "",
         anydesk_id: client.anydesk_id ?? "",
-        products: (client.products ?? []) as string[],
-        contract_value: client.contract_value ?? "",
+        product: (client.product ?? "") as string,
+        valor_contratado: client.valor_contratado ?? client.contract_value ?? "",
+        desconto_percentual: client.desconto_percentual ?? 0,
         fonte_indicacao: client.fonte_indicacao ?? "",
         parceiro_id: client.parceiro_id ?? "",
       });
@@ -83,9 +85,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         .from("clients")
         .update({
           company,
-          // mantém o campo "name" sincronizado com o contato (ou empresa, fallback) para não quebrar listagens existentes
           name: form.contact_name?.trim() || company,
           contact_name: form.contact_name?.trim() || null,
+          cargo: form.cargo?.trim() || null,
           cnpj: form.cnpj?.trim() || null,
           email: form.email?.trim() || null,
           phone: form.phone?.trim() || null,
@@ -95,11 +97,12 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           notes: form.notes?.trim() || null,
           anydesk_id: anydeskIdValue,
           anydesk_senha: null,
-          products: form.products ?? [],
-          contract_value:
-            form.contract_value === "" || form.contract_value == null
+          product: form.product || null,
+          valor_contratado:
+            form.valor_contratado === "" || form.valor_contratado == null
               ? null
-              : Number(form.contract_value),
+              : Number(form.valor_contratado),
+          desconto_percentual: Number(form.desconto_percentual ?? 0) || 0,
           fonte_indicacao: form.fonte_indicacao?.trim() || null,
           parceiro_id: form.parceiro_id || null,
         } as any)
