@@ -20,6 +20,8 @@ export type ClientOption = {
   id: string;
   name: string;
   cnpj: string | null;
+  company?: string | null;
+  contact_name?: string | null;
 };
 
 interface Props {
@@ -37,8 +39,8 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, cnpj")
-        .order("name");
+        .select("id, name, cnpj, company, contact_name")
+        .order("company", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data ?? []) as ClientOption[];
     },
