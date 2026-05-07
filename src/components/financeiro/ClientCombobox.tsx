@@ -20,6 +20,8 @@ export type ClientOption = {
   id: string;
   name: string;
   cnpj: string | null;
+  company?: string | null;
+  contact_name?: string | null;
 };
 
 interface Props {
@@ -37,8 +39,8 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, cnpj")
-        .order("name");
+        .select("id, name, cnpj, company, contact_name")
+        .order("company", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data ?? []) as ClientOption[];
     },
@@ -55,7 +57,9 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
     return clients
       .filter(
         (c) =>
+          (c.company ?? "").toLowerCase().includes(term) ||
           c.name.toLowerCase().includes(term) ||
+          (c.contact_name ?? "").toLowerCase().includes(term) ||
           (c.cnpj ?? "").toLowerCase().includes(term),
       )
       .slice(0, 50);
@@ -77,7 +81,7 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
             className="w-full justify-between font-normal"
           >
             <span className={cn("truncate", !selected && "text-muted-foreground")}>
-              {selected ? selected.name : isLoading ? "Carregando…" : "Selecionar cliente"}
+              {selected ? (selected.company || selected.name) : isLoading ? "Carregando…" : "Selecionar cliente"}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -107,8 +111,11 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
                         value === c.id ? "opacity-100" : "opacity-0",
                       )}
                     />
-                    <div className="flex flex-col">
-                      <span className="text-sm">{c.name}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold truncate">{c.company || c.name}</span>
+                      {c.contact_name && c.contact_name !== (c.company || c.name) && (
+                        <span className="text-xs text-muted-foreground truncate">{c.contact_name}</span>
+                      )}
                       {c.cnpj && (
                         <span className="text-xs text-muted-foreground">{c.cnpj}</span>
                       )}

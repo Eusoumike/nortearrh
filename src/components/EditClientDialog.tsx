@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Copy, Monitor } from "lucide-react";
 import { toast } from "sonner";
-import type { ClientHealth } from "@/lib/constants";
+import { PRODUCT_OPTIONS, type ClientHealth } from "@/lib/constants";
 import { VincularClienteDialog } from "@/components/financeiro/ParceirosTab";
 
 const STATUS_OPTIONS: { value: ClientHealth; label: string }[] = [
@@ -34,6 +34,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
       setForm({
         company: client.company ?? "",
         contact_name: client.contact_name ?? "",
+        cargo: client.cargo ?? "",
         cnpj: client.cnpj ?? "",
         email: client.email ?? "",
         phone: client.phone ?? "",
@@ -42,8 +43,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         health: (client.health ?? "saudavel") as ClientHealth,
         notes: client.notes ?? "",
         anydesk_id: client.anydesk_id ?? "",
-        products: (client.products ?? []) as string[],
-        contract_value: client.contract_value ?? "",
+        product: (client.product ?? "") as string,
+        valor_contratado: client.valor_contratado ?? client.contract_value ?? "",
+        desconto_percentual: client.desconto_percentual ?? 0,
         fonte_indicacao: client.fonte_indicacao ?? "",
         parceiro_id: client.parceiro_id ?? "",
       });
@@ -83,9 +85,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         .from("clients")
         .update({
           company,
-          // mantém o campo "name" sincronizado com o contato (ou empresa, fallback) para não quebrar listagens existentes
           name: form.contact_name?.trim() || company,
           contact_name: form.contact_name?.trim() || null,
+          cargo: form.cargo?.trim() || null,
           cnpj: form.cnpj?.trim() || null,
           email: form.email?.trim() || null,
           phone: form.phone?.trim() || null,
@@ -95,11 +97,12 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           notes: form.notes?.trim() || null,
           anydesk_id: anydeskIdValue,
           anydesk_senha: null,
-          products: form.products ?? [],
-          contract_value:
-            form.contract_value === "" || form.contract_value == null
+          product: form.product || null,
+          valor_contratado:
+            form.valor_contratado === "" || form.valor_contratado == null
               ? null
-              : Number(form.contract_value),
+              : Number(form.valor_contratado),
+          desconto_percentual: Number(form.desconto_percentual ?? 0) || 0,
           fonte_indicacao: form.fonte_indicacao?.trim() || null,
           parceiro_id: form.parceiro_id || null,
         } as any)
@@ -207,39 +210,62 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
             </div>
           </div>
 
-          <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
-            <div className="text-sm font-medium">Produto(s) contratado(s)</div>
-            <div className="flex flex-wrap gap-4">
-              {[
-                { id: "rh_digital", label: "RH Digital (Ponto)" },
-                { id: "vr_beneficios", label: "VR Benefícios" },
-              ].map((p) => {
-                const checked = (form.products ?? []).includes(p.id);
-                return (
-                  <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(v) => {
-                        const set = new Set<string>(form.products ?? []);
-                        if (v) set.add(p.id); else set.delete(p.id);
-                        setForm({ ...form, products: Array.from(set) });
-                      }}
-                    />
-                    {p.label}
-                  </label>
-                );
-              })}
-            </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Valor de contrato (R$)</Label>
+              <Label>Cargo do contato</Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.contract_value}
-                onChange={(e) => setForm({ ...form, contract_value: e.target.value })}
-                placeholder="0,00"
+                value={form.cargo}
+                onChange={(e) => setForm({ ...form, cargo: e.target.value })}
+                placeholder="Ex.: Diretor RH"
               />
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+            <div className="text-sm font-medium">Produto contratado</div>
+            <Select
+              value={form.product || "none"}
+              onValueChange={(v) => setForm({ ...form, product: v === "none" ? "" : v })}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecionar produto" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum</SelectItem>
+                {PRODUCT_OPTIONS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>Valor contratado (R$)</Label>
+                <Input
+                  type="number" step="0.01" min="0"
+                  value={form.valor_contratado}
+                  onChange={(e) => setForm({ ...form, valor_contratado: e.target.value })}
+                  placeholder="0,00"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Desconto (%)</Label>
+                <Input
+                  type="number" step="0.01" min="0" max="100"
+                  value={form.desconto_percentual}
+                  onChange={(e) => setForm({ ...form, desconto_percentual: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Valor com desconto</Label>
+                <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 font-semibold tabular-nums">
+                  {(() => {
+                    const v = Number(form.valor_contratado || 0);
+                    const d = Number(form.desconto_percentual || 0);
+                    const final = v * (1 - d / 100);
+                    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(final || 0);
+                  })()}
+                </div>
+              </div>
             </div>
           </div>
 

@@ -69,12 +69,14 @@ export type Database = {
           anydesk_id: string | null
           anydesk_senha: string | null
           billing_email: string | null
+          cargo: string | null
           cnpj: string | null
           company: string | null
           contact_name: string | null
           contract_value: number | null
           created_at: string
           created_by: string | null
+          desconto_percentual: number
           document: string | null
           email: string | null
           fonte_indicacao: string | null
@@ -90,9 +92,12 @@ export type Database = {
           parceiro_id: string | null
           phone: string | null
           pipedrive_person_id: string | null
+          product: string | null
           products: string[]
           tags: string[] | null
           updated_at: string
+          valor_com_desconto: number | null
+          valor_contratado: number | null
           whatsapp: string | null
         }
         Insert: {
@@ -101,12 +106,14 @@ export type Database = {
           anydesk_id?: string | null
           anydesk_senha?: string | null
           billing_email?: string | null
+          cargo?: string | null
           cnpj?: string | null
           company?: string | null
           contact_name?: string | null
           contract_value?: number | null
           created_at?: string
           created_by?: string | null
+          desconto_percentual?: number
           document?: string | null
           email?: string | null
           fonte_indicacao?: string | null
@@ -122,9 +129,12 @@ export type Database = {
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          product?: string | null
           products?: string[]
           tags?: string[] | null
           updated_at?: string
+          valor_com_desconto?: number | null
+          valor_contratado?: number | null
           whatsapp?: string | null
         }
         Update: {
@@ -133,12 +143,14 @@ export type Database = {
           anydesk_id?: string | null
           anydesk_senha?: string | null
           billing_email?: string | null
+          cargo?: string | null
           cnpj?: string | null
           company?: string | null
           contact_name?: string | null
           contract_value?: number | null
           created_at?: string
           created_by?: string | null
+          desconto_percentual?: number
           document?: string | null
           email?: string | null
           fonte_indicacao?: string | null
@@ -154,9 +166,12 @@ export type Database = {
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          product?: string | null
           products?: string[]
           tags?: string[] | null
           updated_at?: string
+          valor_com_desconto?: number | null
+          valor_contratado?: number | null
           whatsapp?: string | null
         }
         Relationships: [

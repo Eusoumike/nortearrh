@@ -121,6 +121,22 @@ export const CHANNEL_LABEL: Record<TicketChannel, string> = {
 // Canais oferecidos no UI ao criar/editar (os legados ficam escondidos)
 export const ACTIVE_CHANNELS: TicketChannel[] = ["whatsapp", "telefone", "reuniao", "anydesk", "email"];
 
+// Produtos contratáveis pelo cliente (single-select).
+// As combinações geram products[] coerente via trigger no banco.
+export const PRODUCT_OPTIONS: { value: string; label: string; hasRh: boolean; hasVr: boolean }[] = [
+  { value: "rh_digital",            label: "RH Digital",                       hasRh: true,  hasVr: false },
+  { value: "vr_beneficios",         label: "VR Benefícios",                    hasRh: false, hasVr: true  },
+  { value: "vr_multi",              label: "VR Multi (VR + VA)",               hasRh: false, hasVr: true  },
+  { value: "multi_mobilidade",      label: "Multi Mobilidade",                 hasRh: false, hasVr: true  },
+  { value: "rh_vr_beneficios",      label: "RH Digital + VR Benefícios",       hasRh: true,  hasVr: true  },
+  { value: "rh_vr_multi",           label: "RH Digital + VR Multi",            hasRh: true,  hasVr: true  },
+  { value: "rh_multi_mobilidade",   label: "RH Digital + Multi Mobilidade",    hasRh: true,  hasVr: true  },
+];
+
+export const PRODUCT_LABEL: Record<string, string> = Object.fromEntries(
+  PRODUCT_OPTIONS.map((p) => [p.value, p.label]),
+);
+
 export const HEALTH_LABEL: Record<ClientHealth, string> = {
   saudavel: "Ativo",
   em_atencao: "Em risco",

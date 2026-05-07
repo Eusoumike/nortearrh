@@ -30,10 +30,7 @@ import { formatBrazilDate, timeAgo } from "@/lib/formatters";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { IniciarOnboardingDialog } from "@/components/IniciarOnboardingDialog";
 
-const PRODUCT_LABEL: Record<string, string> = {
-  rh_digital: "RH Digital",
-  vr_beneficios: "VR Benefícios",
-};
+import { PRODUCT_LABEL } from "@/lib/constants";
 
 const ETAPA_LABEL: Record<string, string> = {
   novo_cliente: "Novo cliente",
@@ -236,23 +233,33 @@ export default function ClientDetail() {
                 <dd className="font-mono">{client.cnpj || "—"}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs text-muted-foreground">Produto(s) contratado(s)</dt>
-                <dd className="mt-1 flex flex-wrap gap-1.5">
-                  {products.length === 0 ? (
-                    <span className="text-muted-foreground">—</span>
+                <dt className="text-xs text-muted-foreground">Produto contratado</dt>
+                <dd className="mt-1">
+                  {client.product ? (
+                    <Badge variant="secondary">{PRODUCT_LABEL[client.product] ?? client.product}</Badge>
+                  ) : products.length ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {products.map((p) => (
+                        <Badge key={p} variant="secondary">{PRODUCT_LABEL[p] ?? p}</Badge>
+                      ))}
+                    </div>
                   ) : (
-                    products.map((p) => (
-                      <Badge key={p} variant="secondary">{PRODUCT_LABEL[p] ?? p}</Badge>
-                    ))
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </dd>
               </div>
-              {client.contract_value != null && (
-                <div>
-                  <dt className="text-xs text-muted-foreground">Valor de contrato</dt>
-                  <dd className="font-medium">{brl(client.contract_value)}</dd>
-                </div>
-              )}
+              <div>
+                <dt className="text-xs text-muted-foreground">Valor cheio</dt>
+                <dd className="font-medium">{client.valor_contratado != null ? brl(client.valor_contratado) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Desconto</dt>
+                <dd className="font-medium">{Number(client.desconto_percentual ?? 0) > 0 ? `${client.desconto_percentual}%` : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Valor final</dt>
+                <dd className="font-semibold text-primary">{client.valor_com_desconto != null ? brl(client.valor_com_desconto) : (client.contract_value != null ? brl(client.contract_value) : "—")}</dd>
+              </div>
               {client.fonte_indicacao && (
                 <div>
                   <dt className="text-xs text-muted-foreground">Fonte de indicação</dt>
@@ -279,20 +286,36 @@ export default function ClientDetail() {
                 <dd className="font-medium">{client.contact_name || "—"}</dd>
               </div>
               <div>
+                <dt className="text-xs text-muted-foreground">Cargo</dt>
+                <dd>{client.cargo || "—"}</dd>
+              </div>
+              <div>
                 <dt className="text-xs text-muted-foreground">E-mail</dt>
                 <dd>
                   {client.email ? (
-                    <a href={`mailto:${client.email}`} className="hover:underline">{client.email}</a>
+                    <a href={`mailto:${client.email}`} className="text-primary hover:underline">{client.email}</a>
                   ) : "—"}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Telefone</dt>
-                <dd>{client.phone || "—"}</dd>
+                <dd>
+                  {client.phone ? (
+                    <a href={`https://wa.me/55${onlyDigits(client.phone)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {client.phone}
+                    </a>
+                  ) : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">WhatsApp</dt>
-                <dd>{client.whatsapp || "—"}</dd>
+                <dd>
+                  {client.whatsapp ? (
+                    <a href={`https://wa.me/55${onlyDigits(client.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {client.whatsapp}
+                    </a>
+                  ) : "—"}
+                </dd>
               </div>
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
