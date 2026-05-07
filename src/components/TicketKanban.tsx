@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PriorityBadge } from "@/components/badges";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
