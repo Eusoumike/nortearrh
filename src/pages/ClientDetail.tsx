@@ -286,20 +286,36 @@ export default function ClientDetail() {
                 <dd className="font-medium">{client.contact_name || "—"}</dd>
               </div>
               <div>
+                <dt className="text-xs text-muted-foreground">Cargo</dt>
+                <dd>{client.cargo || "—"}</dd>
+              </div>
+              <div>
                 <dt className="text-xs text-muted-foreground">E-mail</dt>
                 <dd>
                   {client.email ? (
-                    <a href={`mailto:${client.email}`} className="hover:underline">{client.email}</a>
+                    <a href={`mailto:${client.email}`} className="text-primary hover:underline">{client.email}</a>
                   ) : "—"}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Telefone</dt>
-                <dd>{client.phone || "—"}</dd>
+                <dd>
+                  {client.phone ? (
+                    <a href={`https://wa.me/55${onlyDigits(client.phone)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {client.phone}
+                    </a>
+                  ) : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">WhatsApp</dt>
-                <dd>{client.whatsapp || "—"}</dd>
+                <dd>
+                  {client.whatsapp ? (
+                    <a href={`https://wa.me/55${onlyDigits(client.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {client.whatsapp}
+                    </a>
+                  ) : "—"}
+                </dd>
               </div>
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
