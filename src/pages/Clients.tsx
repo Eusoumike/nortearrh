@@ -26,7 +26,7 @@ import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
-import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
+import { HEALTH_LABEL, PRODUCT_LABEL, type ClientHealth } from "@/lib/constants";
 
 export default function Clients() {
   const [q, setQ] = useState("");
@@ -212,15 +212,21 @@ export default function Clients() {
           <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
         </Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((c) => (
-            <Card key={c.id} className="group relative h-full p-4 transition-all hover:border-primary/40 hover:shadow-md">
-              <Link to={`/clientes/${c.id}`} className="absolute inset-0 z-0" aria-label={`Abrir ${c.name}`} />
+        <div className="grid w-full max-w-full gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((c: any) => {
+            const empresa = c.company || c.organization || c.name;
+            const contato = c.contact_name && c.contact_name !== empresa ? c.contact_name : null;
+            const valorFinal = c.valor_com_desconto ?? c.contract_value ?? null;
+            const valorCheio = c.valor_contratado ?? c.contract_value ?? null;
+            const desc = Number(c.desconto_percentual || 0);
+            return (
+            <Card key={c.id} className="group relative h-full max-w-full p-4 transition-all hover:border-primary/40 hover:shadow-md overflow-hidden">
+              <Link to={`/clientes/${c.id}`} className="absolute inset-0 z-0" aria-label={`Abrir ${empresa}`} />
               <div className="relative z-10 pointer-events-none">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="truncate font-medium">{c.name}</p>
+                      <p className="truncate font-semibold text-base">{empresa}</p>
                       {(() => {
                         if (!c.pipedrive_person_id || !c.created_at) return null;
                         const ageMs = Date.now() - new Date(c.created_at).getTime();
@@ -232,18 +238,29 @@ export default function Clients() {
                         );
                       })()}
                     </div>
-                    {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
+                    {contato && <p className="truncate text-sm text-muted-foreground">{contato}</p>}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
                     {c.pipedrive_person_id && (
-                      <ToneBadge tone="warning" size="sm">
-                        Pipedrive
-                      </ToneBadge>
+                      <ToneBadge tone="warning" size="sm">Pipedrive</ToneBadge>
                     )}
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
+                  {c.product && (
+                    <p className="truncate"><Badge variant="secondary" className="text-[10px]">{PRODUCT_LABEL[c.product] ?? c.product}</Badge></p>
+                  )}
+                  {valorFinal != null && (
+                    <p className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(valorFinal))}
+                      </span>
+                      {desc > 0 && (
+                        <ToneBadge tone="success" size="sm">- {desc}% desc.</ToneBadge>
+                      )}
+                    </p>
+                  )}
                   {c.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
                   {c.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.phone}</p>}
                   {(c as any).anydesk_id ? (
