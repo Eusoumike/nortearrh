@@ -110,6 +110,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     sla_deadline: slaDefault,
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
 
   // Reset on open + busca próximo número sequencial
   useEffect(() => {
