@@ -19,7 +19,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import {
+  getClientPrimary,
+  getClientSecondary,
+  getClientLabel,
+  filterAndSortClients,
+} from "@/lib/clientDisplay";
 import { toast } from "sonner";
 import {
   AlertDialog,
