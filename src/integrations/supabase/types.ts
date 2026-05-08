@@ -69,12 +69,14 @@ export type Database = {
           anydesk_id: string | null
           anydesk_senha: string | null
           billing_email: string | null
+          cargo: string | null
           cnpj: string | null
           company: string | null
           contact_name: string | null
           contract_value: number | null
           created_at: string
           created_by: string | null
+          desconto_percentual: number
           document: string | null
           email: string | null
           fonte_indicacao: string | null
@@ -90,9 +92,12 @@ export type Database = {
           parceiro_id: string | null
           phone: string | null
           pipedrive_person_id: string | null
+          product: string | null
           products: string[]
           tags: string[] | null
           updated_at: string
+          valor_com_desconto: number | null
+          valor_contratado: number | null
           whatsapp: string | null
         }
         Insert: {
@@ -101,12 +106,14 @@ export type Database = {
           anydesk_id?: string | null
           anydesk_senha?: string | null
           billing_email?: string | null
+          cargo?: string | null
           cnpj?: string | null
           company?: string | null
           contact_name?: string | null
           contract_value?: number | null
           created_at?: string
           created_by?: string | null
+          desconto_percentual?: number
           document?: string | null
           email?: string | null
           fonte_indicacao?: string | null
@@ -122,9 +129,12 @@ export type Database = {
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          product?: string | null
           products?: string[]
           tags?: string[] | null
           updated_at?: string
+          valor_com_desconto?: number | null
+          valor_contratado?: number | null
           whatsapp?: string | null
         }
         Update: {
@@ -133,12 +143,14 @@ export type Database = {
           anydesk_id?: string | null
           anydesk_senha?: string | null
           billing_email?: string | null
+          cargo?: string | null
           cnpj?: string | null
           company?: string | null
           contact_name?: string | null
           contract_value?: number | null
           created_at?: string
           created_by?: string | null
+          desconto_percentual?: number
           document?: string | null
           email?: string | null
           fonte_indicacao?: string | null
@@ -154,9 +166,12 @@ export type Database = {
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          product?: string | null
           products?: string[]
           tags?: string[] | null
           updated_at?: string
+          valor_com_desconto?: number | null
+          valor_contratado?: number | null
           whatsapp?: string | null
         }
         Relationships: [
@@ -335,6 +350,48 @@ export type Database = {
           valor_anual?: number
           valor_mensalidade?: number
           valor_nortear?: number
+        }
+        Relationships: []
+      }
+      custom_ticket_stages: {
+        Row: {
+          ativo: boolean
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_system: boolean
+          label: string
+          ordem: number
+          sla_hours: number
+          stage_key: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          label: string
+          ordem?: number
+          sla_hours?: number
+          stage_key: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          label?: string
+          ordem?: number
+          sla_hours?: number
+          stage_key?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1482,6 +1539,33 @@ export type Database = {
           },
         ]
       }
+      ticket_stage_times: {
+        Row: {
+          created_at: string
+          id: string
+          stage_key: string
+          ticket_id: string
+          total_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          stage_key: string
+          ticket_id: string
+          total_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          stage_key?: string
+          ticket_id?: string
+          total_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ticket_status_history: {
         Row: {
           changed_by: string | null
@@ -1553,6 +1637,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          active_custom_stage_key: string | null
           anydesk_id: string | null
           anydesk_senha: string | null
           assigned_name: string | null
@@ -1567,6 +1652,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_stage_started_at: string
+          custom_stage_started_at: string | null
           description: string | null
           entered_aguardando_cliente_at: string | null
           entered_em_atendimento_at: string | null
@@ -1574,6 +1660,7 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
+          kanban_stage_key: string | null
           opened_at: string
           organization: string | null
           pipedrive_deal_id: string | null
@@ -1599,6 +1686,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
           assigned_name?: string | null
@@ -1613,6 +1701,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_stage_started_at?: string
+          custom_stage_started_at?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1620,6 +1709,7 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
@@ -1645,6 +1735,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
           assigned_name?: string | null
@@ -1659,6 +1750,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_stage_started_at?: string
+          custom_stage_started_at?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1666,6 +1758,7 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null

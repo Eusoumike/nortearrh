@@ -33,6 +33,12 @@ import {
 } from "@/lib/constants";
 import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
+import {
+  getClientPrimary,
+  getClientSecondary,
+  getClientLabel,
+  filterAndSortClients,
+} from "@/lib/clientDisplay";
 
 interface NewTicketDialogProps {
   open: boolean;
@@ -104,6 +110,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     sla_deadline: slaDefault,
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
 
   // Reset on open + busca próximo número sequencial
   useEffect(() => {
@@ -155,7 +162,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, email, phone, anydesk_id, anydesk_senha")
+        .select("id, name, company, contact_name, email, phone, anydesk_id, anydesk_senha")
         .order("name");
       if (error) throw error;
       return data;
@@ -369,21 +376,26 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                   >
                     <span className="flex items-center gap-2 truncate">
                       <Search className="h-3.5 w-3.5 shrink-0" />
-                      {selectedClient ? selectedClient.name : "Nome do cliente"}
+                      {selectedClient ? getClientLabel(selectedClient as any) : "Nome do cliente"}
                     </span>
                     <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar cliente…" className="h-9" />
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Buscar por empresa ou contato…"
+                      className="h-9"
+                      value={clientSearch}
+                      onValueChange={setClientSearch}
+                    />
                     <CommandList>
                       <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                       <CommandGroup>
-                        {(clients ?? []).map((c) => (
+                        {filterAndSortClients((clients ?? []) as any[], clientSearch).map((c) => (
                           <CommandItem
                             key={c.id}
-                            value={`${c.name} ${c.company ?? ""} ${c.email ?? ""}`}
+                            value={c.id}
                             onSelect={() => {
                               setForm((prev) => ({
                                 ...prev,
@@ -403,9 +415,9 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                               )}
                             />
                             <div className="flex flex-col">
-                              <span className="text-sm">{c.name}</span>
-                              {c.company && (
-                                <span className="text-xs text-muted-foreground">{c.company}</span>
+                              <span className="text-sm font-medium">{getClientPrimary(c)}</span>
+                              {getClientSecondary(c) && (
+                                <span className="text-xs text-muted-foreground">{getClientSecondary(c)}</span>
                               )}
                             </div>
                           </CommandItem>
