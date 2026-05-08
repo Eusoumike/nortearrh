@@ -217,20 +217,11 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Cliente</Label>
-              <Select
-                value={form.client_id || "none"}
-                onValueChange={(v) => setForm({ ...form, client_id: v === "none" ? "" : v })}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Nenhum —</SelectItem>
-                  {(clients ?? []).map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}{c.company ? ` · ${c.company}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ClientPickerPopover
+                clients={(clients ?? []) as any[]}
+                value={form.client_id}
+                onSelect={(id) => setForm({ ...form, client_id: id })}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="organization">Organização</Label>
