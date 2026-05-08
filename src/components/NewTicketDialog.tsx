@@ -33,6 +33,12 @@ import {
 } from "@/lib/constants";
 import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
+import {
+  getClientPrimary,
+  getClientSecondary,
+  getClientLabel,
+  filterAndSortClients,
+} from "@/lib/clientDisplay";
 
 interface NewTicketDialogProps {
   open: boolean;
