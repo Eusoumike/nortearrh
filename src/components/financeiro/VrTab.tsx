@@ -210,7 +210,7 @@ export function VrTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((r) => {
+              {filteredData.map((r) => {
                 const tone = vencimentoTone(r.fidelidade_vencimento);
                 return (
                   <TableRow key={r.id}>
