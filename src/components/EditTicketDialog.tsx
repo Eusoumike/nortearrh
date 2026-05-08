@@ -22,7 +22,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  getClientPrimary,
+  getClientSecondary,
+  getClientLabel,
+  filterAndSortClients,
+} from "@/lib/clientDisplay";
 import { toast } from "sonner";
 import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
 import {
