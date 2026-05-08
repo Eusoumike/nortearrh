@@ -318,23 +318,11 @@ export function EditTaskDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Cliente vinculado</Label>
-              <Select
+              <TaskClientPicker
+                clients={(clients ?? []) as any[]}
                 value={form.client_id}
-                onValueChange={(v) => setForm({ ...form, client_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sem cliente</SelectItem>
-                  {clients?.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                      {c.company ? ` · ${c.company}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onSelect={(id) => setForm({ ...form, client_id: id })}
+              />
             </div>
           </div>
 
