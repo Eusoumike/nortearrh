@@ -162,7 +162,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, email, phone, anydesk_id, anydesk_senha")
+        .select("id, name, company, contact_name, email, phone, anydesk_id, anydesk_senha")
         .order("name");
       if (error) throw error;
       return data;
