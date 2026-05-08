@@ -136,8 +136,28 @@ export function RhDigitalTab() {
     },
   });
 
-  const parcelas = parcelasQuery.data ?? [];
+  const allParcelas = parcelasQuery.data ?? [];
   const contratos = contratosQuery.data ?? [];
+
+  const matchesSearch = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const digits = term.replace(/\D/g, "");
+    return (item: { cliente_nome?: string | null; cnpj?: string | null }) => {
+      if (!term) return true;
+      const nameMatch = item.cliente_nome?.toLowerCase().includes(term);
+      const cnpjMatch = digits && item.cnpj && item.cnpj.replace(/\D/g, "").includes(digits);
+      return Boolean(nameMatch || cnpjMatch);
+    };
+  }, [search]);
+
+  const parcelas = useMemo(() => {
+    if (!search.trim()) return allParcelas;
+    // Para parcelas, precisamos buscar via contrato (cnpj não está em parcela)
+    return allParcelas.filter((p) => {
+      const c = contratos.find((x) => x.id === p.contrato_id);
+      return matchesSearch({ cliente_nome: p.cliente_nome, cnpj: c?.cnpj ?? null });
+    });
+  }, [allParcelas, contratos, matchesSearch, search]);
   const contratosAtivos = contratos.filter((c) => c.ativo);
 
   // Stats agregadas para parcelas pagas/contratadas
