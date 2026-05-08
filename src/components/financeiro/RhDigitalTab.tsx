@@ -551,7 +551,8 @@ export function RhDigitalTab() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (() => {
-            const contratosFiltrados = showEncerrados ? contratos : contratos.filter((c) => c.ativo);
+            const base = showEncerrados ? contratos : contratos.filter((c) => c.ativo);
+            const contratosFiltrados = base.filter(matchesSearch);
             if (contratosFiltrados.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
