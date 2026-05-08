@@ -26,8 +26,8 @@ export type ClientOption = {
   id: string;
   name: string;
   cnpj: string | null;
-  company: string | null;
-  contact_name: string | null;
+  company?: string | null;
+  contact_name?: string | null;
 };
 
 interface Props {
