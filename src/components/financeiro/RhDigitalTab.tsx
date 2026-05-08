@@ -96,6 +96,7 @@ export function RhDigitalTab() {
   const [excluirParcela, setExcluirParcela] = useState<Parcela | null>(null);
   const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
   const [showEncerrados, setShowEncerrados] = useState(false);
+  const [search, setSearch] = useState("");
   const { role } = useAuth();
   const isAdmin = role === "admin";
 
