@@ -109,7 +109,7 @@ export function EditTaskDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company")
+        .select("id, name, company, contact_name")
         .order("name");
       if (error) throw error;
       return data ?? [];
