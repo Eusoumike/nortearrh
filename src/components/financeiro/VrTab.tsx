@@ -76,14 +76,25 @@ export function VrTab() {
     },
   });
 
-  const totalBase = useMemo(() => data.reduce((s, r) => s + Number(r.valor_base), 0), [data]);
+  const filteredData = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return data;
+    const digits = term.replace(/\D/g, "");
+    return data.filter((r) => {
+      const nameMatch = r.cliente_nome?.toLowerCase().includes(term);
+      const cnpjMatch = digits && r.cnpj && r.cnpj.replace(/\D/g, "").includes(digits);
+      return nameMatch || cnpjMatch;
+    });
+  }, [data, search]);
+
+  const totalBase = useMemo(() => filteredData.reduce((s, r) => s + Number(r.valor_base), 0), [filteredData]);
   const totalComissao = useMemo(
-    () => data.reduce((s, r) => s + Number(r.valor_comissao), 0),
-    [data],
+    () => filteredData.reduce((s, r) => s + Number(r.valor_comissao), 0),
+    [filteredData],
   );
 
-  const vencidos = data.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "danger");
-  const proximos = data.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "warning");
+  const vencidos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "danger");
+  const proximos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "warning");
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
