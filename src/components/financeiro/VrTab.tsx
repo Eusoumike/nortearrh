@@ -11,8 +11,10 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Search,
   Trash2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,7 @@ export function VrTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<LancamentoVR | null>(null);
   const [toDelete, setToDelete] = useState<Row | null>(null);
+  const [search, setSearch] = useState("");
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
@@ -73,14 +76,25 @@ export function VrTab() {
     },
   });
 
-  const totalBase = useMemo(() => data.reduce((s, r) => s + Number(r.valor_base), 0), [data]);
+  const filteredData = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return data;
+    const digits = term.replace(/\D/g, "");
+    return data.filter((r) => {
+      const nameMatch = r.cliente_nome?.toLowerCase().includes(term);
+      const cnpjMatch = digits && r.cnpj && r.cnpj.replace(/\D/g, "").includes(digits);
+      return nameMatch || cnpjMatch;
+    });
+  }, [data, search]);
+
+  const totalBase = useMemo(() => filteredData.reduce((s, r) => s + Number(r.valor_base), 0), [filteredData]);
   const totalComissao = useMemo(
-    () => data.reduce((s, r) => s + Number(r.valor_comissao), 0),
-    [data],
+    () => filteredData.reduce((s, r) => s + Number(r.valor_comissao), 0),
+    [filteredData],
   );
 
-  const vencidos = data.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "danger");
-  const proximos = data.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "warning");
+  const vencidos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "danger");
+  const proximos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "warning");
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
@@ -129,6 +143,16 @@ export function VrTab() {
         </Button>
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por cliente ou CNPJ…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {(vencidos.length > 0 || proximos.length > 0) && (
         <div className="grid gap-2">
           {vencidos.length > 0 && (
@@ -163,6 +187,13 @@ export function VrTab() {
               setDialogOpen(true);
             }}
           />
+        ) : filteredData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Nenhum lançamento encontrado para "{search}".
+            </p>
+            <Button size="sm" variant="ghost" onClick={() => setSearch("")}>Limpar busca</Button>
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -179,7 +210,7 @@ export function VrTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((r) => {
+              {filteredData.map((r) => {
                 const tone = vencimentoTone(r.fidelidade_vencimento);
                 return (
                   <TableRow key={r.id}>

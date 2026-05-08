@@ -12,9 +12,11 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Search,
   Trash2,
   X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -94,6 +96,7 @@ export function RhDigitalTab() {
   const [excluirParcela, setExcluirParcela] = useState<Parcela | null>(null);
   const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
   const [showEncerrados, setShowEncerrados] = useState(false);
+  const [search, setSearch] = useState("");
   const { role } = useAuth();
   const isAdmin = role === "admin";
 
@@ -133,8 +136,28 @@ export function RhDigitalTab() {
     },
   });
 
-  const parcelas = parcelasQuery.data ?? [];
+  const allParcelas = parcelasQuery.data ?? [];
   const contratos = contratosQuery.data ?? [];
+
+  const matchesSearch = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const digits = term.replace(/\D/g, "");
+    return (item: { cliente_nome?: string | null; cnpj?: string | null }) => {
+      if (!term) return true;
+      const nameMatch = item.cliente_nome?.toLowerCase().includes(term);
+      const cnpjMatch = digits && item.cnpj && item.cnpj.replace(/\D/g, "").includes(digits);
+      return Boolean(nameMatch || cnpjMatch);
+    };
+  }, [search]);
+
+  const parcelas = useMemo(() => {
+    if (!search.trim()) return allParcelas;
+    // Para parcelas, precisamos buscar via contrato (cnpj não está em parcela)
+    return allParcelas.filter((p) => {
+      const c = contratos.find((x) => x.id === p.contrato_id);
+      return matchesSearch({ cliente_nome: p.cliente_nome, cnpj: c?.cnpj ?? null });
+    });
+  }, [allParcelas, contratos, matchesSearch, search]);
   const contratosAtivos = contratos.filter((c) => c.ativo);
 
   // Stats agregadas para parcelas pagas/contratadas
@@ -326,6 +349,15 @@ export function RhDigitalTab() {
         </div>
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por cliente ou CNPJ…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
       {/* Banners */}
       {(vencidos.length > 0 || proximos.length > 0) && (
         <div className="grid gap-2">
@@ -528,7 +560,8 @@ export function RhDigitalTab() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (() => {
-            const contratosFiltrados = showEncerrados ? contratos : contratos.filter((c) => c.ativo);
+            const base = showEncerrados ? contratos : contratos.filter((c) => c.ativo);
+            const contratosFiltrados = base.filter(matchesSearch);
             if (contratosFiltrados.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
