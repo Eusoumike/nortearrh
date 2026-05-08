@@ -53,6 +53,7 @@ export function VrTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<LancamentoVR | null>(null);
   const [toDelete, setToDelete] = useState<Row | null>(null);
+  const [search, setSearch] = useState("");
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
