@@ -15,11 +15,19 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getClientPrimary,
+  getClientSecondary,
+  getClientLabel,
+  filterAndSortClients,
+} from "@/lib/clientDisplay";
 
 export type ClientOption = {
   id: string;
   name: string;
   cnpj: string | null;
+  company: string | null;
+  contact_name: string | null;
 };
 
 interface Props {
@@ -37,7 +45,7 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, cnpj")
+        .select("id, name, cnpj, company, contact_name")
         .order("name");
       if (error) throw error;
       return (data ?? []) as ClientOption[];
@@ -51,14 +59,16 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return clients.slice(0, 50);
-    return clients
-      .filter(
-        (c) =>
-          c.name.toLowerCase().includes(term) ||
-          (c.cnpj ?? "").toLowerCase().includes(term),
-      )
-      .slice(0, 50);
+    const base = filterAndSortClients(clients, search);
+    if (!term) return base.slice(0, 50);
+    // Inclui busca por CNPJ como complemento
+    const byCnpj = clients.filter(
+      (c) =>
+        !!c.cnpj &&
+        c.cnpj.toLowerCase().includes(term) &&
+        !base.some((b) => b.id === c.id),
+    );
+    return [...base, ...byCnpj].slice(0, 50);
   }, [clients, search]);
 
   useEffect(() => {
@@ -77,7 +87,11 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
             className="w-full justify-between font-normal"
           >
             <span className={cn("truncate", !selected && "text-muted-foreground")}>
-              {selected ? selected.name : isLoading ? "Carregando…" : "Selecionar cliente"}
+              {selected
+                ? getClientLabel(selected)
+                : isLoading
+                  ? "Carregando…"
+                  : "Selecionar cliente"}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -85,7 +99,7 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Buscar por nome ou CNPJ…"
+              placeholder="Buscar por empresa, contato ou CNPJ…"
               value={search}
               onValueChange={setSearch}
             />
@@ -108,9 +122,14 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
                       )}
                     />
                     <div className="flex flex-col">
-                      <span className="text-sm">{c.name}</span>
+                      <span className="text-sm font-medium">{getClientPrimary(c)}</span>
+                      {getClientSecondary(c) && (
+                        <span className="text-xs text-muted-foreground">
+                          {getClientSecondary(c)}
+                        </span>
+                      )}
                       {c.cnpj && (
-                        <span className="text-xs text-muted-foreground">{c.cnpj}</span>
+                        <span className="text-[10px] text-muted-foreground">CNPJ: {c.cnpj}</span>
                       )}
                     </div>
                   </CommandItem>
