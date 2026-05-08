@@ -187,6 +187,13 @@ export function VrTab() {
               setDialogOpen(true);
             }}
           />
+        ) : filteredData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Nenhum lançamento encontrado para "{search}".
+            </p>
+            <Button size="sm" variant="ghost" onClick={() => setSearch("")}>Limpar busca</Button>
+          </div>
         ) : (
           <Table>
             <TableHeader>
