@@ -21,6 +21,7 @@ import {
   getClientLabel,
   filterAndSortClients,
 } from "@/lib/clientDisplay";
+import { formatCnpj } from "@/lib/formatters";
 
 export type ClientOption = {
   id: string;
