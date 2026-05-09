@@ -405,6 +405,7 @@ export function RhDigitalTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>CNPJ</TableHead>
                   <TableHead className="text-right">Mensalidade</TableHead>
                   <TableHead className="text-right">% Nortear</TableHead>
                   <TableHead className="text-right">Valor Nortear</TableHead>
