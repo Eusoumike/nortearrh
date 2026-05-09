@@ -120,7 +120,7 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
                         </span>
                       )}
                       {c.cnpj && (
-                        <span className="text-[10px] text-muted-foreground">CNPJ: {c.cnpj}</span>
+                        <span className="text-[10px] text-muted-foreground">CNPJ: {formatCnpj(c.cnpj)}</span>
                       )}
                     </div>
                   </CommandItem>
