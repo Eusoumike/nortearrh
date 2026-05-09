@@ -630,6 +630,9 @@ export function RhDigitalTab() {
                           </Badge>
                         )}
                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">
+                        {formatCnpj(c.cnpj) || "—"}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {BRL.format(Number(c.valor_mensalidade))}
                       </TableCell>
