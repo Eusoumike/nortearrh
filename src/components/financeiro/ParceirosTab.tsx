@@ -301,7 +301,7 @@ export function ParceirosTab() {
                               <TableCell>{clientName(c.client_id)}</TableCell>
                               <TableCell>{PRODUTO_LABEL[c.produto]}</TableCell>
                               <TableCell>{TIPO_LABEL[c.tipo_repasse]}</TableCell>
-                              <TableCell className="text-right tabular-nums">{Number(c.percentual)}%</TableCell>
+                              <TableCell className="text-right tabular-nums">{formatPercent(c.percentual)}</TableCell>
                               <TableCell>
                                 {ult ? (
                                   <Badge variant={ult.status === "pago" ? "default" : "secondary"}>
