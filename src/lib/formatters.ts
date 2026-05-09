@@ -117,3 +117,10 @@ export function initials(name?: string | null): string {
     .map((n) => n[0]?.toUpperCase())
     .join("");
 }
+
+export function formatPercent(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "—";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return `${n.toFixed(2).replace(".", ",")}%`;
+}
