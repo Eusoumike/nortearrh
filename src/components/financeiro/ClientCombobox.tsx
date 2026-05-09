@@ -58,17 +58,7 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
   );
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const base = filterAndSortClients(clients, search);
-    if (!term) return base.slice(0, 50);
-    // Inclui busca por CNPJ como complemento
-    const byCnpj = clients.filter(
-      (c) =>
-        !!c.cnpj &&
-        c.cnpj.toLowerCase().includes(term) &&
-        !base.some((b) => b.id === c.id),
-    );
-    return [...base, ...byCnpj].slice(0, 50);
+    return filterAndSortClients(clients, search).slice(0, 50);
   }, [clients, search]);
 
   useEffect(() => {
