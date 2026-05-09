@@ -50,7 +50,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
-import { formatCnpj } from "@/lib/formatters";
+import { formatCnpj, formatPercent } from "@/lib/formatters";
 
 const PADRAO_PERC = 40;
 
@@ -452,11 +452,11 @@ export function RhDigitalTab() {
                       <TableCell className="text-right">
                         {customPerc ? (
                           <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
-                            {Number(p.percentual_nortear).toFixed(1)}%
+                            {formatPercent(p.percentual_nortear)}
                           </Badge>
                         ) : (
                           <span className="tabular-nums">
-                            {Number(p.percentual_nortear).toFixed(1)}%
+                            {formatPercent(p.percentual_nortear)}
                           </span>
                         )}
                       </TableCell>
@@ -637,7 +637,7 @@ export function RhDigitalTab() {
                         {BRL.format(Number(c.valor_mensalidade))}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {Number(c.percentual_nortear).toFixed(1)}%
+                        {formatPercent(c.percentual_nortear)}
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums">
                         {BRL.format(Number(c.valor_nortear))}

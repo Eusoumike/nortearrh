@@ -5,6 +5,7 @@ import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPl
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatPercent } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -300,7 +301,7 @@ export function ParceirosTab() {
                               <TableCell>{clientName(c.client_id)}</TableCell>
                               <TableCell>{PRODUTO_LABEL[c.produto]}</TableCell>
                               <TableCell>{TIPO_LABEL[c.tipo_repasse]}</TableCell>
-                              <TableCell className="text-right tabular-nums">{Number(c.percentual)}%</TableCell>
+                              <TableCell className="text-right tabular-nums">{formatPercent(c.percentual)}</TableCell>
                               <TableCell>
                                 {ult ? (
                                   <Badge variant={ult.status === "pago" ? "default" : "secondary"}>
@@ -386,7 +387,7 @@ export function ParceirosTab() {
                     <TableCell>{r.cliente_nome}</TableCell>
                     <TableCell>{PRODUTO_LABEL[r.produto]}</TableCell>
                     <TableCell>{TIPO_LABEL[r.tipo_repasse]}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(r.percentual)}%</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPercent(r.percentual)}</TableCell>
                     <TableCell className="text-right tabular-nums">{BRL.format(Number(r.valor_base))}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{BRL.format(Number(r.valor_repasse))}</TableCell>
                     <TableCell>{formatBRDate(r.competencia)}</TableCell>

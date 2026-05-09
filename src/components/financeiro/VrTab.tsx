@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { LancamentoVrDialog, LancamentoVR } from "./LancamentoVrDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
-import { formatCnpj } from "@/lib/formatters";
+import { formatCnpj, formatPercent } from "@/lib/formatters";
 
 type Row = LancamentoVR & { valor_comissao: number };
 
@@ -243,7 +243,7 @@ export function VrTab() {
                       {BRL.format(Number(r.valor_base))}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {Number(r.percentual_comissao).toFixed(1)}%
+                      {formatPercent(r.percentual_comissao)}
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
                       {BRL.format(Number(r.valor_comissao))}
