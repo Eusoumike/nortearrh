@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { LancamentoVrDialog, LancamentoVR } from "./LancamentoVrDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { formatCnpj } from "@/lib/formatters";
 
 type Row = LancamentoVR & { valor_comissao: number };
 
@@ -226,7 +227,7 @@ export function VrTab() {
                         r.cliente_nome
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{r.cnpj ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground tabular-nums">{formatCnpj(r.cnpj) || "—"}</TableCell>
                     <TableCell>
                       {r.tipo === "primeira_carga" ? (
                         <Badge className="border-transparent bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20">

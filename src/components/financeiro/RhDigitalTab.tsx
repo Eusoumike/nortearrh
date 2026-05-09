@@ -50,6 +50,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { formatCnpj } from "@/lib/formatters";
 
 const PADRAO_PERC = 40;
 
@@ -404,6 +405,7 @@ export function RhDigitalTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>CNPJ</TableHead>
                   <TableHead className="text-right">Mensalidade</TableHead>
                   <TableHead className="text-right">% Nortear</TableHead>
                   <TableHead className="text-right">Valor Nortear</TableHead>
@@ -430,6 +432,9 @@ export function RhDigitalTab() {
                         ) : (
                           p.cliente_nome
                         )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">
+                        {formatCnpj(contratoP?.cnpj ?? null) || "—"}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         <div className="flex items-center justify-end gap-2">
@@ -523,7 +528,7 @@ export function RhDigitalTab() {
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell className="text-right font-medium">Total</TableCell>
+                  <TableCell colSpan={2} className="text-right font-medium">Total</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {BRL.format(totalMensalidade)}
                   </TableCell>
@@ -582,6 +587,7 @@ export function RhDigitalTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>CNPJ</TableHead>
                   <TableHead className="text-right">Mensalidade</TableHead>
                   <TableHead className="text-right">%</TableHead>
                   <TableHead className="text-right">Valor Nortear</TableHead>
@@ -623,6 +629,9 @@ export function RhDigitalTab() {
                             Encerrado
                           </Badge>
                         )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">
+                        {formatCnpj(c.cnpj) || "—"}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {BRL.format(Number(c.valor_mensalidade))}
