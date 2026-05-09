@@ -9,7 +9,13 @@ export type ClientLike = {
   name?: string | null;
   company?: string | null;
   contact_name?: string | null;
+  cnpj?: string | null;
 };
+
+/** Remove tudo que não for dígito (para comparar CNPJs com/sem máscara). */
+export function normalizeCnpj(value: string | null | undefined): string {
+  return (value ?? "").replace(/\D/g, "");
+}
 
 export function getClientPrimary(c: ClientLike): string {
   return (c.company || c.name || "—").toString();
