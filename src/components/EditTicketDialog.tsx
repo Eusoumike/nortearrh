@@ -152,7 +152,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name")
+        .select("id, name, company, contact_name, cnpj")
         .order("name");
       if (error) throw error;
       return data;
