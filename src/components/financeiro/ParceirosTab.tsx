@@ -387,7 +387,7 @@ export function ParceirosTab() {
                     <TableCell>{r.cliente_nome}</TableCell>
                     <TableCell>{PRODUTO_LABEL[r.produto]}</TableCell>
                     <TableCell>{TIPO_LABEL[r.tipo_repasse]}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(r.percentual)}%</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPercent(r.percentual)}</TableCell>
                     <TableCell className="text-right tabular-nums">{BRL.format(Number(r.valor_base))}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{BRL.format(Number(r.valor_repasse))}</TableCell>
                     <TableCell>{formatBRDate(r.competencia)}</TableCell>
