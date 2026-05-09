@@ -436,6 +436,7 @@ export function RhDigitalTab() {
                       <TableCell className="text-xs text-muted-foreground tabular-nums">
                         {formatCnpj(contratoP?.cnpj ?? null) || "—"}
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">
                         <div className="flex items-center justify-end gap-2">
                           {isAnual && (
                             <Badge
