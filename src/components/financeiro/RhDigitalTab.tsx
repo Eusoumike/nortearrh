@@ -528,7 +528,7 @@ export function RhDigitalTab() {
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell className="text-right font-medium">Total</TableCell>
+                  <TableCell colSpan={2} className="text-right font-medium">Total</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {BRL.format(totalMensalidade)}
                   </TableCell>
