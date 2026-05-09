@@ -43,11 +43,20 @@ export function filterAndSortClients<T extends ClientLike>(
   searchTerm: string,
 ): T[] {
   const term = searchTerm.trim().toLowerCase();
+  const termDigits = normalizeCnpj(searchTerm);
+  // Considera busca por CNPJ quando o usuário digita ao menos 2 dígitos
+  // (com ou sem máscara). Aceita também buscas só com letras como nome.
+  const isCnpjSearch = termDigits.length >= 2;
   const list = clients.filter((c) => {
     const primary = getClientPrimary(c).toLowerCase();
     const secondary = getClientSecondary(c).toLowerCase();
     if (!term) return true;
-    return primary.includes(term) || secondary.includes(term);
+    if (primary.includes(term) || secondary.includes(term)) return true;
+    if (isCnpjSearch) {
+      const cnpjDigits = normalizeCnpj(c.cnpj);
+      if (cnpjDigits && cnpjDigits.includes(termDigits)) return true;
+    }
+    return false;
   });
   list.sort((a, b) => {
     const nameA = getClientPrimary(a).toLowerCase();
