@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { LancamentoVrDialog, LancamentoVR } from "./LancamentoVrDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { formatCnpj } from "@/lib/formatters";
 
 type Row = LancamentoVR & { valor_comissao: number };
 
