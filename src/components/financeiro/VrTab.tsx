@@ -243,7 +243,7 @@ export function VrTab() {
                       {BRL.format(Number(r.valor_base))}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {Number(r.percentual_comissao).toFixed(1)}%
+                      {formatPercent(r.percentual_comissao)}
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
                       {BRL.format(Number(r.valor_comissao))}
