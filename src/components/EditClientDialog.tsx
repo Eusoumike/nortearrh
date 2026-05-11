@@ -62,12 +62,14 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
     },
   });
 
-  // Config RH Digital por cliente (inline)
+  // Config RH Digital + VR por cliente (inline)
   const [rhTipo, setRhTipo] = useState<"primeira_mensalidade" | "recorrencia">("primeira_mensalidade");
   const [rhPct, setRhPct] = useState<string>("0");
   const [rhConfigId, setRhConfigId] = useState<string | null>(null);
+  const [vrPct, setVrPct] = useState<string>("0");
+  const [vrConfigId, setVrConfigId] = useState<string | null>(null);
 
-  // Carrega config existente quando abre
+  // Carrega configs existentes quando abre
   useEffect(() => {
     if (!open || !client?.id) return;
     (async () => {
@@ -75,24 +77,33 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         setRhConfigId(null);
         setRhTipo("primeira_mensalidade");
         setRhPct("0");
+        setVrConfigId(null);
+        setVrPct("0");
         return;
       }
-      const { data } = await supabase
+      const { data: rows } = await supabase
         .from("configuracoes_parceiro")
-        .select("id, tipo_repasse, percentual")
+        .select("id, tipo_repasse, percentual, produto")
         .eq("client_id", client.id)
         .eq("parceiro_id", client.parceiro_id)
-        .eq("produto", "rh_digital")
-        .eq("ativo", true)
-        .maybeSingle();
-      if (data) {
-        setRhConfigId(data.id);
-        setRhTipo(data.tipo_repasse as any);
-        setRhPct(String(data.percentual ?? 0));
+        .eq("ativo", true);
+      const rh = (rows ?? []).find((r: any) => r.produto === "rh_digital");
+      const vr = (rows ?? []).find((r: any) => r.produto === "vr_beneficios");
+      if (rh) {
+        setRhConfigId(rh.id);
+        setRhTipo(rh.tipo_repasse as any);
+        setRhPct(String(rh.percentual ?? 0));
       } else {
         setRhConfigId(null);
         setRhTipo("primeira_mensalidade");
         setRhPct("0");
+      }
+      if (vr) {
+        setVrConfigId(vr.id);
+        setVrPct(String(vr.percentual ?? 0));
+      } else {
+        setVrConfigId(null);
+        setVrPct("0");
       }
     })();
   }, [open, client?.id, client?.parceiro_id]);
@@ -102,10 +113,13 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
     if (!p) return;
     setRhTipo((p.percentual_rh_tipo as any) ?? "primeira_mensalidade");
     setRhPct(String(p.percentual_rh ?? 0));
+    setVrPct(String(p.percentual_vr ?? 0));
   };
 
   const rhPctNum = Number(rhPct || 0);
   const rhInvalid = rhTipo === "recorrencia" && (rhPctNum < 0 || rhPctNum > 10);
+  const vrPctNum = Number(vrPct || 0);
+  const vrInvalid = vrPctNum < 0 || vrPctNum > 50;
 
   const save = useMutation({
     mutationFn: async () => {
