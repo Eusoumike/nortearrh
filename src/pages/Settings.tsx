@@ -32,6 +32,7 @@ import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { TicketTitlesManager } from "@/components/settings/TicketTitlesManager";
 import { HistoricoComissoesSection } from "@/components/settings/HistoricoComissoesSection";
+import { ComissoesPadraoSection } from "@/components/settings/ComissoesPadraoSection";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
