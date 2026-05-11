@@ -839,8 +839,18 @@ export function VincularClienteDialog({
                 ? "Repasse estimado (primeira carga)"
                 : "Repasse mensal estimado"}
             </div>
-            <div className="text-lg font-semibold tabular-nums">{BRL.format(preview)}</div>
-            <div className="text-xs text-muted-foreground">Base estimada: {BRL.format(previewBase)}</div>
+            {semBase && client ? (
+              <div className="text-xs text-amber-600">
+                {produto === "vr_beneficios"
+                  ? "Aguardando primeiro lançamento VR para este cliente."
+                  : "Aguardando primeiro lançamento RH para este cliente."}
+              </div>
+            ) : (
+              <>
+                <div className="text-lg font-semibold tabular-nums">{BRL.format(preview)}</div>
+                <div className="text-xs text-muted-foreground">Base estimada: {BRL.format(previewBase)}</div>
+              </>
+            )}
           </div>
         </div>
         <DialogFooter>
