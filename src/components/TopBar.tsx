@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Bell, Moon, Sun } from "lucide-react";
+import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
@@ -105,30 +105,71 @@ export function TopBar() {
 
   const alertCount = alerts?.length ?? 0;
 
-  // Busca global: tickets (título, #número, cliente, empresa)
+  // Busca global multi-módulos
   const { data: searchResults, isFetching: isSearching } = useQuery({
     queryKey: ["global-search", debouncedTerm],
     enabled: searchOpen && debouncedTerm.length >= 2,
     queryFn: async () => {
       const safe = debouncedTerm.replace(/[%_,()]/g, " ").trim();
       const numeric = safe.replace(/^#/, "");
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("id, ticket_number, title, status, client_name, organization, client:clients!fk_tickets_client(name, company)")
-        .or(
-          `title.ilike.%${safe}%,ticket_number.ilike.%${numeric}%,client_name.ilike.%${safe}%,organization.ilike.%${safe}%`,
-        )
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data ?? [];
+      const like = `%${safe}%`;
+
+      const [ticketsRes, clientsRes, implantacoesRes, tasksRes, dealsRes] = await Promise.all([
+        supabase
+          .from("tickets")
+          .select("id, ticket_number, title, status, client_name, organization")
+          .or(
+            `title.ilike.${like},ticket_number.ilike.%${numeric}%,client_name.ilike.${like},organization.ilike.${like}`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("clients")
+          .select("id, name, company, email")
+          .or(`name.ilike.${like},company.ilike.${like},email.ilike.${like}`)
+          .order("name", { ascending: true })
+          .limit(8),
+        supabase
+          .from("implantacoes")
+          .select("id, client_name, etapa, cnpj")
+          .or(`client_name.ilike.${like},cnpj.ilike.${like}`)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("tasks")
+          .select("id, title, status, ticket_id")
+          .ilike("title", like)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("deals")
+          .select("id, title, company_name, contact_name, stage")
+          .or(`title.ilike.${like},company_name.ilike.${like},contact_name.ilike.${like}`)
+          .order("created_at", { ascending: false })
+          .limit(8),
+      ]);
+
+      return {
+        tickets: ticketsRes.data ?? [],
+        clients: clientsRes.data ?? [],
+        implantacoes: implantacoesRes.data ?? [],
+        tasks: tasksRes.data ?? [],
+        deals: dealsRes.data ?? [],
+      };
     },
   });
 
-  const goToTicket = (ticketId: string) => {
+  const totalResults =
+    (searchResults?.tickets.length ?? 0) +
+    (searchResults?.clients.length ?? 0) +
+    (searchResults?.implantacoes.length ?? 0) +
+    (searchResults?.tasks.length ?? 0) +
+    (searchResults?.deals.length ?? 0);
+
+  const goTo = (path: string) => {
     setSearchOpen(false);
     setSearchTerm("");
-    navigate(`/tickets/${ticketId}`);
+    navigate(path);
   };
 
   return (
@@ -197,7 +238,7 @@ export function TopBar() {
         <CommandInput
           value={searchTerm}
           onValueChange={setSearchTerm}
-          placeholder="Buscar por título, #número, cliente ou empresa…"
+          placeholder="Buscar chamados, clientes, implantações, tarefas, negócios…"
         />
         <CommandList>
           {debouncedTerm.length < 2 ? (
@@ -206,35 +247,132 @@ export function TopBar() {
             </div>
           ) : isSearching ? (
             <div className="px-3 py-6 text-center text-xs text-muted-foreground">Buscando…</div>
-          ) : (searchResults?.length ?? 0) === 0 ? (
-            <CommandEmpty>Nenhum chamado encontrado.</CommandEmpty>
+          ) : totalResults === 0 ? (
+            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
           ) : (
-            <CommandGroup heading="Chamados">
-              {searchResults!.map((t: any) => {
-                const company = t.client?.company ?? t.organization ?? "";
-                const clientName = t.client?.name ?? t.client_name ?? "";
-                return (
-                  <CommandItem
-                    key={t.id}
-                    value={`${t.ticket_number} ${t.title} ${clientName} ${company}`}
-                    onSelect={() => goToTicket(t.id)}
-                    className="flex flex-col items-start gap-0.5"
-                  >
-                    <div className="flex w-full items-center gap-2">
-                      <span className="font-mono text-[10px] text-muted-foreground">#{t.ticket_number}</span>
-                      <span className="flex-1 truncate text-sm font-medium">{t.title}</span>
-                    </div>
-                    {(clientName || company) && (
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {clientName}
-                        {clientName && company ? " · " : ""}
-                        {company}
-                      </p>
-                    )}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
+            <>
+              {(searchResults?.tickets.length ?? 0) > 0 && (
+                <CommandGroup heading="Chamados">
+                  {searchResults!.tickets.map((t: any) => {
+                    const company = t.organization ?? "";
+                    const clientName = t.client_name ?? "";
+                    return (
+                      <CommandItem
+                        key={`tk-${t.id}`}
+                        value={`tk ${t.ticket_number} ${t.title} ${clientName} ${company}`}
+                        onSelect={() => goTo(`/tickets/${t.id}`)}
+                        className="flex items-start gap-2"
+                      >
+                        <TicketIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex w-full items-center gap-2">
+                            <span className="font-mono text-[10px] text-muted-foreground">#{t.ticket_number}</span>
+                            <span className="flex-1 truncate text-sm font-medium">{t.title}</span>
+                          </div>
+                          {(clientName || company) && (
+                            <p className="truncate text-[11px] text-muted-foreground">
+                              {clientName}
+                              {clientName && company ? " · " : ""}
+                              {company}
+                            </p>
+                          )}
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              )}
+
+              {(searchResults?.clients.length ?? 0) > 0 && (
+                <CommandGroup heading="Clientes">
+                  {searchResults!.clients.map((c: any) => (
+                    <CommandItem
+                      key={`cl-${c.id}`}
+                      value={`cl ${c.name} ${c.company ?? ""} ${c.email ?? ""}`}
+                      onSelect={() => goTo(`/clientes/${c.id}`)}
+                      className="flex items-start gap-2"
+                    >
+                      <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-info" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{c.company || c.name}</p>
+                        {(c.company && c.name) || c.email ? (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {c.company && c.name ? c.name : ""}
+                            {c.company && c.name && c.email ? " · " : ""}
+                            {c.email ?? ""}
+                          </p>
+                        ) : null}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {(searchResults?.implantacoes.length ?? 0) > 0 && (
+                <CommandGroup heading="Implantações">
+                  {searchResults!.implantacoes.map((i: any) => (
+                    <CommandItem
+                      key={`im-${i.id}`}
+                      value={`im ${i.client_name} ${i.cnpj ?? ""}`}
+                      onSelect={() => goTo(`/implantacao`)}
+                      className="flex items-start gap-2"
+                    >
+                      <Rocket className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{i.client_name}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {i.etapa ?? ""}
+                          {i.etapa && i.cnpj ? " · " : ""}
+                          {i.cnpj ?? ""}
+                        </p>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {(searchResults?.tasks.length ?? 0) > 0 && (
+                <CommandGroup heading="Tarefas">
+                  {searchResults!.tasks.map((t: any) => (
+                    <CommandItem
+                      key={`ta-${t.id}`}
+                      value={`ta ${t.title}`}
+                      onSelect={() => goTo(t.ticket_id ? `/tickets/${t.ticket_id}` : `/tarefas`)}
+                      className="flex items-start gap-2"
+                    >
+                      <ListTodo className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{t.title}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">{t.status}</p>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {(searchResults?.deals.length ?? 0) > 0 && (
+                <CommandGroup heading="Negócios (CRM)">
+                  {searchResults!.deals.map((d: any) => (
+                    <CommandItem
+                      key={`de-${d.id}`}
+                      value={`de ${d.title} ${d.company_name ?? ""} ${d.contact_name ?? ""}`}
+                      onSelect={() => goTo(`/crm`)}
+                      className="flex items-start gap-2"
+                    >
+                      <Briefcase className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{d.title}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {d.company_name ?? ""}
+                          {d.company_name && d.stage ? " · " : ""}
+                          {d.stage ?? ""}
+                        </p>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </>
           )}
         </CommandList>
       </CommandDialog>
