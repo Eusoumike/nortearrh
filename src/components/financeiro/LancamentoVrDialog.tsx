@@ -151,7 +151,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
       setNotificar(true);
       setObservacoes("");
       setOpenFid(false);
-      void aplicarPercentuais(null, "recorrencia");
+      void aplicarPercentuais("recorrencia");
     }
   }, [open, initial, defaultCompetencia]);
 
