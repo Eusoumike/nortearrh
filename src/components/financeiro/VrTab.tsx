@@ -258,19 +258,27 @@ export function VrTab() {
               {filteredData.map((r) => {
                 const tone = vencimentoTone(r.fidelidade_vencimento);
                 const aguardandoValor = r.valor_base == null;
+                const encerrado = !!r.observacoes?.toLowerCase().includes("contrato vr encerrado");
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
-                      {r.client_id ? (
-                        <Link
-                          to={`/clientes/${r.client_id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {r.cliente_nome}
-                        </Link>
-                      ) : (
-                        r.cliente_nome
-                      )}
+                      <div className="flex items-center gap-2">
+                        {r.client_id ? (
+                          <Link
+                            to={`/clientes/${r.client_id}`}
+                            className="text-primary hover:underline"
+                          >
+                            {r.cliente_nome}
+                          </Link>
+                        ) : (
+                          r.cliente_nome
+                        )}
+                        {encerrado && (
+                          <Badge className="border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20">
+                            Encerrado
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground tabular-nums">{formatCnpj(r.cnpj) || "—"}</TableCell>
                     <TableCell>
