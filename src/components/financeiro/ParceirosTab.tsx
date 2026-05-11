@@ -245,6 +245,12 @@ export function ParceirosTab() {
                       <Badge variant={p.ativo ? "default" : "secondary"}>{p.ativo ? "Ativo" : "Inativo"}</Badge>
                     </CardTitle>
                     {p.contato && <div className="text-xs text-muted-foreground">{p.contato}</div>}
+                    <div className="text-xs text-muted-foreground">
+                      VR: {formatPercent(p.percentual_vr)} ·{" "}
+                      RH: {p.percentual_rh_tipo === "primeira_mensalidade"
+                        ? "Primeira mensalidade (100%)"
+                        : `${formatPercent(p.percentual_rh)} recorrência`}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" variant="outline" onClick={() => setVincularFor(p)}>
