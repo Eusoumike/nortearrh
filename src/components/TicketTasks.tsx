@@ -67,7 +67,7 @@ export function TicketTasks({ ticketId }: TicketTasksProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tasks")
-        .select("*")
+        .select("id, title, status, category, priority, due_date, created_at")
         .eq("ticket_id", ticketId)
         .order("created_at", { ascending: true });
       if (error) throw error;

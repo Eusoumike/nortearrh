@@ -89,7 +89,11 @@ export default function Settings() {
     queryKey: ["system-settings"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data } = await supabase.from("system_settings").select("*").limit(1).maybeSingle();
+      const { data } = await supabase
+        .from("system_settings")
+        .select("id, pipedrive_api_token, pipedrive_user_name, pipedrive_connected_at, timezone")
+        .limit(1)
+        .maybeSingle();
       return data;
     },
   });
@@ -100,7 +104,7 @@ export default function Settings() {
     queryFn: async () => {
       const { data } = await supabase
         .from("user_settings")
-        .select("*")
+        .select("theme")
         .eq("user_id", user!.id)
         .maybeSingle();
       return data;
@@ -113,7 +117,7 @@ export default function Settings() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, full_name")
         .eq("id", user!.id)
         .maybeSingle();
       return data;

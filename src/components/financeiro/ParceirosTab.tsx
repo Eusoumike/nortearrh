@@ -95,7 +95,10 @@ export function ParceirosTab() {
   const { data: parceiros = [] } = useQuery({
     queryKey: ["parceiros"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("parceiros").select("*").order("nome");
+      const { data, error } = await supabase
+        .from("parceiros")
+        .select("id, nome, contato, ativo, observacoes")
+        .order("nome");
       if (error) throw error;
       return (data ?? []) as Parceiro[];
     },
@@ -104,7 +107,9 @@ export function ParceirosTab() {
   const { data: configs = [] } = useQuery({
     queryKey: ["configuracoes_parceiro"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("configuracoes_parceiro").select("*");
+      const { data, error } = await supabase
+        .from("configuracoes_parceiro")
+        .select("id, parceiro_id, client_id, produto, tipo_repasse, percentual, ativo");
       if (error) throw error;
       return (data ?? []) as Config[];
     },
@@ -115,7 +120,7 @@ export function ParceirosTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("repasses_parceiro")
-        .select("*")
+        .select("id, parceiro_id, parceiro_nome, client_id, cliente_nome, produto, tipo_repasse, percentual, valor_base, valor_repasse, competencia, status, data_pagamento")
         .order("competencia", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Repasse[];

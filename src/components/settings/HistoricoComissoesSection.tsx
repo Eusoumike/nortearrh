@@ -29,7 +29,7 @@ export function HistoricoComissoesSection() {
     queryFn: async () => {
       let q = supabase
         .from("historico_comissoes")
-        .select("*")
+        .select("id, data_alteracao, cliente_nome, produto, percentual_anterior, percentual_novo, vigencia_a_partir, retroativo, alterado_por, motivo")
         .order("data_alteracao", { ascending: false })
         .limit(500);
 
