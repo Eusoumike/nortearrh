@@ -1144,6 +1144,9 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
+          percentual_rh: number
+          percentual_rh_tipo: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
+          percentual_vr: number
           updated_at: string
         }
         Insert: {
@@ -1154,6 +1157,9 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
+          percentual_rh?: number
+          percentual_rh_tipo?: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
+          percentual_vr?: number
           updated_at?: string
         }
         Update: {
@@ -1164,6 +1170,9 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
+          percentual_rh?: number
+          percentual_rh_tipo?: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
+          percentual_vr?: number
           updated_at?: string
         }
         Relationships: []
@@ -2118,6 +2127,7 @@ export type Database = {
         | "primeira_mensalidade"
         | "recorrencia"
         | "primeira_carga_vr"
+      tipo_repasse_rh_padrao: "primeira_mensalidade" | "recorrencia"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2330,6 +2340,7 @@ export const Constants = {
         "recorrencia",
         "primeira_carga_vr",
       ],
+      tipo_repasse_rh_padrao: ["primeira_mensalidade", "recorrencia"],
     },
   },
 } as const
