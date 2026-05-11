@@ -289,7 +289,7 @@ function useStages(userId: string | null) {
       if (!userId) return [];
       const { data, error } = await supabase
         .from("implantacao_stage_configs")
-        .select("*")
+        .select("id, stage_key, label, hidden, ordem")
         .eq("user_id", userId)
         .order("ordem", { ascending: true });
       if (error) throw error;
@@ -1014,7 +1014,7 @@ function EditImplantacaoDialog({
       if (!implantacaoId) return [];
       const { data, error } = await supabase
         .from("checklist_items")
-        .select("*")
+        .select("id, etapa, label, concluido, ordem")
         .eq("implantacao_id", implantacaoId)
         .order("ordem", { ascending: true });
       if (error) throw error;
@@ -1783,7 +1783,7 @@ function ChecklistStageSection({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("implantacao_pendencias")
-        .select("*")
+        .select("id, conteudo")
         .eq("implantacao_id", itemId)
         .eq("etapa", etapaKey as any)
         .maybeSingle();
@@ -2009,7 +2009,7 @@ function HistoricoTab({ implantacaoId }: { implantacaoId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("implantacao_eventos")
-        .select("*")
+        .select("id, tipo, descricao, created_at, autor_nome")
         .eq("implantacao_id", implantacaoId)
         .order("created_at", { ascending: false });
       if (error) throw error;

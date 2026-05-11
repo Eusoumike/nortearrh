@@ -215,7 +215,7 @@ export default function Nps() {
     queryFn: async () => {
       let q = supabase
         .from("nps_responses")
-        .select("*")
+        .select("id, nome, email, empresa, tempo_cliente, frequencia_uso, nota_atendimento, atendimento_evolucao, tempo_resposta, confianca_informacoes, nps_score, feedback_aberto, experiencia_geral, sugestao_melhoria, comentario_adicional, client_id, source, created_at")
         .order("created_at", { ascending: false })
         .limit(1000);
       if (period === "7" || period === "30" || period === "90") {

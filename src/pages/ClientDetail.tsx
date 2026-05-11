@@ -69,7 +69,11 @@ export default function ClientDetail() {
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("*").eq("id", id!).single();
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id")
+        .eq("id", id!)
+        .single();
       if (error) throw error;
       return data as any;
     },
@@ -97,7 +101,7 @@ export default function ClientDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("contratos_rh_digital")
-        .select("*")
+        .select("id, valor_mensalidade, percentual_nortear, valor_nortear, fidelidade_meses, fidelidade_vencimento")
         .eq("client_id", id!)
         .eq("ativo", true)
         .order("created_at", { ascending: false })
@@ -151,7 +155,7 @@ export default function ClientDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("nps_responses")
-        .select("*")
+        .select("id, nps_score, nome, feedback_aberto, created_at")
         .eq("client_id", id!)
         .order("created_at", { ascending: false })
         .limit(1);

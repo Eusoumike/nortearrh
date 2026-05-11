@@ -209,7 +209,7 @@ function HistoricoCliente({ clientId }: { clientId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("historico_comissoes")
-        .select("*")
+        .select("id, data_alteracao, produto, percentual_anterior, percentual_novo, vigencia_a_partir")
         .eq("client_id", clientId)
         .order("data_alteracao", { ascending: false })
         .limit(20);
