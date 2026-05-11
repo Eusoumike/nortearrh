@@ -44,6 +44,9 @@ type Parceiro = {
   contato: string | null;
   ativo: boolean;
   observacoes: string | null;
+  percentual_vr: number;
+  percentual_rh_tipo: "primeira_mensalidade" | "recorrencia";
+  percentual_rh: number;
 };
 type Config = {
   id: string;
