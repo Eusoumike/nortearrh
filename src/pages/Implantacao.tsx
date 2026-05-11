@@ -371,7 +371,7 @@ export default function Implantacao() {
       </div>
 
       {/* Kanban (preenche restante) */}
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
         <ImplantacaoKanban
           stages={visibleStages}
           onOpenCard={(id) => setEditingId(id)}
