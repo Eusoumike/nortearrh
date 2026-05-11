@@ -924,8 +924,8 @@ export type Database = {
           percentual_comissao: number
           tipo: Database["public"]["Enums"]["lancamento_vr_tipo"]
           updated_at: string
-          valor_base: number
-          valor_comissao: number
+          valor_base: number | null
+          valor_comissao: number | null
         }
         Insert: {
           client_id?: string | null
@@ -943,8 +943,8 @@ export type Database = {
           percentual_comissao?: number
           tipo?: Database["public"]["Enums"]["lancamento_vr_tipo"]
           updated_at?: string
-          valor_base?: number
-          valor_comissao?: number
+          valor_base?: number | null
+          valor_comissao?: number | null
         }
         Update: {
           client_id?: string | null
@@ -962,8 +962,8 @@ export type Database = {
           percentual_comissao?: number
           tipo?: Database["public"]["Enums"]["lancamento_vr_tipo"]
           updated_at?: string
-          valor_base?: number
-          valor_comissao?: number
+          valor_base?: number | null
+          valor_comissao?: number | null
         }
         Relationships: [
           {

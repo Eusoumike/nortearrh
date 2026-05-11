@@ -13,6 +13,8 @@ import {
   Plus,
   Search,
   Trash2,
+  XCircle,
+  Coins,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -20,6 +22,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { PreencherValorRecorrenciaDialog } from "./PreencherValorRecorrenciaDialog";
 import {
   Table,
   TableBody,
@@ -46,14 +50,18 @@ import { LancamentoVrDialog, LancamentoVR } from "./LancamentoVrDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
 import { formatCnpj, formatPercent } from "@/lib/formatters";
 
-type Row = LancamentoVR & { valor_comissao: number };
+type Row = LancamentoVR & { valor_comissao: number | null };
 
 export function VrTab() {
   const qc = useQueryClient();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<LancamentoVR | null>(null);
   const [toDelete, setToDelete] = useState<Row | null>(null);
+  const [toFill, setToFill] = useState<Row | null>(null);
+  const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string } | null>(null);
   const [search, setSearch] = useState("");
 
   const competencia = ymdFirst(month);
@@ -88,9 +96,12 @@ export function VrTab() {
     });
   }, [data, search]);
 
-  const totalBase = useMemo(() => filteredData.reduce((s, r) => s + Number(r.valor_base), 0), [filteredData]);
+  const totalBase = useMemo(
+    () => filteredData.reduce((s, r) => s + Number(r.valor_base ?? 0), 0),
+    [filteredData],
+  );
   const totalComissao = useMemo(
-    () => filteredData.reduce((s, r) => s + Number(r.valor_comissao), 0),
+    () => filteredData.reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
     [filteredData],
   );
 
@@ -110,6 +121,30 @@ export function VrTab() {
       setToDelete(null);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao excluir"),
+  });
+
+  const cancelMut = useMutation({
+    mutationFn: async (clientId: string) => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { error, count } = await supabase
+        .from("lancamentos_vr")
+        .delete({ count: "exact" })
+        .eq("client_id", clientId)
+        .eq("tipo", "recorrencia")
+        .is("valor_base", null)
+        .gt("competencia", today);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    onSuccess: (count) => {
+      toast.success(
+        `Contrato VR encerrado. ${count} recorrência${count === 1 ? "" : "s"} pendente${count === 1 ? "" : "s"} removida${count === 1 ? "" : "s"}.`,
+      );
+      qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
+      setToCancel(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao encerrar contrato"),
   });
 
   return (
@@ -213,6 +248,7 @@ export function VrTab() {
             <TableBody>
               {filteredData.map((r) => {
                 const tone = vencimentoTone(r.fidelidade_vencimento);
+                const aguardandoValor = r.valor_base == null;
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
@@ -240,13 +276,19 @@ export function VrTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {BRL.format(Number(r.valor_base))}
+                      {aguardandoValor ? (
+                        <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
+                          Aguardando valor
+                        </Badge>
+                      ) : (
+                        BRL.format(Number(r.valor_base))
+                      )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatPercent(r.percentual_comissao)}
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
-                      {BRL.format(Number(r.valor_comissao))}
+                      {aguardandoValor ? "—" : BRL.format(Number(r.valor_comissao))}
                     </TableCell>
                     <TableCell>
                       {r.fidelidade_meses ? `${r.fidelidade_meses} meses` : "—"}
@@ -265,6 +307,33 @@ export function VrTab() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        {aguardandoValor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Inserir valor"
+                            onClick={() => setToFill(r)}
+                            className="text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                          >
+                            <Coins className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {isAdmin && r.tipo === "primeira_carga" && r.client_id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Encerrar contrato VR"
+                            onClick={() =>
+                              setToCancel({
+                                client_id: r.client_id!,
+                                cliente_nome: r.cliente_nome,
+                              })
+                            }
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -342,6 +411,50 @@ export function VrTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!toCancel} onOpenChange={(v) => !v && setToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Encerrar contrato VR?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toCancel ? (
+                <>
+                  Encerrar contrato VR de <strong>{toCancel.cliente_nome}</strong>?<br />
+                  As recorrências pendentes futuras (sem valor preenchido) serão removidas.
+                  Lançamentos já preenchidos serão mantidos no histórico.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (toCancel) cancelMut.mutate(toCancel.client_id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Encerrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <PreencherValorRecorrenciaDialog
+        open={!!toFill}
+        onOpenChange={(v) => !v && setToFill(null)}
+        lancamento={
+          toFill
+            ? {
+                id: toFill.id,
+                cliente_nome: toFill.cliente_nome,
+                competencia: toFill.competencia,
+                percentual_comissao: Number(toFill.percentual_comissao),
+              }
+            : null
+        }
+      />
     </div>
   );
 }
