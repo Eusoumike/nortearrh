@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { addMonths, format, startOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -42,7 +43,7 @@ export type LancamentoVR = {
   cnpj: string | null;
   competencia: string;
   tipo: "primeira_carga" | "recorrencia";
-  valor_base: number;
+  valor_base: number | null;
   percentual_comissao: number;
   fidelidade_meses: number | null;
   fidelidade_inicio: string | null;
@@ -68,6 +69,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
   const [tipo, setTipo] = useState<TipoLancamentoVR>("recorrencia");
   const [valorBase, setValorBase] = useState<string>("0");
   const [percentual, setPercentual] = useState<string>("17.5");
+  const [percentualRecorrencia, setPercentualRecorrencia] = useState<string>("17.5");
   const [fidMeses, setFidMeses] = useState<string>("");
   const [fidInicio, setFidInicio] = useState<string>("");
   const [notificar, setNotificar] = useState(true);
@@ -75,10 +77,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
   const [openFid, setOpenFid] = useState(false);
   const percentualRequestRef = useRef(0);
 
-  const buscarPercentualVr = async (
-    clientId: string | null,
-    tipoAtual: TipoLancamentoVR,
-  ) => {
+  const buscarPercentuaisVr = async (clientId: string | null) => {
     let config: {
       percentual_vr_primeira_carga: number | null;
       percentual_vr_recorrencia: number | null;
@@ -102,24 +101,24 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
       .maybeSingle();
     if (settingsError) throw settingsError;
 
-    const valor =
-      tipoAtual === "primeira_carga"
-        ? config?.percentual_vr_primeira_carga ??
-          settings?.percentual_vr_primeira_carga ??
-          17.5
-        : config?.percentual_vr_recorrencia ?? settings?.percentual_vr_recorrencia ?? 17.5;
-
-    return String(valor);
+    return {
+      primeiraCarga:
+        config?.percentual_vr_primeira_carga ?? settings?.percentual_vr_primeira_carga ?? 17.5,
+      recorrencia:
+        config?.percentual_vr_recorrencia ?? settings?.percentual_vr_recorrencia ?? 17.5,
+    };
   };
 
-  const aplicarPercentualVr = async (
+  const aplicarPercentuais = async (
     clientId: string | null,
     tipoAtual: TipoLancamentoVR,
   ) => {
     const requestId = ++percentualRequestRef.current;
     try {
-      const valor = await buscarPercentualVr(clientId, tipoAtual);
-      if (percentualRequestRef.current === requestId) setPercentual(valor);
+      const { primeiraCarga, recorrencia } = await buscarPercentuaisVr(clientId);
+      if (percentualRequestRef.current !== requestId) return;
+      setPercentualRecorrencia(String(recorrencia));
+      setPercentual(String(tipoAtual === "primeira_carga" ? primeiraCarga : recorrencia));
     } catch (e: any) {
       if (percentualRequestRef.current === requestId) {
         toast.error(e.message ?? "Erro ao buscar percentual configurado");
@@ -129,12 +128,12 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
 
   const handleClienteSelect = (selected: ClientOption | null) => {
     setClient(selected);
-    if (!isEdit) void aplicarPercentualVr(selected?.id ?? null, tipo);
+    if (!isEdit) void aplicarPercentuais(selected?.id ?? null, tipo);
   };
 
   const handleTipoChange = (novoTipo: TipoLancamentoVR) => {
     setTipo(novoTipo);
-    if (!isEdit) void aplicarPercentualVr(client?.id ?? null, novoTipo);
+    if (!isEdit) void aplicarPercentuais(client?.id ?? null, novoTipo);
   };
 
   // Reset/initialize on open
@@ -149,8 +148,9 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
       );
       setCompetencia(initial.competencia);
       setTipo(initial.tipo);
-      setValorBase(String(initial.valor_base));
+      setValorBase(initial.valor_base == null ? "" : String(initial.valor_base));
       setPercentual(String(initial.percentual_comissao));
+      setPercentualRecorrencia(String(initial.percentual_comissao));
       setFidMeses(initial.fidelidade_meses ? String(initial.fidelidade_meses) : "");
       setFidInicio(initial.fidelidade_inicio ?? "");
       setNotificar(initial.notificar_vencimento);
@@ -162,12 +162,13 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
       setTipo("recorrencia");
       setValorBase("0");
       setPercentual("17.5");
+      setPercentualRecorrencia("17.5");
       setFidMeses("");
       setFidInicio("");
       setNotificar(true);
       setObservacoes("");
       setOpenFid(false);
-      void aplicarPercentualVr(null, "recorrencia");
+      void aplicarPercentuais(null, "recorrencia");
     }
   }, [open, initial, defaultCompetencia]);
 
@@ -182,7 +183,33 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
     [fidInicio, fidMeses],
   );
 
+  // Lista de competências de recorrência a serem geradas
+  const recorrenciasGeradas = useMemo<string[]>(() => {
+    if (isEdit) return [];
+    if (tipo !== "primeira_carga") return [];
+    if (!competencia || !vencimentoCalc) return [];
+    const start = startOfMonth(addMonths(new Date(competencia + "T00:00:00"), 1));
+    const end = new Date(vencimentoCalc + "T00:00:00");
+    const months: string[] = [];
+    let cur = start;
+    let safety = 0;
+    while (cur <= end && safety < 60) {
+      months.push(format(cur, "yyyy-MM-dd"));
+      cur = addMonths(cur, 1);
+      safety++;
+    }
+    return months;
+  }, [isEdit, tipo, competencia, vencimentoCalc]);
+
   const competenciaInputValue = competencia ? competencia.slice(0, 7) : "";
+
+  const formatMesAno = (ymd: string) =>
+    format(new Date(ymd + "T00:00:00"), "MMM/yy", { locale: ptBR });
+
+  const fmtPct = (v: string | number) => {
+    const n = Number(v || 0);
+    return `${n.toFixed(2).replace(".", ",")}%`;
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -213,15 +240,47 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
           .update(payload)
           .eq("id", initial.id);
         if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("lancamentos_vr")
-          .insert({ ...payload, created_by: userId });
-        if (error) throw error;
+        return { recorrencias: 0 };
       }
+
+      const { error } = await supabase
+        .from("lancamentos_vr")
+        .insert({ ...payload, created_by: userId });
+      if (error) throw error;
+
+      // Gera recorrências futuras automaticamente
+      if (tipo === "primeira_carga" && recorrenciasGeradas.length > 0) {
+        const pctRec = Number(percentualRecorrencia || percentual);
+        const recPayloads = recorrenciasGeradas.map((comp) => ({
+          client_id: client.id,
+          cliente_nome: client.name,
+          cnpj: client.cnpj,
+          competencia: comp,
+          tipo: "recorrencia" as const,
+          valor_base: null,
+          percentual_comissao: pctRec,
+          fidelidade_meses: fidMeses ? Number(fidMeses) : null,
+          fidelidade_inicio: fidInicio || null,
+          notificar_vencimento: notificar,
+          observacoes: "Gerado automaticamente a partir da Primeira Carga",
+          created_by: userId,
+        }));
+        const { error: errRec } = await supabase.from("lancamentos_vr").insert(recPayloads);
+        if (errRec) throw errRec;
+      }
+
+      return { recorrencias: tipo === "primeira_carga" ? recorrenciasGeradas.length : 0 };
     },
-    onSuccess: () => {
-      toast.success(isEdit ? "Lançamento VR atualizado!" : "Lançamento VR salvo com sucesso!");
+    onSuccess: ({ recorrencias }) => {
+      if (isEdit) {
+        toast.success("Lançamento VR atualizado!");
+      } else if (recorrencias > 0) {
+        toast.success(
+          `Primeira carga salva + ${recorrencias} recorrência${recorrencias === 1 ? "" : "s"} gerada${recorrencias === 1 ? "" : "s"}.`,
+        );
+      } else {
+        toast.success("Lançamento VR salvo com sucesso!");
+      }
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
       qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
@@ -324,6 +383,22 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
             </div>
           </div>
 
+          {!isEdit && tipo === "primeira_carga" && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="perc-vr-rec">% Recorrência (para meses seguintes)</Label>
+              <Input
+                id="perc-vr-rec"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                max="100"
+                value={percentualRecorrencia}
+                onChange={(e) => setPercentualRecorrencia(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
             Valor da comissão:{" "}
             <span className="font-semibold tabular-nums">= {BRL.format(valorComissao)}</span>
@@ -379,6 +454,36 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
               </label>
             </CollapsibleContent>
           </Collapsible>
+
+          {!isEdit && tipo === "primeira_carga" && (
+            <div className="rounded-md border-l-4 border-l-primary bg-primary/5 p-3 text-sm">
+              <div className="mb-1.5 font-medium">Será gerado:</div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  1 lançamento de <strong>primeira carga</strong> —{" "}
+                  {competencia ? formatMesAno(competencia) : "—"} — {fmtPct(percentual)}
+                </span>
+              </div>
+              {recorrenciasGeradas.length > 0 ? (
+                <div className="mt-1 flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    {recorrenciasGeradas.length} lançamento
+                    {recorrenciasGeradas.length === 1 ? "" : "s"} de <strong>recorrência</strong> —{" "}
+                    {formatMesAno(recorrenciasGeradas[0])} a{" "}
+                    {formatMesAno(recorrenciasGeradas[recorrenciasGeradas.length - 1])} —{" "}
+                    {fmtPct(percentualRecorrencia)}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Configure fidelidade (período + data de início) para gerar recorrências
+                  automaticamente.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-1.5">
             <Label htmlFor="obs-vr">Observações</Label>
