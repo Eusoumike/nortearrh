@@ -248,6 +248,7 @@ export function VrTab() {
             <TableBody>
               {filteredData.map((r) => {
                 const tone = vencimentoTone(r.fidelidade_vencimento);
+                const aguardandoValor = r.valor_base == null;
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
@@ -275,13 +276,19 @@ export function VrTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {BRL.format(Number(r.valor_base))}
+                      {aguardandoValor ? (
+                        <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
+                          Aguardando valor
+                        </Badge>
+                      ) : (
+                        BRL.format(Number(r.valor_base))
+                      )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatPercent(r.percentual_comissao)}
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
-                      {BRL.format(Number(r.valor_comissao))}
+                      {aguardandoValor ? "—" : BRL.format(Number(r.valor_comissao))}
                     </TableCell>
                     <TableCell>
                       {r.fidelidade_meses ? `${r.fidelidade_meses} meses` : "—"}
@@ -300,6 +307,33 @@ export function VrTab() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        {aguardandoValor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Inserir valor"
+                            onClick={() => setToFill(r)}
+                            className="text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+                          >
+                            <Coins className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {isAdmin && r.tipo === "primeira_carga" && r.client_id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Encerrar contrato VR"
+                            onClick={() =>
+                              setToCancel({
+                                client_id: r.client_id!,
+                                cliente_nome: r.cliente_nome,
+                              })
+                            }
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
