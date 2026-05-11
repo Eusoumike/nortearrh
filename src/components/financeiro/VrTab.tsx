@@ -123,6 +123,30 @@ export function VrTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro ao excluir"),
   });
 
+  const cancelMut = useMutation({
+    mutationFn: async (clientId: string) => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { error, count } = await supabase
+        .from("lancamentos_vr")
+        .delete({ count: "exact" })
+        .eq("client_id", clientId)
+        .eq("tipo", "recorrencia")
+        .is("valor_base", null)
+        .gt("competencia", today);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    onSuccess: (count) => {
+      toast.success(
+        `Contrato VR encerrado. ${count} recorrência${count === 1 ? "" : "s"} pendente${count === 1 ? "" : "s"} removida${count === 1 ? "" : "s"}.`,
+      );
+      qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
+      setToCancel(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao encerrar contrato"),
+  });
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
