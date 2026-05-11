@@ -450,12 +450,6 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           </DialogFooter>
         </form>
       </DialogContent>
-      <VincularClienteDialog
-        open={!!vincularParceiro}
-        onOpenChange={(v) => !v && setVincularParceiro(null)}
-        parceiro={vincularParceiro}
-        defaultClient={client ? { id: client.id, name: client.name ?? client.company, cnpj: client.cnpj ?? null } : null}
-      />
     </Dialog>
   );
 }
