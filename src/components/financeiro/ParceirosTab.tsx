@@ -676,11 +676,10 @@ export function VincularClienteDialog({
       if (!client?.id) return 0;
       if (produto === "rh_digital") {
         const { data } = await supabase
-          .from("contratos_rh_digital")
+          .from("parcelas_rh_digital")
           .select("valor_nortear")
           .eq("client_id", client.id)
-          .eq("ativo", true)
-          .order("created_at", { ascending: false })
+          .order("competencia", { ascending: true })
           .limit(1)
           .maybeSingle();
         return Number((data as any)?.valor_nortear ?? 0);
@@ -689,6 +688,7 @@ export function VincularClienteDialog({
           .from("lancamentos_vr")
           .select("valor_comissao")
           .eq("client_id", client.id)
+          .eq("tipo", "primeira_carga")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -697,6 +697,7 @@ export function VincularClienteDialog({
     },
   });
   const preview = previewBase * (Number(percentual || 0) / 100);
+  const semBase = previewBase === 0;
 
   // limites por tipo
   const maxPct = tipo === "primeira_carga_vr" ? 50 : tipo === "recorrencia" ? 10 : 100;
