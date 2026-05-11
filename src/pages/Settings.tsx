@@ -572,7 +572,8 @@ export default function Settings() {
       {/* Títulos de chamado */}
       <TicketTitlesManager />
 
-      {/* Histórico de Comissões — apenas admin */}
+      {/* Comissões padrão e Histórico — apenas admin */}
+      {isAdmin && <ComissoesPadraoSection />}
       {isAdmin && <HistoricoComissoesSection />}
 
       {/* Aparência */}
