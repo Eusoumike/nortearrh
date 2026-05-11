@@ -542,16 +542,15 @@ function ImplantacaoKanban({
       style={{
         width: "100%",
         height: "100%",
-        overflowX: "auto",
-        overflowY: "hidden",
+        overflow: "auto",
       }}
     >
       <div
         style={{
-          display: "inline-flex",
+          display: "flex",
           flexDirection: "row",
           gap: "12px",
-          minWidth: "max-content",
+          minWidth: "min-content",
           height: "100%",
           alignItems: "stretch",
           padding: "0 16px 16px",
