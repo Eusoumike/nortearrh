@@ -686,7 +686,7 @@ function KanbanCard({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="group relative cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
+      className="group relative cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
     >
       <Button
         size="icon"
