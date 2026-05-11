@@ -269,6 +269,11 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 value={percentual}
                 onChange={(e) => setPercentual(e.target.value)}
               />
+              {!isEdit && (
+                <p className="text-[11px] text-muted-foreground">
+                  {Number(percentual) === padraoPonto ? "(padrão global)" : "(exceção)"}
+                </p>
+              )}
             </div>
           </div>
 
