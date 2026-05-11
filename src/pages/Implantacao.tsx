@@ -586,9 +586,9 @@ function ImplantacaoKanban({
             {/* Header sticky com barra colorida + título */}
             <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
               <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
-              <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
+              <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
                 <h3
-                  className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
+                  className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80"
                   title={stage.label}
                 >
                   {stage.label}
