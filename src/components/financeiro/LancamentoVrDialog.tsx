@@ -363,6 +363,14 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
                 value={percentual}
                 onChange={(e) => setPercentual(e.target.value)}
               />
+              {!isEdit && (
+                <p className="text-[11px] text-muted-foreground">
+                  {Number(percentual) ===
+                  (tipo === "primeira_carga" ? padraoVrPrim : padraoVrRec)
+                    ? "(padrão global)"
+                    : "(exceção)"}
+                </p>
+              )}
             </div>
           </div>
 
