@@ -892,6 +892,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_lancamentos_ponto_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lancamentos_ponto_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lancamentos_ponto_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -966,6 +980,20 @@ export type Database = {
           valor_comissao?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_lancamentos_vr_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lancamentos_vr_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lancamentos_vr_client_id_fkey"
             columns: ["client_id"]
@@ -1188,6 +1216,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_parcelas_contrato"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_rh_digital"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "parcelas_rh_digital_contrato_id_fkey"
             columns: ["contrato_id"]
             isOneToOne: false
@@ -1288,6 +1323,13 @@ export type Database = {
           valor_repasse?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_repasses_parceiro"
+            columns: ["parceiro_id"]
+            isOneToOne: false
+            referencedRelation: "parceiros"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "repasses_parceiro_parceiro_id_fkey"
             columns: ["parceiro_id"]
