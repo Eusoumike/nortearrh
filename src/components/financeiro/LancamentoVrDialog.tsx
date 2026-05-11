@@ -77,46 +77,30 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
   const [openFid, setOpenFid] = useState(false);
   const percentualRequestRef = useRef(0);
 
-  const buscarPercentuaisVr = async (clientId: string | null) => {
-    let config: {
-      percentual_vr_primeira_carga: number | null;
-      percentual_vr_recorrencia: number | null;
-    } | null = null;
+  const [padraoVrPrim, setPadraoVrPrim] = useState<number>(17.5);
+  const [padraoVrRec, setPadraoVrRec] = useState<number>(17.5);
 
-    if (clientId) {
-      const { data, error } = await supabase
-        .from("config_comissoes")
-        .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
-        .eq("client_id", clientId)
-        .maybeSingle();
-      if (error) throw error;
-      config = data;
-    }
-
-    const { data: settings, error: settingsError } = await supabase
+  const buscarPercentuaisVr = async () => {
+    const { data: settings, error } = await supabase
       .from("system_settings")
       .select("percentual_vr_primeira_carga, percentual_vr_recorrencia")
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
-    if (settingsError) throw settingsError;
-
+    if (error) throw error;
     return {
-      primeiraCarga:
-        config?.percentual_vr_primeira_carga ?? settings?.percentual_vr_primeira_carga ?? 17.5,
-      recorrencia:
-        config?.percentual_vr_recorrencia ?? settings?.percentual_vr_recorrencia ?? 17.5,
+      primeiraCarga: Number(settings?.percentual_vr_primeira_carga ?? 17.5),
+      recorrencia: Number(settings?.percentual_vr_recorrencia ?? 17.5),
     };
   };
 
-  const aplicarPercentuais = async (
-    clientId: string | null,
-    tipoAtual: TipoLancamentoVR,
-  ) => {
+  const aplicarPercentuais = async (tipoAtual: TipoLancamentoVR) => {
     const requestId = ++percentualRequestRef.current;
     try {
-      const { primeiraCarga, recorrencia } = await buscarPercentuaisVr(clientId);
+      const { primeiraCarga, recorrencia } = await buscarPercentuaisVr();
       if (percentualRequestRef.current !== requestId) return;
+      setPadraoVrPrim(primeiraCarga);
+      setPadraoVrRec(recorrencia);
       setPercentualRecorrencia(String(recorrencia));
       setPercentual(String(tipoAtual === "primeira_carga" ? primeiraCarga : recorrencia));
     } catch (e: any) {
@@ -128,12 +112,11 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
 
   const handleClienteSelect = (selected: ClientOption | null) => {
     setClient(selected);
-    if (!isEdit) void aplicarPercentuais(selected?.id ?? null, tipo);
   };
 
   const handleTipoChange = (novoTipo: TipoLancamentoVR) => {
     setTipo(novoTipo);
-    if (!isEdit) void aplicarPercentuais(client?.id ?? null, novoTipo);
+    if (!isEdit) void aplicarPercentuais(novoTipo);
   };
 
   // Reset/initialize on open
