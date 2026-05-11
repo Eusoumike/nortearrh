@@ -411,6 +411,50 @@ export function VrTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!toCancel} onOpenChange={(v) => !v && setToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Encerrar contrato VR?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toCancel ? (
+                <>
+                  Encerrar contrato VR de <strong>{toCancel.cliente_nome}</strong>?<br />
+                  As recorrências pendentes futuras (sem valor preenchido) serão removidas.
+                  Lançamentos já preenchidos serão mantidos no histórico.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (toCancel) cancelMut.mutate(toCancel.client_id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Encerrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <PreencherValorRecorrenciaDialog
+        open={!!toFill}
+        onOpenChange={(v) => !v && setToFill(null)}
+        lancamento={
+          toFill
+            ? {
+                id: toFill.id,
+                cliente_nome: toFill.cliente_nome,
+                competencia: toFill.competencia,
+                percentual_comissao: Number(toFill.percentual_comissao),
+              }
+            : null
+        }
+      />
     </div>
   );
 }
