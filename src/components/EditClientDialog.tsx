@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Copy, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import type { ClientHealth } from "@/lib/constants";
-import { VincularClienteDialog } from "@/components/financeiro/ParceirosTab";
+
 
 const STATUS_OPTIONS: { value: ClientHealth; label: string }[] = [
   { value: "saudavel", label: "Ativo" },
@@ -51,17 +51,61 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
   }, [open, client]);
 
   const { data: parceiros = [] } = useQuery({
-    queryKey: ["parceiros-ativos"],
+    queryKey: ["parceiros-ativos-edit"],
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("parceiros").select("id, nome, contato, ativo, observacoes")
+        .from("parceiros").select("id, nome, contato, ativo, observacoes, percentual_rh, percentual_rh_tipo, percentual_vr")
         .eq("ativo", true).order("nome");
       if (error) throw error;
       return data ?? [];
     },
   });
-  const [vincularParceiro, setVincularParceiro] = useState<any>(null);
+
+  // Config RH Digital por cliente (inline)
+  const [rhTipo, setRhTipo] = useState<"primeira_mensalidade" | "recorrencia">("primeira_mensalidade");
+  const [rhPct, setRhPct] = useState<string>("0");
+  const [rhConfigId, setRhConfigId] = useState<string | null>(null);
+
+  // Carrega config existente quando abre
+  useEffect(() => {
+    if (!open || !client?.id) return;
+    (async () => {
+      if (!client.parceiro_id) {
+        setRhConfigId(null);
+        setRhTipo("primeira_mensalidade");
+        setRhPct("0");
+        return;
+      }
+      const { data } = await supabase
+        .from("configuracoes_parceiro")
+        .select("id, tipo_repasse, percentual")
+        .eq("client_id", client.id)
+        .eq("parceiro_id", client.parceiro_id)
+        .eq("produto", "rh_digital")
+        .eq("ativo", true)
+        .maybeSingle();
+      if (data) {
+        setRhConfigId(data.id);
+        setRhTipo(data.tipo_repasse as any);
+        setRhPct(String(data.percentual ?? 0));
+      } else {
+        setRhConfigId(null);
+        setRhTipo("primeira_mensalidade");
+        setRhPct("0");
+      }
+    })();
+  }, [open, client?.id, client?.parceiro_id]);
+
+  const applyParceiroDefaults = (parceiroId: string) => {
+    const p: any = parceiros.find((x: any) => x.id === parceiroId);
+    if (!p) return;
+    setRhTipo((p.percentual_rh_tipo as any) ?? "primeira_mensalidade");
+    setRhPct(String(p.percentual_rh ?? 0));
+  };
+
+  const rhPctNum = Number(rhPct || 0);
+  const rhInvalid = rhTipo === "recorrencia" && (rhPctNum < 0 || rhPctNum > 10);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -79,11 +123,14 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         anydeskIdValue = idDigits;
       }
 
+      if (form.parceiro_id && rhInvalid) {
+        throw new Error("% de recorrência RH deve estar entre 0 e 10.");
+      }
+
       const { error } = await supabase
         .from("clients")
         .update({
           company,
-          // mantém o campo "name" sincronizado com o contato (ou empresa, fallback) para não quebrar listagens existentes
           name: form.contact_name?.trim() || company,
           contact_name: form.contact_name?.trim() || null,
           cnpj: form.cnpj?.trim() || null,
@@ -105,6 +152,30 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         } as any)
         .eq("id", client.id);
       if (error) throw error;
+
+      // Salva config RH Digital do parceiro para este cliente
+      if (form.parceiro_id) {
+        const pct = rhTipo === "primeira_mensalidade" ? 100 : rhPctNum;
+        if (rhConfigId) {
+          const { error: e2 } = await supabase
+            .from("configuracoes_parceiro")
+            .update({ tipo_repasse: rhTipo, percentual: pct, ativo: true } as any)
+            .eq("id", rhConfigId);
+          if (e2) throw e2;
+        } else {
+          const { error: e2 } = await supabase
+            .from("configuracoes_parceiro")
+            .insert({
+              parceiro_id: form.parceiro_id,
+              client_id: client.id,
+              produto: "rh_digital",
+              tipo_repasse: rhTipo,
+              percentual: pct,
+              ativo: true,
+            } as any);
+          if (e2) throw e2;
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -121,7 +192,7 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar cliente</DialogTitle>
         </DialogHeader>
@@ -306,10 +377,12 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
                 onValueChange={(v) => {
                   if (v === "none") {
                     setForm({ ...form, parceiro_id: "" });
+                    setRhConfigId(null);
+                    setRhTipo("primeira_mensalidade");
+                    setRhPct("0");
                   } else {
                     setForm({ ...form, parceiro_id: v });
-                    const p = parceiros.find((x: any) => x.id === v);
-                    if (p) setVincularParceiro(p);
+                    applyParceiroDefaults(v);
                   }
                 }}
               >
@@ -323,6 +396,44 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               </Select>
             </div>
           </div>
+
+          {form.parceiro_id && (
+            <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+              <div className="text-sm font-medium">% sobre RH Digital</div>
+              <Select
+                value={rhTipo}
+                onValueChange={(v) => setRhTipo(v as any)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="primeira_mensalidade">Primeira mensalidade — 100% (pagamento único)</SelectItem>
+                  <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
+                </SelectContent>
+              </Select>
+              {rhTipo === "primeira_mensalidade" ? (
+                <p className="text-xs text-muted-foreground">100% da primeira mensalidade</p>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>% recorrência RH</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.01"
+                    value={rhPct}
+                    onChange={(e) => setRhPct(e.target.value)}
+                  />
+                  {rhInvalid && (
+                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 10.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Repasse mensal enquanto o cliente estiver ativo
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
@@ -339,12 +450,6 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           </DialogFooter>
         </form>
       </DialogContent>
-      <VincularClienteDialog
-        open={!!vincularParceiro}
-        onOpenChange={(v) => !v && setVincularParceiro(null)}
-        parceiro={vincularParceiro}
-        defaultClient={client ? { id: client.id, name: client.name ?? client.company, cnpj: client.cnpj ?? null } : null}
-      />
     </Dialog>
   );
 }
