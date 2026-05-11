@@ -33,6 +33,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { TicketTitlesManager } from "@/components/settings/TicketTitlesManager";
 import { HistoricoComissoesSection } from "@/components/settings/HistoricoComissoesSection";
 import { ComissoesPadraoSection } from "@/components/settings/ComissoesPadraoSection";
+import { ImplantacaoStagesManager } from "@/components/settings/ImplantacaoStagesManager";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -571,6 +572,9 @@ export default function Settings() {
 
       {/* Títulos de chamado */}
       <TicketTitlesManager />
+
+      {/* Etapas da Implantação */}
+      <ImplantacaoStagesManager />
 
       {/* Comissões padrão e Histórico — apenas admin */}
       {isAdmin && <ComissoesPadraoSection />}
