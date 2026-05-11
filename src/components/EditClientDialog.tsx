@@ -438,39 +438,63 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           </div>
 
           {form.parceiro_id && (
-            <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
-              <div className="text-sm font-medium">% sobre RH Digital</div>
-              <Select
-                value={rhTipo}
-                onValueChange={(v) => setRhTipo(v as any)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="primeira_mensalidade">Primeira mensalidade — 100% (pagamento único)</SelectItem>
-                  <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
-                </SelectContent>
-              </Select>
-              {rhTipo === "primeira_mensalidade" ? (
-                <p className="text-xs text-muted-foreground">100% da primeira mensalidade</p>
-              ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+                <div className="text-sm font-medium">% sobre RH Digital</div>
+                <Select
+                  value={rhTipo}
+                  onValueChange={(v) => setRhTipo(v as any)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primeira_mensalidade">Primeira mensalidade — 100% (pagamento único)</SelectItem>
+                    <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {rhTipo === "primeira_mensalidade" ? (
+                  <p className="text-xs text-muted-foreground">100% da primeira mensalidade</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label>% recorrência RH</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.01"
+                      value={rhPct}
+                      onChange={(e) => setRhPct(e.target.value)}
+                    />
+                    {rhInvalid && (
+                      <p className="text-xs text-destructive">Valor deve estar entre 0 e 10.</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Repasse mensal enquanto o cliente estiver ativo
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+                <div className="text-sm font-medium">% sobre VR Benefícios</div>
                 <div className="space-y-1.5">
-                  <Label>% recorrência RH</Label>
+                  <Label>% VR (primeira carga)</Label>
                   <Input
                     type="number"
                     min="0"
-                    max="10"
+                    max="50"
                     step="0.01"
-                    value={rhPct}
-                    onChange={(e) => setRhPct(e.target.value)}
+                    placeholder="Ex: 17.5"
+                    value={vrPct}
+                    onChange={(e) => setVrPct(e.target.value)}
                   />
-                  {rhInvalid && (
-                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 10.</p>
+                  {vrInvalid && (
+                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 50.</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Repasse mensal enquanto o cliente estiver ativo
+                    Repasse único sobre a comissão da primeira carga
                   </p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
