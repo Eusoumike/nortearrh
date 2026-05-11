@@ -96,9 +96,12 @@ export function VrTab() {
     });
   }, [data, search]);
 
-  const totalBase = useMemo(() => filteredData.reduce((s, r) => s + Number(r.valor_base), 0), [filteredData]);
+  const totalBase = useMemo(
+    () => filteredData.reduce((s, r) => s + Number(r.valor_base ?? 0), 0),
+    [filteredData],
+  );
   const totalComissao = useMemo(
-    () => filteredData.reduce((s, r) => s + Number(r.valor_comissao), 0),
+    () => filteredData.reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
     [filteredData],
   );
 
