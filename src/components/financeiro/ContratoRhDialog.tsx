@@ -123,7 +123,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setTipoCobranca("mensal");
       setNotificar(true);
       setObservacoes("");
-      void aplicarPercentualPonto(null);
+      void aplicarPercentualPonto();
     }
   }, [open, initial]);
 
