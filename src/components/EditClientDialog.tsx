@@ -123,11 +123,14 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         anydeskIdValue = idDigits;
       }
 
+      if (form.parceiro_id && rhInvalid) {
+        throw new Error("% de recorrência RH deve estar entre 0 e 10.");
+      }
+
       const { error } = await supabase
         .from("clients")
         .update({
           company,
-          // mantém o campo "name" sincronizado com o contato (ou empresa, fallback) para não quebrar listagens existentes
           name: form.contact_name?.trim() || company,
           contact_name: form.contact_name?.trim() || null,
           cnpj: form.cnpj?.trim() || null,
@@ -149,6 +152,30 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         } as any)
         .eq("id", client.id);
       if (error) throw error;
+
+      // Salva config RH Digital do parceiro para este cliente
+      if (form.parceiro_id) {
+        const pct = rhTipo === "primeira_mensalidade" ? 100 : rhPctNum;
+        if (rhConfigId) {
+          const { error: e2 } = await supabase
+            .from("configuracoes_parceiro")
+            .update({ tipo_repasse: rhTipo, percentual: pct, ativo: true } as any)
+            .eq("id", rhConfigId);
+          if (e2) throw e2;
+        } else {
+          const { error: e2 } = await supabase
+            .from("configuracoes_parceiro")
+            .insert({
+              parceiro_id: form.parceiro_id,
+              client_id: client.id,
+              produto: "rh_digital",
+              tipo_repasse: rhTipo,
+              percentual: pct,
+              ativo: true,
+            } as any);
+          if (e2) throw e2;
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
