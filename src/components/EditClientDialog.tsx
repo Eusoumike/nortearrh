@@ -62,12 +62,14 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
     },
   });
 
-  // Config RH Digital por cliente (inline)
+  // Config RH Digital + VR por cliente (inline)
   const [rhTipo, setRhTipo] = useState<"primeira_mensalidade" | "recorrencia">("primeira_mensalidade");
   const [rhPct, setRhPct] = useState<string>("0");
   const [rhConfigId, setRhConfigId] = useState<string | null>(null);
+  const [vrPct, setVrPct] = useState<string>("0");
+  const [vrConfigId, setVrConfigId] = useState<string | null>(null);
 
-  // Carrega config existente quando abre
+  // Carrega configs existentes quando abre
   useEffect(() => {
     if (!open || !client?.id) return;
     (async () => {
@@ -75,24 +77,33 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         setRhConfigId(null);
         setRhTipo("primeira_mensalidade");
         setRhPct("0");
+        setVrConfigId(null);
+        setVrPct("0");
         return;
       }
-      const { data } = await supabase
+      const { data: rows } = await supabase
         .from("configuracoes_parceiro")
-        .select("id, tipo_repasse, percentual")
+        .select("id, tipo_repasse, percentual, produto")
         .eq("client_id", client.id)
         .eq("parceiro_id", client.parceiro_id)
-        .eq("produto", "rh_digital")
-        .eq("ativo", true)
-        .maybeSingle();
-      if (data) {
-        setRhConfigId(data.id);
-        setRhTipo(data.tipo_repasse as any);
-        setRhPct(String(data.percentual ?? 0));
+        .eq("ativo", true);
+      const rh = (rows ?? []).find((r: any) => r.produto === "rh_digital");
+      const vr = (rows ?? []).find((r: any) => r.produto === "vr_beneficios");
+      if (rh) {
+        setRhConfigId(rh.id);
+        setRhTipo(rh.tipo_repasse as any);
+        setRhPct(String(rh.percentual ?? 0));
       } else {
         setRhConfigId(null);
         setRhTipo("primeira_mensalidade");
         setRhPct("0");
+      }
+      if (vr) {
+        setVrConfigId(vr.id);
+        setVrPct(String(vr.percentual ?? 0));
+      } else {
+        setVrConfigId(null);
+        setVrPct("0");
       }
     })();
   }, [open, client?.id, client?.parceiro_id]);
@@ -102,10 +113,13 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
     if (!p) return;
     setRhTipo((p.percentual_rh_tipo as any) ?? "primeira_mensalidade");
     setRhPct(String(p.percentual_rh ?? 0));
+    setVrPct(String(p.percentual_vr ?? 0));
   };
 
   const rhPctNum = Number(rhPct || 0);
   const rhInvalid = rhTipo === "recorrencia" && (rhPctNum < 0 || rhPctNum > 10);
+  const vrPctNum = Number(vrPct || 0);
+  const vrInvalid = vrPctNum < 0 || vrPctNum > 50;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -125,6 +139,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
 
       if (form.parceiro_id && rhInvalid) {
         throw new Error("% de recorrência RH deve estar entre 0 e 10.");
+      }
+      if (form.parceiro_id && vrInvalid) {
+        throw new Error("% sobre VR Benefícios deve estar entre 0 e 50.");
       }
 
       const { error } = await supabase
@@ -153,13 +170,13 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         .eq("id", client.id);
       if (error) throw error;
 
-      // Salva config RH Digital do parceiro para este cliente
+      // Salva config RH Digital + VR do parceiro para este cliente
       if (form.parceiro_id) {
-        const pct = rhTipo === "primeira_mensalidade" ? 100 : rhPctNum;
+        const pctRh = rhTipo === "primeira_mensalidade" ? 100 : rhPctNum;
         if (rhConfigId) {
           const { error: e2 } = await supabase
             .from("configuracoes_parceiro")
-            .update({ tipo_repasse: rhTipo, percentual: pct, ativo: true } as any)
+            .update({ tipo_repasse: rhTipo, percentual: pctRh, ativo: true } as any)
             .eq("id", rhConfigId);
           if (e2) throw e2;
         } else {
@@ -170,10 +187,31 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               client_id: client.id,
               produto: "rh_digital",
               tipo_repasse: rhTipo,
-              percentual: pct,
+              percentual: pctRh,
               ativo: true,
             } as any);
           if (e2) throw e2;
+        }
+
+        // VR Benefícios — primeira_carga_vr
+        if (vrConfigId) {
+          const { error: e3 } = await supabase
+            .from("configuracoes_parceiro")
+            .update({ tipo_repasse: "primeira_carga_vr", percentual: vrPctNum, ativo: vrPctNum > 0 } as any)
+            .eq("id", vrConfigId);
+          if (e3) throw e3;
+        } else if (vrPctNum > 0) {
+          const { error: e3 } = await supabase
+            .from("configuracoes_parceiro")
+            .insert({
+              parceiro_id: form.parceiro_id,
+              client_id: client.id,
+              produto: "vr_beneficios",
+              tipo_repasse: "primeira_carga_vr",
+              percentual: vrPctNum,
+              ativo: true,
+            } as any);
+          if (e3) throw e3;
         }
       }
     },
@@ -375,11 +413,13 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               <Select
                 value={form.parceiro_id || "none"}
                 onValueChange={(v) => {
-                  if (v === "none") {
+                   if (v === "none") {
                     setForm({ ...form, parceiro_id: "" });
                     setRhConfigId(null);
                     setRhTipo("primeira_mensalidade");
                     setRhPct("0");
+                    setVrConfigId(null);
+                    setVrPct("0");
                   } else {
                     setForm({ ...form, parceiro_id: v });
                     applyParceiroDefaults(v);
@@ -398,39 +438,63 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
           </div>
 
           {form.parceiro_id && (
-            <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
-              <div className="text-sm font-medium">% sobre RH Digital</div>
-              <Select
-                value={rhTipo}
-                onValueChange={(v) => setRhTipo(v as any)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="primeira_mensalidade">Primeira mensalidade — 100% (pagamento único)</SelectItem>
-                  <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
-                </SelectContent>
-              </Select>
-              {rhTipo === "primeira_mensalidade" ? (
-                <p className="text-xs text-muted-foreground">100% da primeira mensalidade</p>
-              ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+                <div className="text-sm font-medium">% sobre RH Digital</div>
+                <Select
+                  value={rhTipo}
+                  onValueChange={(v) => setRhTipo(v as any)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primeira_mensalidade">Primeira mensalidade — 100% (pagamento único)</SelectItem>
+                    <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {rhTipo === "primeira_mensalidade" ? (
+                  <p className="text-xs text-muted-foreground">100% da primeira mensalidade</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label>% recorrência RH</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.01"
+                      value={rhPct}
+                      onChange={(e) => setRhPct(e.target.value)}
+                    />
+                    {rhInvalid && (
+                      <p className="text-xs text-destructive">Valor deve estar entre 0 e 10.</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Repasse mensal enquanto o cliente estiver ativo
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+                <div className="text-sm font-medium">% sobre VR Benefícios</div>
                 <div className="space-y-1.5">
-                  <Label>% recorrência RH</Label>
+                  <Label>% VR (primeira carga)</Label>
                   <Input
                     type="number"
                     min="0"
-                    max="10"
+                    max="50"
                     step="0.01"
-                    value={rhPct}
-                    onChange={(e) => setRhPct(e.target.value)}
+                    placeholder="Ex: 17.5"
+                    value={vrPct}
+                    onChange={(e) => setVrPct(e.target.value)}
                   />
-                  {rhInvalid && (
-                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 10.</p>
+                  {vrInvalid && (
+                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 50.</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Repasse mensal enquanto o cliente estiver ativo
+                    Repasse único sobre a comissão da primeira carga
                   </p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
