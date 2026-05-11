@@ -336,6 +336,7 @@ export function VrTab() {
                               setToCancel({
                                 client_id: r.client_id!,
                                 cliente_nome: r.cliente_nome,
+                                primeira_carga_id: r.id,
                               })
                             }
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
