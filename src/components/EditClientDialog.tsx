@@ -140,6 +140,9 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
       if (form.parceiro_id && rhInvalid) {
         throw new Error("% de recorrência RH deve estar entre 0 e 10.");
       }
+      if (form.parceiro_id && vrInvalid) {
+        throw new Error("% sobre VR Benefícios deve estar entre 0 e 50.");
+      }
 
       const { error } = await supabase
         .from("clients")
@@ -167,13 +170,13 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
         .eq("id", client.id);
       if (error) throw error;
 
-      // Salva config RH Digital do parceiro para este cliente
+      // Salva config RH Digital + VR do parceiro para este cliente
       if (form.parceiro_id) {
-        const pct = rhTipo === "primeira_mensalidade" ? 100 : rhPctNum;
+        const pctRh = rhTipo === "primeira_mensalidade" ? 100 : rhPctNum;
         if (rhConfigId) {
           const { error: e2 } = await supabase
             .from("configuracoes_parceiro")
-            .update({ tipo_repasse: rhTipo, percentual: pct, ativo: true } as any)
+            .update({ tipo_repasse: rhTipo, percentual: pctRh, ativo: true } as any)
             .eq("id", rhConfigId);
           if (e2) throw e2;
         } else {
@@ -184,10 +187,31 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               client_id: client.id,
               produto: "rh_digital",
               tipo_repasse: rhTipo,
-              percentual: pct,
+              percentual: pctRh,
               ativo: true,
             } as any);
           if (e2) throw e2;
+        }
+
+        // VR Benefícios — primeira_carga_vr
+        if (vrConfigId) {
+          const { error: e3 } = await supabase
+            .from("configuracoes_parceiro")
+            .update({ tipo_repasse: "primeira_carga_vr", percentual: vrPctNum, ativo: vrPctNum > 0 } as any)
+            .eq("id", vrConfigId);
+          if (e3) throw e3;
+        } else if (vrPctNum > 0) {
+          const { error: e3 } = await supabase
+            .from("configuracoes_parceiro")
+            .insert({
+              parceiro_id: form.parceiro_id,
+              client_id: client.id,
+              produto: "vr_beneficios",
+              tipo_repasse: "primeira_carga_vr",
+              percentual: vrPctNum,
+              ativo: true,
+            } as any);
+          if (e3) throw e3;
         }
       }
     },
