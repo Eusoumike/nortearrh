@@ -124,48 +124,54 @@ export function TicketTitlesManager() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div>
-          <CardTitle>Títulos de chamado</CardTitle>
-          <CardDescription>
-            Opções pré-cadastradas que aparecem no campo "Título" do formulário de chamado.
-          </CardDescription>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="mr-1.5 h-4 w-4" /> Novo título
-        </Button>
+      <CardHeader>
+        <CardTitle>Títulos de chamado</CardTitle>
+        <CardDescription>
+          Opções pré-cadastradas que aparecem no campo "Título" do formulário de chamado.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-        {!isLoading && (titles ?? []).length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhum título cadastrado.</p>
-        )}
-        {(titles ?? []).map((t) => (
-          <div
-            key={t.id}
-            className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-          >
-            <span className="text-sm">{t.name}</span>
-            <div className="flex items-center gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => openEdit(t)}
-                title="Editar"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setRemoveTarget(t)}
-                title="Excluir"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
+      <CardContent>
+        <Accordion type="single" collapsible>
+          <AccordionItem value="titulos-chamado" className="border-none">
+            <AccordionTrigger className="rounded-md border px-3 py-2 hover:no-underline">
+              <span className="flex items-center gap-2 text-sm">
+                Gerenciar títulos
+                <Badge variant="secondary" className="font-normal">
+                  {(titles ?? []).length} cadastrados
+                </Badge>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4">
+              <div className="mb-3 flex justify-end">
+                <Button size="sm" onClick={openCreate}>
+                  <Plus className="mr-1.5 h-4 w-4" /> Novo título
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+                {!isLoading && (titles ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhum título cadastrado.</p>
+                )}
+                {(titles ?? []).map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                  >
+                    <span className="text-sm">{t.name}</span>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(t)} title="Editar">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => setRemoveTarget(t)} title="Excluir">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => !o && closeDialog()}>
