@@ -100,7 +100,7 @@ export function ParceirosTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("parceiros")
-        .select("id, nome, contato, ativo, observacoes")
+        .select("id, nome, contato, ativo, observacoes, percentual_vr, percentual_rh_tipo, percentual_rh")
         .order("nome");
       if (error) throw error;
       return (data ?? []) as Parceiro[];
