@@ -124,22 +124,31 @@ export function VrTab() {
   });
 
   const cancelMut = useMutation({
-    mutationFn: async (clientId: string) => {
+    mutationFn: async (payload: { client_id: string; primeira_carga_id?: string }) => {
       const today = format(new Date(), "yyyy-MM-dd");
-      const { error, count } = await supabase
+      // 1) Remove recorrências futuras pendentes (sem valor preenchido)
+      const { error: delErr, count } = await supabase
         .from("lancamentos_vr")
         .delete({ count: "exact" })
-        .eq("client_id", clientId)
+        .eq("client_id", payload.client_id)
         .eq("tipo", "recorrencia")
         .is("valor_base", null)
         .gt("competencia", today);
-      if (error) throw error;
+      if (delErr) throw delErr;
+
+      // 2) Marca a primeira carga como encerrada via observações
+      if (payload.primeira_carga_id) {
+        const dataStr = format(new Date(), "dd/MM/yyyy");
+        const { error: upErr } = await supabase
+          .from("lancamentos_vr")
+          .update({ observacoes: `Contrato VR encerrado em ${dataStr}` })
+          .eq("id", payload.primeira_carga_id);
+        if (upErr) throw upErr;
+      }
       return count ?? 0;
     },
-    onSuccess: (count) => {
-      toast.success(
-        `Contrato VR encerrado. ${count} recorrência${count === 1 ? "" : "s"} pendente${count === 1 ? "" : "s"} removida${count === 1 ? "" : "s"}.`,
-      );
+    onSuccess: () => {
+      toast.success("Contrato VR encerrado. Recorrências futuras removidas.");
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
       qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       setToCancel(null);
