@@ -135,7 +135,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
   const valorMensalNum = Number(valorMensalidade || 0);
   const percentualNum = Number(percentual || 0);
   const valorNorteaMensal = Math.round(valorMensalNum * (percentualNum / 100) * 100) / 100;
-  const valorAnual = Math.round(valorMensalNum * 12 * 100) / 100;
+  // Para anual, valor informado JÁ é o valor total do ano (não multiplica por 12)
+  const valorAnual = valorMensalNum;
   const valorNorteaAnual = Math.round(valorAnual * (percentualNum / 100) * 100) / 100;
 
   const meses = useMemo(() => {
@@ -246,7 +247,9 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="valor-mensalidade-rh">Mensalidade (R$) *</Label>
+              <Label htmlFor="valor-mensalidade-rh">
+                {tipoCobranca === "anual" ? "Valor anual (R$) *" : "Mensalidade (R$) *"}
+              </Label>
               <Input
                 id="valor-mensalidade-rh"
                 type="number"
@@ -256,6 +259,11 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 value={valorMensalidade}
                 onChange={(e) => setValorMensalidade(e.target.value)}
               />
+              {tipoCobranca === "anual" && (
+                <p className="text-[11px] text-muted-foreground">
+                  Valor total pago pelo cliente no ano.
+                </p>
+              )}
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="perc-rh">% Nortear *</Label>
@@ -304,22 +312,20 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           ) : (
             <div className="rounded-md border bg-purple-500/5 px-4 py-3 text-center">
               <div className="text-xs font-medium text-purple-600">Contrato anual — pagamento único</div>
-              <div className="mt-1 text-xl font-semibold tabular-nums">
-                Valor total: {BRL.format(valorAnual)}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                ({BRL.format(valorMensalNum)} × 12 meses)
-              </div>
-              <div className="mt-2 text-sm">
-                Será gerada <strong>1 parcela</strong> de{" "}
+              <div className="mt-2 text-base">
+                <strong>1 parcela única</strong> de{" "}
                 <strong className="tabular-nums">{BRL.format(valorAnual)}</strong>
-                {dataInicio && vencimentoCalc && (
-                  <> referente ao período {format(new Date(dataInicio + "T00:00:00"), "MM/yyyy")} a {vencimentoCalc.slice(3)}</>
-                )}
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                Comissão Nortear: {BRL.format(valorNorteaAnual)}
+              <div className="mt-1 text-sm text-muted-foreground">
+                Valor Nortear:{" "}
+                <span className="tabular-nums text-foreground">{BRL.format(valorNorteaAnual)}</span>{" "}
+                ({percentualNum}%)
               </div>
+              {dataInicio && vencimentoCalc && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Período: {format(new Date(dataInicio + "T00:00:00"), "MM/yyyy")} a {vencimentoCalc.slice(3)}
+                </div>
+              )}
             </div>
           )}
 
