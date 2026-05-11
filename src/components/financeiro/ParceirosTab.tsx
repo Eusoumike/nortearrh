@@ -591,11 +591,24 @@ export function VincularClienteDialog({
   });
   const preview = previewBase * (Number(percentual || 0) / 100);
 
+  // limites por tipo
+  const maxPct = tipo === "primeira_carga_vr" ? 50 : tipo === "recorrencia" ? 10 : 100;
+  const isFixoPrimeiraMensalidade = produto === "rh_digital" && tipo === "primeira_mensalidade";
+
   const save = useMutation({
     mutationFn: async () => {
       if (!parceiro || !client) throw new Error("Selecione cliente e parceiro");
-      const pct = Number(percentual);
-      if (isNaN(pct) || pct < 0 || pct > 100) throw new Error("Percentual inválido");
+      const pct = isFixoPrimeiraMensalidade ? 100 : Number(percentual);
+      if (isNaN(pct) || pct < 0) throw new Error("Percentual inválido");
+      if (pct > maxPct) {
+        throw new Error(
+          tipo === "primeira_carga_vr"
+            ? "Percentual máximo para VR Benefícios é 50%."
+            : tipo === "recorrencia"
+            ? "Percentual máximo para recorrência RH Digital é 10%."
+            : "Percentual inválido.",
+        );
+      }
       const { error } = await supabase.from("configuracoes_parceiro").upsert({
         parceiro_id: parceiro.id,
         client_id: client.id,
@@ -605,7 +618,6 @@ export function VincularClienteDialog({
         ativo: true,
       }, { onConflict: "parceiro_id,client_id,produto,tipo_repasse" });
       if (error) throw error;
-      // Vincula parceiro ao cliente
       await supabase.from("clients").update({ parceiro_id: parceiro.id }).eq("id", client.id);
     },
     onSuccess: () => {
@@ -617,6 +629,9 @@ export function VincularClienteDialog({
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const pctNum = isFixoPrimeiraMensalidade ? 100 : Number(percentual || 0);
+  const pctInvalid = !isFixoPrimeiraMensalidade && (isNaN(pctNum) || pctNum < 0 || pctNum > maxPct);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -647,37 +662,80 @@ export function VincularClienteDialog({
             </div>
             <div className="grid gap-1.5">
               <Label>Tipo de repasse *</Label>
-              <Select value={tipo} onValueChange={(v) => handleTipo(v as any)}>
+              <Select
+                value={tipo}
+                onValueChange={(v) => handleTipo(v as any)}
+                disabled={produto === "vr_beneficios"}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {produto === "rh_digital" ? (
                     <>
-                      <SelectItem value="primeira_mensalidade">Primeira mensalidade</SelectItem>
-                      <SelectItem value="recorrencia">Recorrente</SelectItem>
+                      <SelectItem value="primeira_mensalidade">Primeira mensalidade (100% — único)</SelectItem>
+                      <SelectItem value="recorrencia">Recorrência mensal (máx. 10%)</SelectItem>
                     </>
                   ) : (
-                    <SelectItem value="primeira_carga_vr">Primeira carga</SelectItem>
+                    <SelectItem value="primeira_carga_vr">Primeira carga (máx. 50%)</SelectItem>
                   )}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Percentual (0–100) *</Label>
-            <Input
-              type="number" step="0.01" min={0} max={100}
-              value={percentual} onChange={(e) => setPercentual(e.target.value)}
-            />
-          </div>
+
+          {isFixoPrimeiraMensalidade ? (
+            <div className="grid gap-1.5">
+              <Label>Percentual</Label>
+              <Input type="number" value={100} disabled />
+              <p className="text-xs text-muted-foreground">
+                100% da primeira mensalidade — repasse único, não editável.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-1.5">
+              <Label>
+                {tipo === "primeira_carga_vr"
+                  ? "% sobre primeira carga (máx. 50%) *"
+                  : "% mensal de recorrência (máx. 10%) *"}
+              </Label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                max={maxPct}
+                value={percentual}
+                onChange={(e) => setPercentual(e.target.value)}
+              />
+              {pctInvalid && (
+                <p className="text-xs text-destructive">
+                  Valor deve estar entre 0 e {maxPct}%.
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {tipo === "primeira_carga_vr"
+                  ? "O repasse ao parceiro é sobre a comissão da primeira carga recebida pela Nortear."
+                  : "Repasse mensal enquanto o cliente estiver ativo."}
+              </p>
+            </div>
+          )}
+
           <div className="rounded-md border bg-muted/40 p-3 text-sm">
-            <div className="text-xs text-muted-foreground">Repasse estimado</div>
+            <div className="text-xs text-muted-foreground">
+              {isFixoPrimeiraMensalidade
+                ? "Repasse único"
+                : tipo === "primeira_carga_vr"
+                ? "Repasse estimado (primeira carga)"
+                : "Repasse mensal estimado"}
+            </div>
             <div className="text-lg font-semibold tabular-nums">{BRL.format(preview)}</div>
             <div className="text-xs text-muted-foreground">Base estimada: {BRL.format(previewBase)}</div>
           </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !client || !parceiro}>
+          <Button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !client || !parceiro || pctInvalid}
+          >
             {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar vínculo
           </Button>
         </DialogFooter>
@@ -685,6 +743,7 @@ export function VincularClienteDialog({
     </Dialog>
   );
 }
+
 
 function ConfirmarRepasseDialog({
   repasse, onOpenChange,
