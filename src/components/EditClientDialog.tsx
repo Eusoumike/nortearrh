@@ -51,17 +51,61 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
   }, [open, client]);
 
   const { data: parceiros = [] } = useQuery({
-    queryKey: ["parceiros-ativos"],
+    queryKey: ["parceiros-ativos-edit"],
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("parceiros").select("id, nome, contato, ativo, observacoes")
+        .from("parceiros").select("id, nome, contato, ativo, observacoes, percentual_rh, percentual_rh_tipo, percentual_vr")
         .eq("ativo", true).order("nome");
       if (error) throw error;
       return data ?? [];
     },
   });
-  const [vincularParceiro, setVincularParceiro] = useState<any>(null);
+
+  // Config RH Digital por cliente (inline)
+  const [rhTipo, setRhTipo] = useState<"primeira_mensalidade" | "recorrencia">("primeira_mensalidade");
+  const [rhPct, setRhPct] = useState<string>("0");
+  const [rhConfigId, setRhConfigId] = useState<string | null>(null);
+
+  // Carrega config existente quando abre
+  useEffect(() => {
+    if (!open || !client?.id) return;
+    (async () => {
+      if (!client.parceiro_id) {
+        setRhConfigId(null);
+        setRhTipo("primeira_mensalidade");
+        setRhPct("0");
+        return;
+      }
+      const { data } = await supabase
+        .from("configuracoes_parceiro")
+        .select("id, tipo_repasse, percentual")
+        .eq("client_id", client.id)
+        .eq("parceiro_id", client.parceiro_id)
+        .eq("produto", "rh_digital")
+        .eq("ativo", true)
+        .maybeSingle();
+      if (data) {
+        setRhConfigId(data.id);
+        setRhTipo(data.tipo_repasse as any);
+        setRhPct(String(data.percentual ?? 0));
+      } else {
+        setRhConfigId(null);
+        setRhTipo("primeira_mensalidade");
+        setRhPct("0");
+      }
+    })();
+  }, [open, client?.id, client?.parceiro_id]);
+
+  const applyParceiroDefaults = (parceiroId: string) => {
+    const p: any = parceiros.find((x: any) => x.id === parceiroId);
+    if (!p) return;
+    setRhTipo((p.percentual_rh_tipo as any) ?? "primeira_mensalidade");
+    setRhPct(String(p.percentual_rh ?? 0));
+  };
+
+  const rhPctNum = Number(rhPct || 0);
+  const rhInvalid = rhTipo === "recorrencia" && (rhPctNum < 0 || rhPctNum > 10);
 
   const save = useMutation({
     mutationFn: async () => {
