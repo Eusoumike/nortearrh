@@ -66,35 +66,27 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
   const [observacoes, setObservacoes] = useState<string>("");
   const percentualRequestRef = useRef(0);
 
-  const buscarPercentualPonto = async (clientId: string | null) => {
-    let config: { percentual_ponto: number | null } | null = null;
+  const [padraoPonto, setPadraoPonto] = useState<number>(40);
 
-    if (clientId) {
-      const { data, error } = await supabase
-        .from("config_comissoes")
-        .select("percentual_ponto")
-        .eq("client_id", clientId)
-        .maybeSingle();
-      if (error) throw error;
-      config = data;
-    }
-
-    const { data: settings, error: settingsError } = await supabase
+  const buscarPercentualPonto = async () => {
+    const { data: settings, error } = await supabase
       .from("system_settings")
       .select("percentual_ponto")
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
-    if (settingsError) throw settingsError;
-
-    return String(config?.percentual_ponto ?? settings?.percentual_ponto ?? 40);
+    if (error) throw error;
+    return Number(settings?.percentual_ponto ?? 40);
   };
 
-  const aplicarPercentualPonto = async (clientId: string | null) => {
+  const aplicarPercentualPonto = async () => {
     const requestId = ++percentualRequestRef.current;
     try {
-      const valor = await buscarPercentualPonto(clientId);
-      if (percentualRequestRef.current === requestId) setPercentual(valor);
+      const valor = await buscarPercentualPonto();
+      if (percentualRequestRef.current === requestId) {
+        setPadraoPonto(valor);
+        setPercentual(String(valor));
+      }
     } catch (e: any) {
       if (percentualRequestRef.current === requestId) {
         toast.error(e.message ?? "Erro ao buscar percentual configurado");
@@ -104,7 +96,6 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
 
   const handleClienteSelect = (selected: ClientOption | null) => {
     setClient(selected);
-    if (!isEdit) void aplicarPercentualPonto(selected?.id ?? null);
   };
 
   useEffect(() => {
@@ -132,7 +123,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setTipoCobranca("mensal");
       setNotificar(true);
       setObservacoes("");
-      void aplicarPercentualPonto(null);
+      void aplicarPercentualPonto();
     }
   }, [open, initial]);
 
@@ -278,6 +269,11 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 value={percentual}
                 onChange={(e) => setPercentual(e.target.value)}
               />
+              {!isEdit && (
+                <p className="text-[11px] text-muted-foreground">
+                  {Number(percentual) === padraoPonto ? "(padrão global)" : "(exceção)"}
+                </p>
+              )}
             </div>
           </div>
 

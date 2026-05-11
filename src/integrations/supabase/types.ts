@@ -546,8 +546,8 @@ export type Database = {
         Row: {
           alterado_por: string | null
           alterado_por_id: string | null
-          client_id: string
-          cliente_nome: string
+          client_id: string | null
+          cliente_nome: string | null
           created_at: string
           data_alteracao: string
           id: string
@@ -561,8 +561,8 @@ export type Database = {
         Insert: {
           alterado_por?: string | null
           alterado_por_id?: string | null
-          client_id: string
-          cliente_nome: string
+          client_id?: string | null
+          cliente_nome?: string | null
           created_at?: string
           data_alteracao?: string
           id?: string
@@ -576,8 +576,8 @@ export type Database = {
         Update: {
           alterado_por?: string | null
           alterado_por_id?: string | null
-          client_id?: string
-          cliente_nome?: string
+          client_id?: string | null
+          cliente_nome?: string | null
           created_at?: string
           data_alteracao?: string
           id?: string
