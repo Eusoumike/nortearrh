@@ -810,8 +810,13 @@ export function VincularClienteDialog({
                 min={0}
                 max={maxPct}
                 value={percentual}
-                onChange={(e) => setPercentual(e.target.value)}
+                onChange={(e) => { setPercentual(e.target.value); setUsouPadrao(false); }}
               />
+              {usouPadrao && parceiro && (
+                <p className="text-xs text-primary">
+                  Padrão do parceiro — editável para este cliente.
+                </p>
+              )}
               {pctInvalid && (
                 <p className="text-xs text-destructive">
                   Valor deve estar entre 0 e {maxPct}%.
