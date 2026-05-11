@@ -467,27 +467,44 @@ function ParceiroDialog({
   const [nome, setNome] = useState("");
   const [contato, setContato] = useState("");
   const [obs, setObs] = useState("");
+  const [pctVr, setPctVr] = useState<string>("0");
+  const [rhTipo, setRhTipo] = useState<"primeira_mensalidade" | "recorrencia">("primeira_mensalidade");
+  const [pctRh, setPctRh] = useState<string>("0");
 
   useMemo(() => {
     if (open) {
       setNome(parceiro?.nome ?? "");
       setContato(parceiro?.contato ?? "");
       setObs(parceiro?.observacoes ?? "");
+      setPctVr(parceiro ? String(parceiro.percentual_vr ?? 0) : "0");
+      setRhTipo(parceiro?.percentual_rh_tipo ?? "primeira_mensalidade");
+      setPctRh(parceiro ? String(parceiro.percentual_rh ?? 0) : "0");
     }
   }, [open, parceiro]);
+
+  const vrNum = Number(pctVr || 0);
+  const rhNum = Number(pctRh || 0);
+  const vrInvalid = isNaN(vrNum) || vrNum < 0 || vrNum > 50;
+  const rhInvalid = rhTipo === "recorrencia" && (isNaN(rhNum) || rhNum < 0 || rhNum > 10);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!nome.trim()) throw new Error("Nome é obrigatório");
+      if (vrInvalid) throw new Error("% VR Benefícios deve estar entre 0 e 50.");
+      if (rhInvalid) throw new Error("% RH Digital recorrência deve estar entre 0 e 10.");
+      const payload = {
+        nome: nome.trim(),
+        contato: contato.trim() || null,
+        observacoes: obs.trim() || null,
+        percentual_vr: vrNum,
+        percentual_rh_tipo: rhTipo,
+        percentual_rh: rhTipo === "recorrencia" ? rhNum : 0,
+      };
       if (parceiro) {
-        const { error } = await supabase.from("parceiros").update({
-          nome: nome.trim(), contato: contato.trim() || null, observacoes: obs.trim() || null,
-        }).eq("id", parceiro.id);
+        const { error } = await supabase.from("parceiros").update(payload).eq("id", parceiro.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("parceiros").insert({
-          nome: nome.trim(), contato: contato.trim() || null, observacoes: obs.trim() || null,
-        });
+        const { error } = await supabase.from("parceiros").insert(payload);
         if (error) throw error;
       }
     },
@@ -501,7 +518,7 @@ function ParceiroDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{parceiro ? "Editar parceiro" : "Novo parceiro"}</DialogTitle>
         </DialogHeader>
@@ -516,12 +533,76 @@ function ParceiroDialog({
           </div>
           <div className="grid gap-1.5">
             <Label>Observações</Label>
-            <Textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} />
+            <Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
+          </div>
+
+          <div className="rounded-md border p-3 space-y-3">
+            <div className="text-sm font-medium">Comissões do parceiro</div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">RH Digital</div>
+              <div className="grid gap-1.5">
+                <Label>Tipo de repasse</Label>
+                <Select value={rhTipo} onValueChange={(v) => setRhTipo(v as any)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primeira_mensalidade">Primeira mensalidade — repasse único de 100%</SelectItem>
+                    <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {rhTipo === "recorrencia" ? (
+                <div className="grid gap-1.5">
+                  <Label>% recorrência RH Digital</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={10}
+                    placeholder="Ex: 5"
+                    value={pctRh}
+                    onChange={(e) => setPctRh(e.target.value)}
+                  />
+                  {rhInvalid && (
+                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 10%.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Repasse mensal enquanto o cliente estiver ativo.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  100% da primeira mensalidade — pagamento único.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <div className="text-xs font-medium text-muted-foreground">VR Benefícios</div>
+              <div className="grid gap-1.5">
+                <Label>% sobre primeira carga</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  max={50}
+                  placeholder="Ex: 17.5"
+                  value={pctVr}
+                  onChange={(e) => setPctVr(e.target.value)}
+                />
+                {vrInvalid && (
+                  <p className="text-xs text-destructive">Valor deve estar entre 0 e 50%.</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Repasse único sobre a comissão da primeira carga.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !nome.trim()}>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || !nome.trim() || vrInvalid || rhInvalid}>
             {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
           </Button>
         </DialogFooter>
@@ -543,31 +624,48 @@ export function VincularClienteDialog({
   const [produto, setProduto] = useState<"rh_digital" | "vr_beneficios">("rh_digital");
   const [tipo, setTipo] = useState<"primeira_mensalidade" | "recorrencia" | "primeira_carga_vr">("primeira_mensalidade");
   const [percentual, setPercentual] = useState<string>("100");
+  const [usouPadrao, setUsouPadrao] = useState(true);
 
-  useMemo(() => {
-    if (open) {
-      setClient(defaultClient ?? null);
-      setProduto("rh_digital");
-      setTipo("primeira_mensalidade");
+  const applyPadrao = (
+    p: "rh_digital" | "vr_beneficios",
+    t: "primeira_mensalidade" | "recorrencia" | "primeira_carga_vr",
+  ) => {
+    if (!parceiro) return;
+    if (p === "vr_beneficios") {
+      setPercentual(String(parceiro.percentual_vr ?? 0));
+    } else if (t === "recorrencia") {
+      setPercentual(String(parceiro.percentual_rh ?? 0));
+    } else {
       setPercentual("100");
     }
-  }, [open, defaultClient]);
+    setUsouPadrao(true);
+  };
+
+  useMemo(() => {
+    if (open && parceiro) {
+      setClient(defaultClient ?? null);
+      setProduto("rh_digital");
+      const t = parceiro.percentual_rh_tipo ?? "primeira_mensalidade";
+      setTipo(t);
+      setPercentual(t === "recorrencia" ? String(parceiro.percentual_rh ?? 0) : "100");
+      setUsouPadrao(true);
+    }
+  }, [open, parceiro, defaultClient]);
 
   const handleProduto = (p: "rh_digital" | "vr_beneficios") => {
     setProduto(p);
     if (p === "vr_beneficios") {
       setTipo("primeira_carga_vr");
-      setPercentual("");
+      applyPadrao(p, "primeira_carga_vr");
     } else {
-      setTipo("primeira_mensalidade");
-      setPercentual("100");
+      const t = parceiro?.percentual_rh_tipo ?? "primeira_mensalidade";
+      setTipo(t);
+      applyPadrao(p, t);
     }
   };
   const handleTipo = (t: typeof tipo) => {
     setTipo(t);
-    if (t === "primeira_mensalidade") setPercentual("100");
-    else if (t === "recorrencia") setPercentual("10");
-    else setPercentual("");
+    applyPadrao(produto, t);
   };
 
   // preview valor
