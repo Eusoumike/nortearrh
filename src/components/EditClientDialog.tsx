@@ -413,11 +413,13 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               <Select
                 value={form.parceiro_id || "none"}
                 onValueChange={(v) => {
-                  if (v === "none") {
+                   if (v === "none") {
                     setForm({ ...form, parceiro_id: "" });
                     setRhConfigId(null);
                     setRhTipo("primeira_mensalidade");
                     setRhPct("0");
+                    setVrConfigId(null);
+                    setVrPct("0");
                   } else {
                     setForm({ ...form, parceiro_id: v });
                     applyParceiroDefaults(v);
