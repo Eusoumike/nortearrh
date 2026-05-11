@@ -105,30 +105,71 @@ export function TopBar() {
 
   const alertCount = alerts?.length ?? 0;
 
-  // Busca global: tickets (título, #número, cliente, empresa)
+  // Busca global multi-módulos
   const { data: searchResults, isFetching: isSearching } = useQuery({
     queryKey: ["global-search", debouncedTerm],
     enabled: searchOpen && debouncedTerm.length >= 2,
     queryFn: async () => {
       const safe = debouncedTerm.replace(/[%_,()]/g, " ").trim();
       const numeric = safe.replace(/^#/, "");
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("id, ticket_number, title, status, client_name, organization, client:clients!fk_tickets_client(name, company)")
-        .or(
-          `title.ilike.%${safe}%,ticket_number.ilike.%${numeric}%,client_name.ilike.%${safe}%,organization.ilike.%${safe}%`,
-        )
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data ?? [];
+      const like = `%${safe}%`;
+
+      const [ticketsRes, clientsRes, implantacoesRes, tasksRes, dealsRes] = await Promise.all([
+        supabase
+          .from("tickets")
+          .select("id, ticket_number, title, status, client_name, organization")
+          .or(
+            `title.ilike.${like},ticket_number.ilike.%${numeric}%,client_name.ilike.${like},organization.ilike.${like}`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("clients")
+          .select("id, name, company, email")
+          .or(`name.ilike.${like},company.ilike.${like},email.ilike.${like}`)
+          .order("name", { ascending: true })
+          .limit(8),
+        supabase
+          .from("implantacoes")
+          .select("id, client_name, etapa, cnpj")
+          .or(`client_name.ilike.${like},cnpj.ilike.${like}`)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("tasks")
+          .select("id, title, status, ticket_id")
+          .ilike("title", like)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("deals")
+          .select("id, title, company_name, contact_name, stage")
+          .or(`title.ilike.${like},company_name.ilike.${like},contact_name.ilike.${like}`)
+          .order("created_at", { ascending: false })
+          .limit(8),
+      ]);
+
+      return {
+        tickets: ticketsRes.data ?? [],
+        clients: clientsRes.data ?? [],
+        implantacoes: implantacoesRes.data ?? [],
+        tasks: tasksRes.data ?? [],
+        deals: dealsRes.data ?? [],
+      };
     },
   });
 
-  const goToTicket = (ticketId: string) => {
+  const totalResults =
+    (searchResults?.tickets.length ?? 0) +
+    (searchResults?.clients.length ?? 0) +
+    (searchResults?.implantacoes.length ?? 0) +
+    (searchResults?.tasks.length ?? 0) +
+    (searchResults?.deals.length ?? 0);
+
+  const goTo = (path: string) => {
     setSearchOpen(false);
     setSearchTerm("");
-    navigate(`/tickets/${ticketId}`);
+    navigate(path);
   };
 
   return (
