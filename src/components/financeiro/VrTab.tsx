@@ -61,7 +61,7 @@ export function VrTab() {
   const [editing, setEditing] = useState<LancamentoVR | null>(null);
   const [toDelete, setToDelete] = useState<Row | null>(null);
   const [toFill, setToFill] = useState<Row | null>(null);
-  const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string } | null>(null);
+  const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string; primeira_carga_id?: string } | null>(null);
   const [search, setSearch] = useState("");
 
   const competencia = ymdFirst(month);
