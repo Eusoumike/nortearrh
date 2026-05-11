@@ -377,10 +377,12 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
                 onValueChange={(v) => {
                   if (v === "none") {
                     setForm({ ...form, parceiro_id: "" });
+                    setRhConfigId(null);
+                    setRhTipo("primeira_mensalidade");
+                    setRhPct("0");
                   } else {
                     setForm({ ...form, parceiro_id: v });
-                    const p = parceiros.find((x: any) => x.id === v);
-                    if (p) setVincularParceiro(p);
+                    applyParceiroDefaults(v);
                   }
                 }}
               >
@@ -394,6 +396,44 @@ export function EditClientDialog({ client, open, onOpenChange }: EditClientDialo
               </Select>
             </div>
           </div>
+
+          {form.parceiro_id && (
+            <div className="space-y-3 rounded-lg border border-border bg-surface-muted/30 p-3">
+              <div className="text-sm font-medium">% sobre RH Digital</div>
+              <Select
+                value={rhTipo}
+                onValueChange={(v) => setRhTipo(v as any)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="primeira_mensalidade">Primeira mensalidade — 100% (pagamento único)</SelectItem>
+                  <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
+                </SelectContent>
+              </Select>
+              {rhTipo === "primeira_mensalidade" ? (
+                <p className="text-xs text-muted-foreground">100% da primeira mensalidade</p>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>% recorrência RH</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.01"
+                    value={rhPct}
+                    onChange={(e) => setRhPct(e.target.value)}
+                  />
+                  {rhInvalid && (
+                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 10.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Repasse mensal enquanto o cliente estiver ativo
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
