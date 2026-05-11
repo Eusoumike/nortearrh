@@ -504,7 +504,7 @@ function ParceiroDialog({
         const { error } = await supabase.from("parceiros").update(payload).eq("id", parceiro.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("parceiros").insert(payload);
+        const { error } = await supabase.from("parceiros").insert({ ...payload, ativo: true });
         if (error) throw error;
       }
     },
