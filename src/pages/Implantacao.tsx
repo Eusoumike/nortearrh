@@ -371,7 +371,7 @@ export default function Implantacao() {
       </div>
 
       {/* Kanban (preenche restante) */}
-      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1">
         <ImplantacaoKanban
           stages={visibleStages}
           onOpenCard={(id) => setEditingId(id)}
@@ -542,16 +542,15 @@ function ImplantacaoKanban({
       style={{
         width: "100%",
         height: "100%",
-        overflowX: "auto",
-        overflowY: "hidden",
+        overflow: "auto",
       }}
     >
       <div
         style={{
-          display: "inline-flex",
+          display: "flex",
           flexDirection: "row",
           gap: "12px",
-          minWidth: "max-content",
+          minWidth: "min-content",
           height: "100%",
           alignItems: "stretch",
           padding: "0 16px 16px",
@@ -587,9 +586,9 @@ function ImplantacaoKanban({
             {/* Header sticky com barra colorida + título */}
             <div className="kanban-column-header rounded-t-lg bg-surface-muted/60">
               <div className={cn("h-[3px] w-full rounded-t-lg", stripeByTone[stage.tone] ?? "bg-muted-foreground/40")} />
-              <div className="flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
+              <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
                 <h3
-                  className="line-clamp-2 text-[11px] font-semibold uppercase tracking-wide leading-tight text-foreground/80"
+                  className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80"
                   title={stage.label}
                 >
                   {stage.label}
@@ -687,7 +686,7 @@ function KanbanCard({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="group relative cursor-pointer rounded-md border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
+      className="group relative cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
     >
       <Button
         size="icon"
@@ -702,7 +701,7 @@ function KanbanCard({
       <div className="flex items-start gap-2">
         <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/60" />
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="truncate pr-6 text-sm font-semibold">{item.client_name}</p>
+          <p className="line-clamp-2 pr-6 text-xs font-semibold leading-snug">{item.client_name}</p>
 
           <div className="flex items-center gap-2">
             <Avatar className="h-5 w-5">
