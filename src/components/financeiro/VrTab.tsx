@@ -441,7 +441,7 @@ export function VrTab() {
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                if (toCancel) cancelMut.mutate(toCancel.client_id);
+                if (toCancel) cancelMut.mutate({ client_id: toCancel.client_id, primeira_carga_id: toCancel.primeira_carga_id });
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
