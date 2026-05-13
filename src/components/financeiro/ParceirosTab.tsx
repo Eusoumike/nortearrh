@@ -343,6 +343,9 @@ export function ParceirosTab() {
         })}
       </div>
 
+      {/* INCONSISTÊNCIAS */}
+      <InconsistenciasRepasse />
+
       {/* REPASSES */}
       <Card>
         <CardHeader>
