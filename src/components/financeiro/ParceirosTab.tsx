@@ -920,3 +920,303 @@ function ConfirmarRepasseDialog({
     </Dialog>
   );
 }
+
+/* ---------- Inconsistências de Repasse ---------- */
+
+type Inconsistencia = {
+  key: string;
+  origem_id: string;
+  client_id: string;
+  cliente_nome: string;
+  parceiro_id: string;
+  parceiro_nome: string;
+  produto: "rh_digital" | "vr_beneficios";
+  tipo_repasse: "primeira_mensalidade" | "recorrencia" | "primeira_carga_vr";
+  percentual: number;
+  valor_base: number;
+  valor_repasse: number;
+  competencia: string;
+};
+
+function InconsistenciasRepasse() {
+  const qc = useQueryClient();
+  const [fixingKey, setFixingKey] = useState<string | null>(null);
+
+  const { data: inconsistencias = [], isLoading } = useQuery({
+    queryKey: ["repasses-inconsistencias"],
+    queryFn: async (): Promise<Inconsistencia[]> => {
+      const [{ data: configs }, { data: parceirosAll }, { data: vrLanc }, { data: rhParc }, { data: repassesAll }] =
+        await Promise.all([
+          supabase
+            .from("configuracoes_parceiro")
+            .select("id, parceiro_id, client_id, produto, tipo_repasse, percentual, ativo")
+            .eq("ativo", true),
+          supabase.from("parceiros").select("id, nome, ativo"),
+          supabase
+            .from("lancamentos_vr")
+            .select("id, client_id, cliente_nome, competencia, valor_comissao, tipo")
+            .eq("tipo", "primeira_carga"),
+          supabase
+            .from("parcelas_rh_digital")
+            .select("id, client_id, cliente_nome, competencia, valor_nortear, status")
+            .eq("status", "pago"),
+          supabase
+            .from("repasses_parceiro")
+            .select("parceiro_id, client_id, produto, tipo_repasse, competencia, origem_id"),
+        ]);
+
+      const parceiroById = new Map((parceirosAll ?? []).map((p: any) => [p.id, p]));
+      const repasseExists = (
+        parceiro_id: string,
+        client_id: string,
+        produto: string,
+        tipo_repasse: string,
+        competencia: string,
+        origem_id: string,
+      ) =>
+        (repassesAll ?? []).some(
+          (r: any) =>
+            r.parceiro_id === parceiro_id &&
+            r.client_id === client_id &&
+            r.produto === produto &&
+            r.tipo_repasse === tipo_repasse &&
+            (r.origem_id === origem_id ||
+              (tipo_repasse === "recorrencia" && r.competencia === competencia) ||
+              tipo_repasse === "primeira_mensalidade" ||
+              tipo_repasse === "primeira_carga_vr"),
+        );
+
+      const out: Inconsistencia[] = [];
+
+      // VR primeira_carga
+      for (const l of vrLanc ?? []) {
+        if (!l.client_id || l.valor_comissao == null) continue;
+        const cfgs = (configs ?? []).filter(
+          (c: any) =>
+            c.client_id === l.client_id &&
+            c.produto === "vr_beneficios" &&
+            Number(c.percentual) > 0,
+        );
+        for (const c of cfgs as any[]) {
+          const p = parceiroById.get(c.parceiro_id);
+          if (!p?.ativo) continue;
+          if (
+            repasseExists(c.parceiro_id, l.client_id, "vr_beneficios", "primeira_carga_vr", l.competencia, l.id)
+          )
+            continue;
+          out.push({
+            key: `vr-${l.id}-${c.parceiro_id}`,
+            origem_id: l.id,
+            client_id: l.client_id,
+            cliente_nome: l.cliente_nome,
+            parceiro_id: c.parceiro_id,
+            parceiro_nome: p.nome,
+            produto: "vr_beneficios",
+            tipo_repasse: "primeira_carga_vr",
+            percentual: Number(c.percentual),
+            valor_base: Number(l.valor_comissao),
+            valor_repasse: Math.round(Number(l.valor_comissao) * Number(c.percentual)) / 100,
+            competencia: l.competencia,
+          });
+        }
+      }
+
+      // RH parcelas pagas
+      for (const p of rhParc ?? []) {
+        if (!p.client_id || p.valor_nortear == null) continue;
+        const cfgs = (configs ?? []).filter(
+          (c: any) =>
+            c.client_id === p.client_id &&
+            c.produto === "rh_digital" &&
+            Number(c.percentual) > 0,
+        );
+        for (const c of cfgs as any[]) {
+          const parc = parceiroById.get(c.parceiro_id);
+          if (!parc?.ativo) continue;
+          const tipo = c.tipo_repasse === "recorrencia" ? "recorrencia" : "primeira_mensalidade";
+          if (repasseExists(c.parceiro_id, p.client_id, "rh_digital", tipo, p.competencia, p.id)) continue;
+          out.push({
+            key: `rh-${p.id}-${c.parceiro_id}`,
+            origem_id: p.id,
+            client_id: p.client_id,
+            cliente_nome: p.cliente_nome,
+            parceiro_id: c.parceiro_id,
+            parceiro_nome: parc.nome,
+            produto: "rh_digital",
+            tipo_repasse: tipo,
+            percentual: Number(c.percentual),
+            valor_base: Number(p.valor_nortear),
+            valor_repasse: Math.round(Number(p.valor_nortear) * Number(c.percentual)) / 100,
+            competencia: p.competencia,
+          });
+        }
+      }
+
+      return out;
+    },
+  });
+
+  const corrigir = useMutation({
+    mutationFn: async (item: Inconsistencia) => {
+      const { error } = await supabase.from("repasses_parceiro").insert({
+        parceiro_id: item.parceiro_id,
+        parceiro_nome: item.parceiro_nome,
+        client_id: item.client_id,
+        cliente_nome: item.cliente_nome,
+        produto: item.produto,
+        tipo_repasse: item.tipo_repasse,
+        percentual: item.percentual,
+        valor_base: item.valor_base,
+        valor_repasse: item.valor_repasse,
+        competencia: item.competencia,
+        origem_id: item.origem_id,
+        status: "pendente",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Repasse gerado.");
+      qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
+      qc.invalidateQueries({ queryKey: ["repasses-inconsistencias"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+    onSettled: () => setFixingKey(null),
+  });
+
+  const corrigirTodos = useMutation({
+    mutationFn: async (items: Inconsistencia[]) => {
+      const payload = items.map((item) => ({
+        parceiro_id: item.parceiro_id,
+        parceiro_nome: item.parceiro_nome,
+        client_id: item.client_id,
+        cliente_nome: item.cliente_nome,
+        produto: item.produto,
+        tipo_repasse: item.tipo_repasse,
+        percentual: item.percentual,
+        valor_base: item.valor_base,
+        valor_repasse: item.valor_repasse,
+        competencia: item.competencia,
+        origem_id: item.origem_id,
+        status: "pendente" as const,
+      }));
+      const { error } = await supabase.from("repasses_parceiro").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: (_d, items) => {
+      toast.success(`${items.length} repasse(s) gerado(s).`);
+      qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
+      qc.invalidateQueries({ queryKey: ["repasses-inconsistencias"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <div className="flex items-center gap-2">
+          <AlertTriangle
+            className={
+              inconsistencias.length > 0
+                ? "h-4 w-4 text-amber-500"
+                : "h-4 w-4 text-muted-foreground"
+            }
+          />
+          <CardTitle className="text-base">Inconsistências de repasse</CardTitle>
+          {inconsistencias.length > 0 && (
+            <Badge className="bg-amber-500 text-white hover:bg-amber-500/90">
+              {inconsistencias.length}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => qc.invalidateQueries({ queryKey: ["repasses-inconsistencias"] })}
+            disabled={isLoading}
+          >
+            {isLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+            Reverificar
+          </Button>
+          {inconsistencias.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() => corrigirTodos.mutate(inconsistencias)}
+              disabled={corrigirTodos.isPending}
+            >
+              {corrigirTodos.isPending ? (
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              ) : (
+                <Wrench className="mr-2 h-3 w-3" />
+              )}
+              Corrigir todos
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando…
+          </div>
+        ) : inconsistencias.length === 0 ? (
+          <div className="py-4 text-center text-sm text-muted-foreground">
+            Nenhuma inconsistência detectada. Todos os lançamentos elegíveis possuem repasse correspondente.
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Parceiro</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Competência</TableHead>
+                  <TableHead className="text-right">%</TableHead>
+                  <TableHead className="text-right">Base</TableHead>
+                  <TableHead className="text-right">Repasse</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inconsistencias.map((it) => (
+                  <TableRow key={it.key}>
+                    <TableCell>{it.cliente_nome}</TableCell>
+                    <TableCell>{it.parceiro_nome}</TableCell>
+                    <TableCell>{PRODUTO_LABEL[it.produto]}</TableCell>
+                    <TableCell>{TIPO_LABEL[it.tipo_repasse]}</TableCell>
+                    <TableCell>{formatBRDate(it.competencia)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPercent(it.percentual)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{BRL.format(it.valor_base)}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">
+                      {BRL.format(it.valor_repasse)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={fixingKey === it.key && corrigir.isPending}
+                        onClick={() => {
+                          setFixingKey(it.key);
+                          corrigir.mutate(it);
+                        }}
+                      >
+                        {fixingKey === it.key && corrigir.isPending ? (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Wrench className="mr-2 h-3 w-3" />
+                        )}
+                        Corrigir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
