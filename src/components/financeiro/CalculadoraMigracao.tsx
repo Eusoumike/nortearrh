@@ -19,6 +19,27 @@ interface Resultado {
   proximoBoleto: number;
 }
 
+interface CenarioExemplo {
+  id: string;
+  titulo: string;
+  descricao: string;
+  icone: React.ReactNode;
+  badge: string;
+  badgeVariant: "default" | "secondary" | "outline" | "destructive";
+  inicioAnterior: string;
+  fimAnterior: string;
+  dataMigracao: string;
+  valorAnterior: string;
+  valorNovo: string;
+  resultadoEsperado: {
+    diasCiclo: number;
+    diaria: number;
+    diasNaoUtilizados: number;
+    credito: number;
+    proximoBoleto: number;
+  };
+}
+
 export function CalculadoraMigracao() {
   const [inicioAnterior, setInicioAnterior] = useState("");
   const [fimAnterior, setFimAnterior] = useState("");
