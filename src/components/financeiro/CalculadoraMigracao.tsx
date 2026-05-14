@@ -418,6 +418,84 @@ export function CalculadoraMigracao() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <RotateCcw className="h-5 w-5" />
+            Cenários de Exemplo — Validação
+          </CardTitle>
+          <CardDescription>
+            Clique em um cenário para preencher automaticamente os dados e validar o cálculo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {cenarios.map((cenario) => (
+              <button
+                key={cenario.id}
+                onClick={() => aplicarCenario(cenario)}
+                className="text-left rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    {cenario.icone}
+                    <span className="font-medium text-sm">{cenario.titulo}</span>
+                  </div>
+                  <Badge variant={cenario.badgeVariant}>{cenario.badge}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">{cenario.descricao}</p>
+                <div className="space-y-1 text-xs text-muted-foreground border-t pt-2">
+                  <div className="flex justify-between">
+                    <span>Ciclo:</span>
+                    <span className="tabular-nums text-foreground">
+                      {formatarData(new Date(cenario.inicioAnterior))} → {formatarData(new Date(cenario.fimAnterior))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Migração:</span>
+                    <span className="tabular-nums text-foreground">
+                      {formatarData(new Date(cenario.dataMigracao))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Planos:</span>
+                    <span className="tabular-nums text-foreground">
+                      R$ {cenario.valorAnterior} → R$ {cenario.valorNovo}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 rounded-md bg-muted/60 p-2 text-xs">
+                  <div className="flex justify-between">
+                    <span>Dias no ciclo:</span>
+                    <span className="tabular-nums font-medium">{cenario.resultadoEsperado.diasCiclo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Diária:</span>
+                    <span className="tabular-nums font-medium">R$ {cenario.resultadoEsperado.diaria.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Dias não utilizados:</span>
+                    <span className="tabular-nums font-medium">{cenario.resultadoEsperado.diasNaoUtilizados}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                    <span>Crédito:</span>
+                    <span className="tabular-nums font-medium">
+                      R$ {cenario.resultadoEsperado.credito.toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+                    <span>Próximo boleto:</span>
+                    <span className="tabular-nums font-medium">
+                      R$ {cenario.resultadoEsperado.proximoBoleto.toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
