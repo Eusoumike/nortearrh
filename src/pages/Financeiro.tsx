@@ -56,6 +56,10 @@ export default function Financeiro() {
           <VrTab />
         </TabsContent>
 
+        <TabsContent value="calculadora" className="mt-4">
+          <CalculadoraMigracao />
+        </TabsContent>
+
         <TabsContent value="ponto" className="mt-4">
           <RhDigitalTab />
         </TabsContent>
