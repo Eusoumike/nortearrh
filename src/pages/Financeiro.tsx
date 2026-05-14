@@ -9,6 +9,7 @@ import { RhDigitalTab } from "@/components/financeiro/RhDigitalTab";
 import { LancamentosTab } from "@/components/financeiro/LancamentosTab";
 import { DocumentosTab } from "@/components/financeiro/DocumentosTab";
 import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
+import { CalculadoraMigracao } from "@/components/financeiro/CalculadoraMigracao";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
