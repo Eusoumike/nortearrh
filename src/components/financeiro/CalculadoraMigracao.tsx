@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calculator, Calendar, DollarSign, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Calculator, Calendar, DollarSign, Info, ArrowUpRight, ArrowDownRight, RotateCcw, CheckCircle } from "lucide-react";
 
 interface Resultado {
   diasCiclo: number;
