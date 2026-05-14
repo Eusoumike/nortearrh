@@ -75,30 +75,33 @@ export function CalculadoraMigracao() {
     return `R$ ${valor.toFixed(2).replace(".", ",")}`;
   };
 
-  const calcular = () => {
-    const inicio = new Date(inicioAnterior + "T00:00:00");
-    const fim = new Date(fimAnterior + "T00:00:00");
-    const migracao = new Date(dataMigracao + "T00:00:00");
-    const vlrAnterior = parseFloat(valorAnterior);
-    const vlrNovo = parseFloat(valorNovo);
+  const calcularComParametros = (
+    pInicio: string,
+    pFim: string,
+    pMigracao: string,
+    pVlrAnterior: string,
+    pVlrNovo: string
+  ): Resultado | null => {
+    const inicio = new Date(pInicio + "T00:00:00");
+    const fim = new Date(pFim + "T00:00:00");
+    const migracao = new Date(pMigracao + "T00:00:00");
+    const vlrAnterior = parseFloat(pVlrAnterior);
+    const vlrNovo = parseFloat(pVlrNovo);
 
     if (
       isNaN(inicio.getTime()) ||
       isNaN(fim.getTime()) ||
       isNaN(migracao.getTime())
     ) {
-      alert("Por favor, preencha todas as datas.");
-      return;
+      return null;
     }
 
     if (isNaN(vlrAnterior) || isNaN(vlrNovo)) {
-      alert("Por favor, preencha todos os valores.");
-      return;
+      return null;
     }
 
     if (migracao < inicio || migracao > fim) {
-      alert("A data de migração deve estar entre o início e fim do ciclo anterior.");
-      return;
+      return null;
     }
 
     const diasCiclo =
@@ -121,7 +124,7 @@ export function CalculadoraMigracao() {
     const proximoBoleto = Math.round((vlrNovo - credito) * 100) / 100;
     const vencimento = calcularDiasUteis(migracao, 7);
 
-    setResultado({
+    return {
       diasCiclo,
       divisor,
       diaria,
@@ -131,8 +134,125 @@ export function CalculadoraMigracao() {
       credito,
       diasNaoUtilizados,
       proximoBoleto,
-    });
+    };
   };
+
+  const calcular = () => {
+    const res = calcularComParametros(
+      inicioAnterior,
+      fimAnterior,
+      dataMigracao,
+      valorAnterior,
+      valorNovo
+    );
+
+    if (!res) {
+      alert("Por favor, preencha todos os campos corretamente.");
+      return;
+    }
+
+    setResultado(res);
+  };
+
+  const aplicarCenario = (cenario: CenarioExemplo) => {
+    setInicioAnterior(cenario.inicioAnterior);
+    setFimAnterior(cenario.fimAnterior);
+    setDataMigracao(cenario.dataMigracao);
+    setValorAnterior(cenario.valorAnterior);
+    setValorNovo(cenario.valorNovo);
+
+    const res = calcularComParametros(
+      cenario.inicioAnterior,
+      cenario.fimAnterior,
+      cenario.dataMigracao,
+      cenario.valorAnterior,
+      cenario.valorNovo
+    );
+
+    if (res) {
+      setResultado(res);
+    }
+  };
+
+  const hoje = new Date();
+  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+  const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
+  const meioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 15)
+    .toISOString()
+    .split("T")[0];
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
+
+  const cenarios: CenarioExemplo[] = [
+    {
+      id: "upgrade",
+      titulo: "Upgrade de Plano",
+      descricao:
+        "Cliente migra para um plano mais caro no meio do ciclo. Recebe crédito pelos dias não utilizados do plano anterior.",
+      icone: <ArrowUpRight className="h-5 w-5 text-emerald-500" />,
+      badge: "Upgrade",
+      badgeVariant: "default",
+      inicioAnterior: primeiroDiaMes,
+      fimAnterior: ultimoDiaMes,
+      dataMigracao: meioMes,
+      valorAnterior: "500",
+      valorNovo: "800",
+      resultadoEsperado: {
+        diasCiclo: 30,
+        diaria: 16.67,
+        diasNaoUtilizados: 16,
+        credito: 266.72,
+        proximoBoleto: 533.28,
+      },
+    },
+    {
+      id: "downgrade",
+      titulo: "Downgrade de Plano",
+      descricao:
+        "Cliente migra para um plano mais barato no meio do ciclo. O crédito dos dias não utilizados reduz o valor do próximo boleto.",
+      icone: <ArrowDownRight className="h-5 w-5 text-amber-500" />,
+      badge: "Downgrade",
+      badgeVariant: "secondary",
+      inicioAnterior: primeiroDiaMes,
+      fimAnterior: ultimoDiaMes,
+      dataMigracao: meioMes,
+      valorAnterior: "800",
+      valorNovo: "500",
+      resultadoEsperado: {
+        diasCiclo: 30,
+        diaria: 26.67,
+        diasNaoUtilizados: 16,
+        credito: 426.72,
+        proximoBoleto: 73.28,
+      },
+    },
+    {
+      id: "ciclo-completo",
+      titulo: "Migração no Final do Ciclo",
+      descricao:
+        "Cliente migra no último dia do ciclo. Não há dias não utilizados, portanto não gera crédito.",
+      icone: <CheckCircle className="h-5 w-5 text-sky-500" />,
+      badge: "Ciclo Completo",
+      badgeVariant: "outline",
+      inicioAnterior: primeiroDiaMes,
+      fimAnterior: ultimoDiaMes,
+      dataMigracao: ultimoDia,
+      valorAnterior: "500",
+      valorNovo: "800",
+      resultadoEsperado: {
+        diasCiclo: 30,
+        diaria: 16.67,
+        diasNaoUtilizados: 0,
+        credito: 0,
+        proximoBoleto: 800,
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
