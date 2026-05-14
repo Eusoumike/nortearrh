@@ -41,6 +41,7 @@ export default function Financeiro() {
         <TabsList className="w-full justify-start overflow-x-auto md:w-auto">
           <TabsTrigger value="visao-geral">Visão geral</TabsTrigger>
           <TabsTrigger value="vr">VR Benefícios</TabsTrigger>
+          <TabsTrigger value="calculadora">Calculadora de Migração</TabsTrigger>
           <TabsTrigger value="ponto">RH Digital</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
