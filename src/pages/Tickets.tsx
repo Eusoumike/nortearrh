@@ -168,6 +168,26 @@ export default function Tickets() {
               {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            size="sm"
+            variant={showResolved ? "default" : "outline"}
+            onClick={toggleShowResolved}
+            className={cn("h-8 gap-1.5 text-xs", showResolved && "shadow-sm")}
+            aria-pressed={showResolved}
+            title={showResolved ? "Ocultar chamados resolvidos" : "Mostrar chamados resolvidos"}
+          >
+            {showResolved ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            <span>Mostrar resolvidos</span>
+            {resolvedTodayCount > 0 && (
+              <span className={cn(
+                "ml-0.5 rounded-full px-1.5 py-px font-mono text-[10px] font-semibold",
+                showResolved ? "bg-primary-foreground/20 text-primary-foreground" : "bg-success/15 text-success",
+              )}>
+                {resolvedTodayCount}
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 
