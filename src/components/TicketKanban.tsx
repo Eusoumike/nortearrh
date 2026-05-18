@@ -42,6 +42,7 @@ interface KanbanTicket {
 
 interface Props {
   tickets: KanbanTicket[];
+  showResolved?: boolean;
 }
 
 // Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
