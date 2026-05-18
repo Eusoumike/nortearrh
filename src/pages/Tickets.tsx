@@ -207,7 +207,7 @@ export default function Tickets() {
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : (
-          <TicketKanban tickets={filtered as any} />
+          <TicketKanban tickets={filtered as any} showResolved={includeResolved} />
         )}
       </div>
     </div>
