@@ -197,7 +197,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
 }
 const MemoColumn = memo(Column);
 
-export function TicketKanban({ tickets }: Props) {
+export function TicketKanban({ tickets, showResolved = false }: Props) {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [activeId, setActiveId] = useState<string | null>(null);
