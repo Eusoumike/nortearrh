@@ -57,6 +57,20 @@ export default function Auth() {
     navigate("/", { replace: true });
   };
 
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setLoading(false);
+      toast.error("Não foi possível entrar com a Apple.");
+      return;
+    }
+    if (result.redirected) return;
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Brand panel */}
