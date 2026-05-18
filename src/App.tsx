@@ -37,6 +37,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/pesquisa" element={<NpsForm />} />
           <Route path="/pesquisa/:token" element={<NpsForm />} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
