@@ -140,6 +140,13 @@ export default function Auth() {
                   Entrar no Hub
                 </Button>
               </form>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-[11px] uppercase"><span className="bg-card px-2 text-muted-foreground">ou</span></div>
+              </div>
+              <Button type="button" variant="outline" disabled={loading} onClick={handleAppleSignIn} className="w-full">
+                <Apple className="mr-2 h-4 w-4" /> Continuar com Apple
+              </Button>
             </TabsContent>
 
             <TabsContent value="signup" className="mt-6">
