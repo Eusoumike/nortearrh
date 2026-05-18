@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Apple } from "lucide-react";
+import { lovable } from "@/integrations/lovable";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -53,6 +54,20 @@ export default function Auth() {
       return;
     }
     toast.success("Conta criada! Aguarde um administrador liberar seu acesso aos dados.");
+    navigate("/", { replace: true });
+  };
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setLoading(false);
+      toast.error("Não foi possível entrar com a Apple.");
+      return;
+    }
+    if (result.redirected) return;
     navigate("/", { replace: true });
   };
 
@@ -125,6 +140,13 @@ export default function Auth() {
                   Entrar no Hub
                 </Button>
               </form>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-[11px] uppercase"><span className="bg-card px-2 text-muted-foreground">ou</span></div>
+              </div>
+              <Button type="button" variant="outline" disabled={loading} onClick={handleAppleSignIn} className="w-full">
+                <Apple className="mr-2 h-4 w-4" /> Continuar com Apple
+              </Button>
             </TabsContent>
 
             <TabsContent value="signup" className="mt-6">
@@ -150,6 +172,13 @@ export default function Auth() {
                   O primeiro usuário do workspace recebe acesso de administrador. Demais contas começam como visualizador e precisam ser promovidas por um admin antes de acessar tickets, clientes e interações.
                 </p>
               </form>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-[11px] uppercase"><span className="bg-card px-2 text-muted-foreground">ou</span></div>
+              </div>
+              <Button type="button" variant="outline" disabled={loading} onClick={handleAppleSignIn} className="w-full">
+                <Apple className="mr-2 h-4 w-4" /> Continuar com Apple
+              </Button>
             </TabsContent>
           </Tabs>
         </Card>
