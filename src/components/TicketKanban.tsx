@@ -283,7 +283,7 @@ export function TicketKanban({ tickets, showResolved = false }: Props) {
             padding: "0 16px 16px",
           }}
         >
-          {STATUS_FLOW.map((status) => (
+          {STATUS_FLOW.filter((s) => showResolved || s !== "resolvido").map((status) => (
             <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
         </div>
