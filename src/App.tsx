@@ -22,6 +22,8 @@ import Financeiro from "./pages/Financeiro";
 import Nps from "./pages/Nps";
 import NpsForm from "./pages/NpsForm";
 import NotFound from "./pages/NotFound.tsx";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
