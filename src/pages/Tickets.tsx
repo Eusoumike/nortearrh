@@ -18,6 +18,10 @@ export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
+  const [showResolved, setShowResolved] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SHOW_RESOLVED_KEY) === "1";
+  });
 
   // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
@@ -26,6 +30,16 @@ export default function Tickets() {
   const clientFilter = searchParams.get("client"); // nome (client_name/organization)
 
   const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientFilter;
+  // Se o filtro especial "resolved=7d" estiver ativo ou o usuário filtrou status=resolvido, força mostrar resolvidos
+  const includeResolved = showResolved || statusFilter === "resolvido" || resolvedWindow === "7d";
+
+  const toggleShowResolved = () => {
+    const next = !showResolved;
+    setShowResolved(next);
+    try {
+      window.localStorage.setItem(SHOW_RESOLVED_KEY, next ? "1" : "0");
+    } catch {}
+  };
 
   // Sincroniza select com URL quando muda externamente
   useEffect(() => {
@@ -61,7 +75,7 @@ export default function Tickets() {
   };
 
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter],
+    queryKey: ["tickets", statusFilter, priorityFilter, includeResolved],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
@@ -70,6 +84,7 @@ export default function Tickets() {
         .limit(200);
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
+      else if (!includeResolved) query = query.not("status", "in", "(resolvido,fechado)");
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
 
       const { data, error } = await query;
@@ -77,6 +92,24 @@ export default function Tickets() {
       return data;
     },
   });
+
+  // Contagem de chamados resolvidos hoje (para o badge do botão)
+  const { data: resolvedTodayCount = 0 } = useQuery({
+    queryKey: ["tickets", "resolved-today-count"],
+    queryFn: async () => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const { count, error } = await supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["resolvido", "fechado"])
+        .gte("resolved_at", start.toISOString());
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+
 
   const filtered = useMemo(() => {
     const list = tickets ?? [];
