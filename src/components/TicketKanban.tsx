@@ -42,6 +42,7 @@ interface KanbanTicket {
 
 interface Props {
   tickets: KanbanTicket[];
+  showResolved?: boolean;
 }
 
 // Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
@@ -196,7 +197,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
 }
 const MemoColumn = memo(Column);
 
-export function TicketKanban({ tickets }: Props) {
+export function TicketKanban({ tickets, showResolved = false }: Props) {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -282,7 +283,7 @@ export function TicketKanban({ tickets }: Props) {
             padding: "0 16px 16px",
           }}
         >
-          {STATUS_FLOW.map((status) => (
+          {STATUS_FLOW.filter((s) => showResolved || s !== "resolvido").map((status) => (
             <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
           ))}
         </div>
