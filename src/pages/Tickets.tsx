@@ -207,9 +207,24 @@ export default function Tickets() {
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : (
-          <TicketKanban tickets={filtered as any} showResolved={includeResolved} />
+          <TicketKanbanWithAssist tickets={filtered as any} showResolved={includeResolved} />
         )}
       </div>
     </div>
   );
+}
+
+function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; showResolved: boolean }) {
+  const { data: assistedIds } = useQuery({
+    queryKey: ["assist-conversation-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assist_conversations" as any)
+        .select("ticket_id");
+      if (error) return new Set<string>();
+      return new Set<string>(((data as any[]) ?? []).map((r: any) => r.ticket_id).filter(Boolean));
+    },
+    staleTime: 60_000,
+  });
+  return <TicketKanban tickets={tickets} showResolved={showResolved} assistedIds={assistedIds ?? new Set()} />;
 }
