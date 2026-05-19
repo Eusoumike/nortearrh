@@ -69,6 +69,13 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   mudanca_status: FileText,
 };
 
+const QUEM_REPORTOU_LABEL: Record<string, string> = {
+  colaborador: "Colaborador",
+  gestor: "Gestor",
+  administrador: "Administrador",
+  rh: "RH",
+};
+
 export default function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
