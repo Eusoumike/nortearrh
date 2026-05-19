@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
     const {
       ticket_id, ticket_title, ticket_description = "",
       categoria = "", client_name = "", products = [],
+      descricao_problema = "", quem_reportou = "",
+      acao_tentada = "", ja_tentou = "",
       messages = [], action = "suggest",
     } = body;
 
