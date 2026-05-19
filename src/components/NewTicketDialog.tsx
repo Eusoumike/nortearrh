@@ -284,7 +284,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
 
   const requiredOk =
-    form.title.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.opened_at;
+    form.title.trim() && form.descricao_problema.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.opened_at;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
