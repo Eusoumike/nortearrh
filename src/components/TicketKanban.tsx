@@ -210,7 +210,7 @@ function Column({ status, tickets, now, assistedIds }: { status: TicketStatus; t
 }
 const MemoColumn = memo(Column);
 
-export function TicketKanban({ tickets, showResolved = false }: Props) {
+export function TicketKanban({ tickets, showResolved = false, assistedIds }: Props) {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [activeId, setActiveId] = useState<string | null>(null);
