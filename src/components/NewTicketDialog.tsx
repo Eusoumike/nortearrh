@@ -337,6 +337,64 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
               />
             </div>
 
+            {/* Descrição do problema */}
+            <div className="col-span-2 space-y-1">
+              <Label htmlFor="descricao_problema" className="text-xs">
+                Descrição do problema <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="descricao_problema"
+                value={form.descricao_problema}
+                onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })}
+                placeholder="Descreva o problema com mais detalhes... Ex: Cliente não consegue registrar ponto pelo app, a câmera abre mas não reconhece o rosto."
+                rows={3}
+                maxLength={2000}
+              />
+            </div>
+
+            {/* Quem está com o problema | O que estava tentando fazer */}
+            <div className="space-y-1">
+              <Label className="text-xs">Quem está com o problema</Label>
+              <Select
+                value={form.quem_reportou || undefined}
+                onValueChange={(v) => setForm({ ...form, quem_reportou: v })}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="colaborador">Colaborador</SelectItem>
+                  <SelectItem value="gestor">Gestor</SelectItem>
+                  <SelectItem value="administrador">Administrador (admin)</SelectItem>
+                  <SelectItem value="rh">RH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="acao_tentada" className="text-xs">O que estava tentando fazer</Label>
+              <Input
+                id="acao_tentada"
+                value={form.acao_tentada}
+                onChange={(e) => setForm({ ...form, acao_tentada: e.target.value })}
+                placeholder="Ex: Registrar ponto facial, fechamento, aprovar abono…"
+                className="h-9"
+                maxLength={300}
+              />
+            </div>
+
+            {/* O que já foi tentado */}
+            <div className="col-span-2 space-y-1">
+              <Label htmlFor="ja_tentou" className="text-xs">O que já foi tentado (opcional)</Label>
+              <Textarea
+                id="ja_tentou"
+                value={form.ja_tentou}
+                onChange={(e) => setForm({ ...form, ja_tentou: e.target.value })}
+                placeholder="Ex: Já limpou o cache, testou em outro celular, verificou as permissões…"
+                rows={2}
+                maxLength={1000}
+              />
+            </div>
+
             {/* Tipo de chamado */}
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">
