@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      assist_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assist_conversations_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assist_solutions: {
+        Row: {
+          categoria: string | null
+          confirmado_em: string | null
+          created_at: string
+          id: string
+          links: string[] | null
+          problema: string | null
+          solucao: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          confirmado_em?: string | null
+          created_at?: string
+          id?: string
+          links?: string[] | null
+          problema?: string | null
+          solucao?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          confirmado_em?: string | null
+          created_at?: string
+          id?: string
+          links?: string[] | null
+          problema?: string | null
+          solucao?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assist_solutions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           concluido: boolean
