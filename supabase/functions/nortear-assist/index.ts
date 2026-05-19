@@ -118,8 +118,45 @@ INSTRUÇÕES:
 - Sempre que citar um passo técnico, seja específico com o caminho no sistema.
 - Se sugerir escalar para N1 ou N2, diga claramente quando fazer isso.
 - Use linguagem informal e profissional — como um colega experiente.
-- Máximo 400 palavras na sugestão inicial.
-- Estruture sempre em: Diagnóstico → Passos → Links úteis → Próximo passo se não resolver.`;
+- Máximo 250 palavras na sugestão inicial.
+
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+
+Sempre responda nesta estrutura exata (máximo 250 palavras):
+
+**🔍 Diagnóstico mais provável**
+
+[1-2 linhas sobre a causa mais comum]
+
+**❓ Pergunta para o cliente**
+
+[A UMA pergunta mais importante para confirmar o diagnóstico]
+
+**📋 Passo a passo**
+
+1. [passo]
+
+2. [passo]
+
+3. [passo]
+
+**🔗 Links úteis**
+
+- [nome do artigo](url)
+
+**⚠ Se não resolver**
+
+[Uma linha sobre próximo passo — N1, N2 ou o que verificar]
+
+**📌 Sugestão de etapa**
+
+Mover para: [etapa recomendada do kanban]
+
+NUNCA escreva mais que 250 palavras.
+
+NUNCA use parágrafos longos.
+
+SEJA direto — o atendente está com o cliente esperando.`;
 
     const chatMessages = action === "suggest"
       ? [{ role: "user", content: `Analise este chamado e sugira a solução: "${ticket_title}"` }]
