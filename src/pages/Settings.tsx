@@ -379,6 +379,9 @@ export default function Settings() {
       {/* Contatos de Suporte VR */}
       <VrSupportContactsCard />
 
+      {/* Nortear Assist — soluções confirmadas */}
+      <AssistSolutionsCard />
+
       {/* Pipedrive (admin) */}
       {isAdmin && (
         <Card>
