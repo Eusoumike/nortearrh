@@ -70,7 +70,7 @@ function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   return Math.max(0, (now - new Date(t.current_stage_started_at).getTime()) / 1000);
 }
 
-const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: number; isOverlay?: boolean }) {
+const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssist = false }: { t: KanbanTicket; now: number; isOverlay?: boolean; hasAssist?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const navigate = useNavigate();
   const elapsed = timeOnCurrentStage(t, now);
