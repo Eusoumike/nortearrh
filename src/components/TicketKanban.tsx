@@ -192,7 +192,7 @@ function Column({ status, tickets, now, assistedIds }: { status: TicketStatus; t
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
           <>
-            {visibleTickets.map((t) => <TicketCard key={t.id} t={t} now={now} />)}
+            {visibleTickets.map((t) => <TicketCard key={t.id} t={t} now={now} hasAssist={assistedIds?.has(t.id)} />)}
             {hasMore && (
               <button
                 type="button"
