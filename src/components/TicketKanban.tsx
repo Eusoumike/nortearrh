@@ -126,7 +126,7 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssi
   );
 });
 
-function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
+function Column({ status, tickets, now, assistedIds }: { status: TicketStatus; tickets: KanbanTicket[]; now: number; assistedIds?: Set<string> }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
