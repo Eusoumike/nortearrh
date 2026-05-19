@@ -472,6 +472,44 @@ export default function TicketDetail() {
                 {ticket.description}
               </p>
             )}
+            {((ticket as any).descricao_problema || (ticket as any).quem_reportou || (ticket as any).acao_tentada || (ticket as any).ja_tentou) && (
+              <div className="space-y-1.5 border-t border-border/60 pt-3 text-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Detalhes do problema
+                </p>
+                {(ticket as any).descricao_problema && (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    <span className="mr-1">📝</span>
+                    <span className="font-medium">Descrição:</span> {(ticket as any).descricao_problema}
+                  </p>
+                )}
+                {(ticket as any).quem_reportou && (
+                  <div>
+                    <ToneBadge tone="info" size="sm">
+                      👤 {QUEM_REPORTOU_LABEL[(ticket as any).quem_reportou] ?? (ticket as any).quem_reportou}
+                    </ToneBadge>
+                  </div>
+                )}
+                {(ticket as any).acao_tentada && (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    <span className="mr-1">🎯</span>
+                    <span className="font-medium">Tentando fazer:</span> {(ticket as any).acao_tentada}
+                  </p>
+                )}
+                {(ticket as any).ja_tentou && (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    <span className="mr-1">🔄</span>
+                    <span className="font-medium">Já tentou:</span> {(ticket as any).ja_tentou}
+                  </p>
+                )}
+                {(ticket as any).solucao_aplicada && (
+                  <p className="whitespace-pre-wrap leading-relaxed border-t border-border/40 pt-2 mt-2">
+                    <span className="mr-1">✅</span>
+                    <span className="font-medium">Solução aplicada:</span> {(ticket as any).solucao_aplicada}
+                  </p>
+                )}
+              </div>
+            )}
             {ticket.client && (
               <div className="space-y-3 border-t border-border/60 pt-3">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
