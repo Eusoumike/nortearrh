@@ -24,6 +24,10 @@ interface Props {
     category?: string | null;
     client_name?: string | null;
     client?: { name?: string; products?: string[] } | null;
+    descricao_problema?: string | null;
+    quem_reportou?: string | null;
+    acao_tentada?: string | null;
+    ja_tentou?: string | null;
   };
 }
 
