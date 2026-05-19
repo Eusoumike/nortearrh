@@ -100,7 +100,17 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssi
         <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary">
           #{t.ticket_number}
         </span>
-        <PriorityBadge priority={t.priority} />
+        <div className="flex items-center gap-1.5">
+          {hasAssist && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Sparkles className="h-3 w-3 text-accent" />
+              </TooltipTrigger>
+              <TooltipContent side="top">Assist consultado</TooltipContent>
+            </Tooltip>
+          )}
+          <PriorityBadge priority={t.priority} />
+        </div>
       </div>
       <p className="line-clamp-2 text-xs font-semibold leading-snug">{t.title}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
