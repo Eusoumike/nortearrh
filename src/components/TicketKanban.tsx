@@ -297,7 +297,7 @@ export function TicketKanban({ tickets, showResolved = false, assistedIds }: Pro
           }}
         >
           {STATUS_FLOW.filter((s) => showResolved || s !== "resolvido").map((status) => (
-            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
+            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} assistedIds={assistedIds} />
           ))}
         </div>
       </div>
