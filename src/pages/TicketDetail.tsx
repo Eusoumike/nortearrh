@@ -204,6 +204,36 @@ export default function TicketDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const resolveWithSolution = useMutation({
+    mutationFn: async (solucao: string) => {
+      const trimmed = solucao.trim();
+      const patch: any = { status: "resolvido" };
+      if (trimmed) patch.solucao_aplicada = trimmed;
+      const { error } = await supabase.from("tickets").update(patch).eq("id", id!);
+      if (error) throw error;
+      if (trimmed && ticket) {
+        const problema = [(ticket as any).title, (ticket as any).descricao_problema]
+          .filter(Boolean)
+          .join(" — ");
+        await supabase.from("assist_solutions" as any).insert({
+          ticket_id: id!,
+          categoria: (ticket as any).category ?? null,
+          problema,
+          solucao: trimmed,
+          confirmado_em: new Date().toISOString(),
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket", id] });
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Chamado resolvido.");
+      setResolveOpen(false);
+      setResolveSolution("");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const updateField = useMutation({
     mutationFn: async (patch: { priority?: TicketPriority; assigned_to?: string | null; ticket_type?: TicketType | null }) => {
       const { error } = await supabase.from("tickets").update(patch).eq("id", id!);
