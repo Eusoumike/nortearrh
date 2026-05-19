@@ -593,6 +593,9 @@ export default function TicketDetail() {
             )}
           </div>
 
+          {/* Nortear Assist — copiloto de IA */}
+          <AssistPanel ticket={ticket as any} />
+
           {/* Atendimentos */}
           <div>
             <Tabs defaultValue="add">
