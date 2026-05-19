@@ -1064,6 +1064,44 @@ export default function TicketDetail() {
       </div>
 
       <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
+
+      <AlertDialog open={resolveOpen} onOpenChange={setResolveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar solução aplicada</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opcional, mas recomendado. A solução alimenta a base do Nortear Assist e ajuda em chamados similares.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            rows={5}
+            value={resolveSolution}
+            onChange={(e) => setResolveSolution(e.target.value)}
+            placeholder="Ex: Verificado em Configurações → Perfis de acesso. O motivo de abono não estava cadastrado. Adicionado em Configurações → Motivos de abono."
+            className="text-sm"
+          />
+          <AlertDialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setResolveOpen(false);
+                setResolveSolution("");
+                updateStatus.mutate("resolvido");
+              }}
+              disabled={resolveWithSolution.isPending || updateStatus.isPending}
+            >
+              Pular
+            </Button>
+            <Button
+              onClick={() => resolveWithSolution.mutate(resolveSolution)}
+              disabled={resolveWithSolution.isPending || !resolveSolution.trim()}
+            >
+              {resolveWithSolution.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar solução
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
