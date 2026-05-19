@@ -34,6 +34,7 @@ import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { AssistPanel } from "@/components/tickets/AssistPanel";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -591,6 +592,9 @@ export default function TicketDetail() {
               </div>
             )}
           </div>
+
+          {/* Nortear Assist — copiloto de IA */}
+          <AssistPanel ticket={ticket as any} />
 
           {/* Atendimentos */}
           <div>
