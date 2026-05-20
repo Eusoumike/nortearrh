@@ -4,7 +4,6 @@ import {
   Sparkles,
   Rocket,
   Headphones,
-  Briefcase,
   DollarSign,
   TrendingUp,
   CheckSquare,
@@ -13,9 +12,6 @@ import {
   ChevronDown,
   LogOut,
   LucideIcon,
-  Kanban,
-  ListChecks,
-  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
