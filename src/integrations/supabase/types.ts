@@ -14,79 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      assist_conversations: {
-        Row: {
-          created_at: string
-          id: string
-          messages: Json
-          ticket_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          messages?: Json
-          ticket_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          messages?: Json
-          ticket_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assist_conversations_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      assist_solutions: {
-        Row: {
-          categoria: string | null
-          confirmado_em: string | null
-          created_at: string
-          id: string
-          links: string[] | null
-          problema: string | null
-          solucao: string | null
-          ticket_id: string | null
-        }
-        Insert: {
-          categoria?: string | null
-          confirmado_em?: string | null
-          created_at?: string
-          id?: string
-          links?: string[] | null
-          problema?: string | null
-          solucao?: string | null
-          ticket_id?: string | null
-        }
-        Update: {
-          categoria?: string | null
-          confirmado_em?: string | null
-          created_at?: string
-          id?: string
-          links?: string[] | null
-          problema?: string | null
-          solucao?: string | null
-          ticket_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assist_solutions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       checklist_items: {
         Row: {
           concluido: boolean
@@ -163,13 +90,9 @@ export type Database = {
           modulos_ativos: string[] | null
           name: string
           notes: string | null
-          nps_data: string | null
-          nps_score: number | null
-          nps_token: string | null
           onboarding_iniciado_em: string | null
           parceiro_id: string | null
           phone: string | null
-          pipedrive_person_id: string | null
           potencial_cross: string[] | null
           product: string | null
           products: string[]
@@ -208,13 +131,9 @@ export type Database = {
           modulos_ativos?: string[] | null
           name: string
           notes?: string | null
-          nps_data?: string | null
-          nps_score?: number | null
-          nps_token?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
-          pipedrive_person_id?: string | null
           potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
@@ -253,13 +172,9 @@ export type Database = {
           modulos_ativos?: string[] | null
           name?: string
           notes?: string | null
-          nps_data?: string | null
-          nps_score?: number | null
-          nps_token?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
-          pipedrive_person_id?: string | null
           potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
@@ -329,13 +244,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: true
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "config_comissoes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: true
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -450,50 +358,6 @@ export type Database = {
         }
         Relationships: []
       }
-      crm_cnpj_consultas: {
-        Row: {
-          cnpj: string
-          consultado_por: string | null
-          consultado_por_nome: string | null
-          created_at: string
-          deal_criado: string | null
-          id: string
-          razao_social: string | null
-          resultado: Json | null
-          situacao: string | null
-        }
-        Insert: {
-          cnpj: string
-          consultado_por?: string | null
-          consultado_por_nome?: string | null
-          created_at?: string
-          deal_criado?: string | null
-          id?: string
-          razao_social?: string | null
-          resultado?: Json | null
-          situacao?: string | null
-        }
-        Update: {
-          cnpj?: string
-          consultado_por?: string | null
-          consultado_por_nome?: string | null
-          created_at?: string
-          deal_criado?: string | null
-          id?: string
-          razao_social?: string | null
-          resultado?: Json | null
-          situacao?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_cnpj_consultas_deal_criado_fkey"
-            columns: ["deal_criado"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       custom_ticket_stages: {
         Row: {
           ativo: boolean
@@ -535,313 +399,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      deal_activities: {
-        Row: {
-          agendado_para: string | null
-          client_id: string | null
-          created_at: string
-          created_by: string | null
-          deal_id: string | null
-          descricao: string | null
-          id: string
-          prioridade: string
-          realizado_em: string | null
-          resultado: string | null
-          status: string
-          tipo: string
-          titulo: string
-          updated_at: string
-        }
-        Insert: {
-          agendado_para?: string | null
-          client_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deal_id?: string | null
-          descricao?: string | null
-          id?: string
-          prioridade?: string
-          realizado_em?: string | null
-          resultado?: string | null
-          status?: string
-          tipo: string
-          titulo: string
-          updated_at?: string
-        }
-        Update: {
-          agendado_para?: string | null
-          client_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deal_id?: string | null
-          descricao?: string | null
-          id?: string
-          prioridade?: string
-          realizado_em?: string | null
-          resultado?: string | null
-          status?: string
-          tipo?: string
-          titulo?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deal_activities_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deal_activities_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deal_activities_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      deal_contacts: {
-        Row: {
-          cargo: string | null
-          client_id: string | null
-          created_at: string
-          created_by: string | null
-          deal_id: string | null
-          email: string | null
-          id: string
-          nome: string
-          notas: string | null
-          papel: string | null
-          telefone: string | null
-          updated_at: string
-          whatsapp: string | null
-        }
-        Insert: {
-          cargo?: string | null
-          client_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deal_id?: string | null
-          email?: string | null
-          id?: string
-          nome: string
-          notas?: string | null
-          papel?: string | null
-          telefone?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-        }
-        Update: {
-          cargo?: string | null
-          client_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deal_id?: string | null
-          email?: string | null
-          id?: string
-          nome?: string
-          notas?: string | null
-          papel?: string | null
-          telefone?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deal_contacts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deal_contacts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deal_contacts_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      deal_history: {
-        Row: {
-          campo: string
-          changed_at: string
-          changed_by: string | null
-          deal_id: string
-          id: string
-          valor_antigo: string | null
-          valor_novo: string | null
-        }
-        Insert: {
-          campo: string
-          changed_at?: string
-          changed_by?: string | null
-          deal_id: string
-          id?: string
-          valor_antigo?: string | null
-          valor_novo?: string | null
-        }
-        Update: {
-          campo?: string
-          changed_at?: string
-          changed_by?: string | null
-          deal_id?: string
-          id?: string
-          valor_antigo?: string | null
-          valor_novo?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deal_history_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      deals: {
-        Row: {
-          canal_origem: string | null
-          client_id: string | null
-          company_name: string
-          contact_email: string | null
-          contact_name: string | null
-          contact_phone: string | null
-          created_at: string
-          created_by: string | null
-          estado: string | null
-          etiqueta: string | null
-          expected_close_date: string | null
-          extensoes: string[] | null
-          faixa_colaboradores: string | null
-          fonte_indicacao: string | null
-          id: string
-          lost_at: string | null
-          motivo_perda: string | null
-          notas: string | null
-          notes: string | null
-          origem_lead: string | null
-          owner_id: string | null
-          pipedrive_deal_id: string | null
-          plano_contratado: string | null
-          position: number
-          probabilidade: string | null
-          product: Database["public"]["Enums"]["deal_product"] | null
-          quem_implanta: string | null
-          segmento: string | null
-          stage: Database["public"]["Enums"]["deal_stage"]
-          stage_changed_at: string
-          title: string
-          updated_at: string
-          value: number
-          won_at: string | null
-        }
-        Insert: {
-          canal_origem?: string | null
-          client_id?: string | null
-          company_name: string
-          contact_email?: string | null
-          contact_name?: string | null
-          contact_phone?: string | null
-          created_at?: string
-          created_by?: string | null
-          estado?: string | null
-          etiqueta?: string | null
-          expected_close_date?: string | null
-          extensoes?: string[] | null
-          faixa_colaboradores?: string | null
-          fonte_indicacao?: string | null
-          id?: string
-          lost_at?: string | null
-          motivo_perda?: string | null
-          notas?: string | null
-          notes?: string | null
-          origem_lead?: string | null
-          owner_id?: string | null
-          pipedrive_deal_id?: string | null
-          plano_contratado?: string | null
-          position?: number
-          probabilidade?: string | null
-          product?: Database["public"]["Enums"]["deal_product"] | null
-          quem_implanta?: string | null
-          segmento?: string | null
-          stage?: Database["public"]["Enums"]["deal_stage"]
-          stage_changed_at?: string
-          title: string
-          updated_at?: string
-          value?: number
-          won_at?: string | null
-        }
-        Update: {
-          canal_origem?: string | null
-          client_id?: string | null
-          company_name?: string
-          contact_email?: string | null
-          contact_name?: string | null
-          contact_phone?: string | null
-          created_at?: string
-          created_by?: string | null
-          estado?: string | null
-          etiqueta?: string | null
-          expected_close_date?: string | null
-          extensoes?: string[] | null
-          faixa_colaboradores?: string | null
-          fonte_indicacao?: string | null
-          id?: string
-          lost_at?: string | null
-          motivo_perda?: string | null
-          notas?: string | null
-          notes?: string | null
-          origem_lead?: string | null
-          owner_id?: string | null
-          pipedrive_deal_id?: string | null
-          plano_contratado?: string | null
-          position?: number
-          probabilidade?: string | null
-          product?: Database["public"]["Enums"]["deal_product"] | null
-          quem_implanta?: string | null
-          segmento?: string | null
-          stage?: Database["public"]["Enums"]["deal_stage"]
-          stage_changed_at?: string
-          title?: string
-          updated_at?: string
-          value?: number
-          won_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deals_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deals_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       documentos_financeiros: {
         Row: {
@@ -901,13 +458,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documentos_financeiros_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1183,13 +733,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "implantacoes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "implantacoes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1269,24 +812,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_lancamentos_ponto_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lancamentos_ponto_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lancamentos_ponto_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1358,24 +887,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_lancamentos_vr_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lancamentos_vr_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lancamentos_vr_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1420,87 +935,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      nps_responses: {
-        Row: {
-          atendimento_evolucao: string | null
-          client_id: string | null
-          comentario_adicional: string | null
-          confianca_informacoes: number | null
-          created_at: string
-          email: string
-          empresa: string
-          experiencia_geral: string | null
-          feedback_aberto: string | null
-          frequencia_uso: string | null
-          id: string
-          nome: string
-          nota_atendimento: number | null
-          nps_score: number | null
-          source: string
-          sugestao_melhoria: string | null
-          tempo_cliente: string | null
-          tempo_resposta: string | null
-          token: string | null
-        }
-        Insert: {
-          atendimento_evolucao?: string | null
-          client_id?: string | null
-          comentario_adicional?: string | null
-          confianca_informacoes?: number | null
-          created_at?: string
-          email: string
-          empresa: string
-          experiencia_geral?: string | null
-          feedback_aberto?: string | null
-          frequencia_uso?: string | null
-          id?: string
-          nome: string
-          nota_atendimento?: number | null
-          nps_score?: number | null
-          source?: string
-          sugestao_melhoria?: string | null
-          tempo_cliente?: string | null
-          tempo_resposta?: string | null
-          token?: string | null
-        }
-        Update: {
-          atendimento_evolucao?: string | null
-          client_id?: string | null
-          comentario_adicional?: string | null
-          confianca_informacoes?: number | null
-          created_at?: string
-          email?: string
-          empresa?: string
-          experiencia_geral?: string | null
-          feedback_aberto?: string | null
-          frequencia_uso?: string | null
-          id?: string
-          nome?: string
-          nota_atendimento?: number | null
-          nps_score?: number | null
-          source?: string
-          sugestao_melhoria?: string | null
-          tempo_cliente?: string | null
-          tempo_resposta?: string | null
-          token?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "nps_responses_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "nps_responses_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1758,9 +1192,6 @@ export type Database = {
           percentual_ponto: number
           percentual_vr_primeira_carga: number
           percentual_vr_recorrencia: number
-          pipedrive_api_token: string | null
-          pipedrive_connected_at: string | null
-          pipedrive_user_name: string | null
           timezone: string
           updated_at: string
           updated_by: string | null
@@ -1771,9 +1202,6 @@ export type Database = {
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
           percentual_vr_recorrencia?: number
-          pipedrive_api_token?: string | null
-          pipedrive_connected_at?: string | null
-          pipedrive_user_name?: string | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -1784,9 +1212,6 @@ export type Database = {
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
           percentual_vr_recorrencia?: number
-          pipedrive_api_token?: string | null
-          pipedrive_connected_at?: string | null
-          pipedrive_user_name?: string | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -1848,13 +1273,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_tasks_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2261,13 +1679,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_tickets_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tickets_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
@@ -2279,13 +1690,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2344,105 +1748,7 @@ export type Database = {
       }
     }
     Views: {
-      clients_safe: {
-        Row: {
-          account_owner: string | null
-          address: string | null
-          anydesk_id: string | null
-          anydesk_senha: string | null
-          billing_email: string | null
-          cnpj: string | null
-          company: string | null
-          contact_name: string | null
-          created_at: string | null
-          created_by: string | null
-          document: string | null
-          email: string | null
-          health: Database["public"]["Enums"]["client_health"] | null
-          health_reason: string | null
-          id: string | null
-          name: string | null
-          notes: string | null
-          nps_data: string | null
-          nps_score: number | null
-          nps_token: string | null
-          phone: string | null
-          pipedrive_person_id: string | null
-          tags: string[] | null
-          updated_at: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          account_owner?: string | null
-          address?: string | null
-          anydesk_id?: never
-          anydesk_senha?: never
-          billing_email?: string | null
-          cnpj?: string | null
-          company?: string | null
-          contact_name?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          document?: string | null
-          email?: string | null
-          health?: Database["public"]["Enums"]["client_health"] | null
-          health_reason?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          nps_data?: string | null
-          nps_score?: number | null
-          nps_token?: string | null
-          phone?: string | null
-          pipedrive_person_id?: string | null
-          tags?: string[] | null
-          updated_at?: string | null
-          whatsapp?: string | null
-        }
-        Update: {
-          account_owner?: string | null
-          address?: string | null
-          anydesk_id?: never
-          anydesk_senha?: never
-          billing_email?: string | null
-          cnpj?: string | null
-          company?: string | null
-          contact_name?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          document?: string | null
-          email?: string | null
-          health?: Database["public"]["Enums"]["client_health"] | null
-          health_reason?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          nps_data?: string | null
-          nps_score?: number | null
-          nps_token?: string | null
-          phone?: string | null
-          pipedrive_person_id?: string | null
-          tags?: string[] | null
-          updated_at?: string | null
-          whatsapp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_account_owner_fkey"
-            columns: ["account_owner"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_remove_user_access: {

@@ -11,10 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Mail,
-  Loader2,
   Pencil,
-  Star,
-  Send,
   Copy,
   Monitor,
   Rocket,
@@ -75,7 +72,7 @@ export default function ClientDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id, status_nortear, fornecedor_beneficios, fornecedor_rh_digital, modulos_ativos, potencial_cross, segmento, estado, faixa_colaboradores")
+        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, status_nortear, fornecedor_beneficios, fornecedor_rh_digital, modulos_ativos, potencial_cross, segmento, estado, faixa_colaboradores")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -153,39 +150,7 @@ export default function ClientDetail() {
     },
   });
 
-  const { data: npsLatest } = useQuery({
-    queryKey: ["client-nps", id],
-    enabled: !!id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("nps_responses")
-        .select("id, nps_score, nome, feedback_aberto, created_at")
-        .eq("client_id", id!)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      return data?.[0] ?? null;
-    },
-  });
 
-  const sendSurvey = useMutation({
-    mutationFn: async () => {
-      if (!client) throw new Error("Cliente não carregado");
-      let token = client.nps_token;
-      if (!token) {
-        token = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
-        const { error } = await supabase.from("clients").update({ nps_token: token }).eq("id", id!);
-        if (error) throw error;
-      }
-      const url = `${window.location.origin}/pesquisa/${token}`;
-      await navigator.clipboard.writeText(url);
-      return url;
-    },
-    onSuccess: (url) => {
-      qc.invalidateQueries({ queryKey: ["client", id] });
-      toast.success("Link copiado: " + url);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   if (isLoading || !client) {
     return (
@@ -442,56 +407,6 @@ export default function ClientDetail() {
               </Card>
             )}
 
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">NPS</h3>
-                <Star className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-              {npsLatest ? (
-                <div className="space-y-2">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-semibold tabular-nums">{npsLatest.nps_score ?? "—"}</span>
-                    {npsLatest.nps_score != null && (
-                      <Badge
-                        className={
-                          npsLatest.nps_score >= 9
-                            ? "bg-success/15 text-success hover:bg-success/15"
-                            : npsLatest.nps_score >= 7
-                              ? "bg-warning/15 text-warning hover:bg-warning/15"
-                              : "bg-destructive/15 text-destructive hover:bg-destructive/15"
-                        }
-                      >
-                        {npsLatest.nps_score >= 9 ? "Promotor" : npsLatest.nps_score >= 7 ? "Neutro" : "Detrator"}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {npsLatest.nome} · {formatBrazilDate(npsLatest.created_at)}
-                  </p>
-                  {npsLatest.feedback_aberto && (
-                    <p className="line-clamp-3 rounded-md bg-surface-muted/50 p-2 text-xs italic">
-                      "{npsLatest.feedback_aberto}"
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="py-2 text-center text-xs text-muted-foreground">Sem respostas ainda.</p>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={() => sendSurvey.mutate()}
-                disabled={sendSurvey.isPending}
-              >
-                {sendSurvey.isPending ? (
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-3.5 w-3.5" />
-                )}
-                Enviar pesquisa NPS
-              </Button>
-            </Card>
 
             <Card className="p-5">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

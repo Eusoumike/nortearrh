@@ -13,7 +13,7 @@ const STATIC_LABELS: Record<string, string> = {
   pipeline: "Pipeline",
   financeiro: "Financeiro",
   performance: "Performance",
-  nps: "NPS",
+  
   configuracoes: "Configurações",
   inbox: "Caixa de entrada",
   novo: "Novo",

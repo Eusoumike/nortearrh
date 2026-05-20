@@ -61,12 +61,8 @@ export default function Settings() {
   const isAdmin = role === "admin";
   const qc = useQueryClient();
 
-  // === Pipedrive ===
-  const [pipedriveToken, setPipedriveToken] = useState("");
-  const [pipedriveTesting, setPipedriveTesting] = useState(false);
-  const [pipedriveStatus, setPipedriveStatus] = useState<
-    { ok: true; name: string } | { ok: false; msg: string } | null
-  >(null);
+  // === Timezone ===
+
 
   // === Timezone ===
   const [systemTz, setSystemTz] = useState("America/Sao_Paulo");
@@ -93,7 +89,7 @@ export default function Settings() {
     queryFn: async () => {
       const { data } = await supabase
         .from("system_settings")
-        .select("id, pipedrive_api_token, pipedrive_user_name, pipedrive_connected_at, timezone")
+        .select("id, timezone")
         .limit(1)
         .maybeSingle();
       return data;
@@ -146,13 +142,10 @@ export default function Settings() {
   // ----- Sincronizar estados quando dados chegam -----
   useEffect(() => {
     if (systemSettings) {
-      setPipedriveToken(systemSettings.pipedrive_api_token ?? "");
       setSystemTz(systemSettings.timezone ?? "America/Sao_Paulo");
-      if (systemSettings.pipedrive_user_name) {
-        setPipedriveStatus({ ok: true, name: systemSettings.pipedrive_user_name });
-      }
     }
   }, [systemSettings]);
+
 
   useEffect(() => {
     if (userSettings) {
@@ -189,67 +182,7 @@ export default function Settings() {
     return () => clearInterval(t);
   }, [systemTz]);
 
-  // ----- Ações: Pipedrive -----
-  async function handleTestPipedrive() {
-    if (!pipedriveToken.trim()) {
-      toast({ title: "Informe o token", variant: "destructive" });
-      return;
-    }
-    setPipedriveTesting(true);
-    setPipedriveStatus(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("pipedrive-validate-token", {
-        body: { token: pipedriveToken.trim() },
-      });
-      if (error) throw error;
-      if (!data?.ok) {
-        setPipedriveStatus({ ok: false, msg: data?.error ?? "Token inválido" });
-        toast({ title: "Token inválido", description: data?.error, variant: "destructive" });
-        return;
-      }
 
-      const upsert = {
-        ...(systemSettings?.id ? { id: systemSettings.id } : {}),
-        pipedrive_api_token: pipedriveToken.trim(),
-        pipedrive_user_name: data.user.name,
-        pipedrive_connected_at: new Date().toISOString(),
-        timezone: systemTz,
-        updated_by: user!.id,
-      };
-      const { error: upErr } = await supabase.from("system_settings").upsert(upsert);
-      if (upErr) throw upErr;
-
-      setPipedriveStatus({ ok: true, name: data.user.name });
-      toast({ title: "Conectado", description: `Pipedrive: ${data.user.name}` });
-      qc.invalidateQueries({ queryKey: ["system-settings"] });
-    } catch (e: any) {
-      setPipedriveStatus({ ok: false, msg: e.message ?? "Erro" });
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    } finally {
-      setPipedriveTesting(false);
-    }
-  }
-
-  async function handleRemovePipedrive() {
-    if (!systemSettings?.id) return;
-    const { error } = await supabase
-      .from("system_settings")
-      .update({
-        pipedrive_api_token: null,
-        pipedrive_user_name: null,
-        pipedrive_connected_at: null,
-        updated_by: user!.id,
-      })
-      .eq("id", systemSettings.id);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-      return;
-    }
-    setPipedriveToken("");
-    setPipedriveStatus(null);
-    toast({ title: "Desconectado do Pipedrive" });
-    qc.invalidateQueries({ queryKey: ["system-settings"] });
-  }
 
   // ----- Ações: Timezone -----
   async function handleSaveTimezone() {
@@ -517,44 +450,6 @@ export default function Settings() {
 
             {activeCategory === "integracoes" && isAdmin && (
               <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Integração Pipedrive</CardTitle>
-                    <CardDescription>
-                      Cole o API Token do Pipedrive. Ele fica salvo no banco com acesso restrito a admins.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pipedrive-token">API Token</Label>
-                      <Input id="pipedrive-token" type="password" placeholder="Cole o token aqui"
-                        value={pipedriveToken} onChange={(e) => setPipedriveToken(e.target.value)} autoComplete="off" />
-                    </div>
-                    {pipedriveStatus && (
-                      <div className={`flex items-center gap-2 rounded-md border p-3 text-sm ${
-                        pipedriveStatus.ok
-                          ? "border-success/30 bg-success/10 text-success"
-                          : "border-destructive/30 bg-destructive/10 text-destructive"
-                      }`}>
-                        {pipedriveStatus.ok ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                        <span>
-                          {pipedriveStatus.ok
-                            ? `Conectado como ${pipedriveStatus.name}`
-                            : `Token inválido — ${(pipedriveStatus as { ok: false; msg: string }).msg}`}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={handleTestPipedrive} disabled={pipedriveTesting}>
-                        {pipedriveTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Salvar e Testar
-                      </Button>
-                      {systemSettings?.pipedrive_api_token && (
-                        <Button variant="outline" onClick={handleRemovePipedrive}>Remover</Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
 
                 <Card>
                   <CardHeader>
