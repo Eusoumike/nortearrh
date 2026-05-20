@@ -136,81 +136,110 @@ export default function Clients() {
         title="Carteira de Clientes"
         subtitle={`${filtered.length} cliente${filtered.length === 1 ? "" : "s"}${q || productFilter !== "todos" ? " (filtrados)" : ""}`}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9"
-            onClick={() => syncPipedrive.mutate()}
-            disabled={syncPipedrive.isPending}
-            title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
-          >
-            {syncPipedrive.isPending ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1.5 h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">Sincronizar Pipedrive</span>
-            <span className="sm:hidden">Sync</span>
-          </Button>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-9 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
-                <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Novo cliente</span><span className="sm:hidden">Novo</span>
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
-            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
-              <div className="space-y-1.5">
-                <Label>Nome *</Label>
-                <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Empresa</Label>
-                  <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Status</Label>
-                  <Select value={form.health} onValueChange={(v) => setForm({ ...form, health: v as ClientHealth })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(HEALTH_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>E-mail</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Telefone</Label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                </div>
-              </div>
-              {form.health !== "saudavel" && (
-                <div className="space-y-1.5">
-                  <Label>Motivo</Label>
-                  <Input value={form.health_reason} onChange={(e) => setForm({ ...form, health_reason: e.target.value })} placeholder="Ex.: contrato em renovação" />
-                </div>
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={() => syncPipedrive.mutate()}
+              disabled={syncPipedrive.isPending}
+              title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
+            >
+              {syncPipedrive.isPending ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1.5 h-4 w-4" />
               )}
-              <div className="space-y-1.5">
-                <Label>Notas</Label>
-                <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={create.isPending || !form.name} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
-                  {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Salvar
+              <span className="hidden sm:inline">Sincronizar</span>
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-9">
+                  <Plus className="mr-1.5 h-4 w-4" /> Novo Cliente
                 </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
+                <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
+                  <div className="space-y-1.5">
+                    <Label>Nome *</Label>
+                    <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Empresa</Label>
+                      <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Status</Label>
+                      <Select value={form.health} onValueChange={(v) => setForm({ ...form, health: v as ClientHealth })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(HEALTH_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>E-mail</Label>
+                      <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Telefone</Label>
+                      <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                    </div>
+                  </div>
+                  {form.health !== "saudavel" && (
+                    <div className="space-y-1.5">
+                      <Label>Motivo</Label>
+                      <Input value={form.health_reason} onChange={(e) => setForm({ ...form, health_reason: e.target.value })} placeholder="Ex.: contrato em renovação" />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>Notas</Label>
+                    <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={create.isPending || !form.name}>
+                      {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Salvar
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
+
+      {/* Filtros chips de produto + busca */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {PRODUCT_CHIPS.map((c) => {
+            const active = productFilter === c.key;
+            return (
+              <button
+                key={c.key}
+                onClick={() => setProductFilter(c.key)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa, CNPJ, contato…" className="h-9 pl-8" />
         </div>
       </div>
+
 
       <Card className="p-3">
         <div className="relative">
