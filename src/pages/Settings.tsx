@@ -89,7 +89,7 @@ export default function Settings() {
     queryFn: async () => {
       const { data } = await supabase
         .from("system_settings")
-        .select("id, pipedrive_api_token, pipedrive_user_name, pipedrive_connected_at, timezone")
+        .select("id, timezone")
         .limit(1)
         .maybeSingle();
       return data;
