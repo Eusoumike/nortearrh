@@ -456,6 +456,7 @@ export type Database = {
           lost_at: string | null
           notes: string | null
           owner_id: string | null
+          position: number
           product: Database["public"]["Enums"]["deal_product"] | null
           stage: Database["public"]["Enums"]["deal_stage"]
           stage_changed_at: string
@@ -477,6 +478,7 @@ export type Database = {
           lost_at?: string | null
           notes?: string | null
           owner_id?: string | null
+          position?: number
           product?: Database["public"]["Enums"]["deal_product"] | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           stage_changed_at?: string
@@ -498,6 +500,7 @@ export type Database = {
           lost_at?: string | null
           notes?: string | null
           owner_id?: string | null
+          position?: number
           product?: Database["public"]["Enums"]["deal_product"] | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           stage_changed_at?: string
@@ -1366,6 +1369,9 @@ export type Database = {
           percentual_ponto: number
           percentual_vr_primeira_carga: number
           percentual_vr_recorrencia: number
+          pipedrive_api_token: string | null
+          pipedrive_connected_at: string | null
+          pipedrive_user_name: string | null
           timezone: string
           updated_at: string
           updated_by: string | null
@@ -1376,6 +1382,9 @@ export type Database = {
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
           percentual_vr_recorrencia?: number
+          pipedrive_api_token?: string | null
+          pipedrive_connected_at?: string | null
+          pipedrive_user_name?: string | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -1386,6 +1395,9 @@ export type Database = {
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
           percentual_vr_recorrencia?: number
+          pipedrive_api_token?: string | null
+          pipedrive_connected_at?: string | null
+          pipedrive_user_name?: string | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
