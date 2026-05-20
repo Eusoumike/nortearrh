@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Filter, X, Eye, EyeOff } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { Filter, X, Eye, EyeOff, Plus } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban } from "@/components/TicketKanban";
 import { cn } from "@/lib/utils";
+
 
 const SHOW_RESOLVED_KEY = "nortear_show_resolved_tickets";
 
