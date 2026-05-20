@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
     const {
       ticket_id, ticket_title, ticket_description = "",
       categoria = "", client_name = "", products = [],
+      descricao_problema = "", quem_reportou = "",
+      acao_tentada = "", ja_tentou = "",
       messages = [], action = "suggest",
     } = body;
 
@@ -90,7 +92,10 @@ Deno.serve(async (req) => {
 
 CONTEXTO DO CHAMADO ATUAL:
 - Título: ${ticket_title}
-- Descrição: ${ticket_description || "Não informada"}
+- Descrição detalhada: ${descricao_problema || ticket_description || "Não informada"}
+- Quem está com o problema: ${quem_reportou || "Não informado"}
+- O que estava tentando fazer: ${acao_tentada || "Não informado"}
+- O que já foi tentado: ${ja_tentou || "Nada informado"}
 - Categoria: ${categoria || "Não classificada"}
 - Cliente: ${client_name || "—"}
 - Produtos: ${products?.join(", ") || "RH Digital"}
