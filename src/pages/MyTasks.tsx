@@ -251,9 +251,13 @@ export default function MyTasks() {
             <Skeleton className="h-12" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            Nenhuma tarefa nessa visão.
-          </p>
+          <EmptyState
+            icon={ListChecks}
+            title="Nenhuma tarefa nessa visão"
+            description="Crie uma nova tarefa ou ajuste os filtros."
+            action={{ label: "Nova Tarefa", icon: Plus, onClick: () => setOpen(true) }}
+          />
+
         ) : (
           <div className="divide-y divide-border">
             {filtered.map((t: any) => {
