@@ -142,13 +142,10 @@ export default function Settings() {
   // ----- Sincronizar estados quando dados chegam -----
   useEffect(() => {
     if (systemSettings) {
-      setPipedriveToken(systemSettings.pipedrive_api_token ?? "");
       setSystemTz(systemSettings.timezone ?? "America/Sao_Paulo");
-      if (systemSettings.pipedrive_user_name) {
-        setPipedriveStatus({ ok: true, name: systemSettings.pipedrive_user_name });
-      }
     }
   }, [systemSettings]);
+
 
   useEffect(() => {
     if (userSettings) {
