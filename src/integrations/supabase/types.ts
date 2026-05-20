@@ -1761,7 +1761,6 @@ export type Database = {
       }
       tickets: {
         Row: {
-          acao_tentada: string | null
           active_custom_stage_key: string | null
           anydesk_id: string | null
           anydesk_senha: string | null
@@ -1778,7 +1777,6 @@ export type Database = {
           created_by: string | null
           current_stage_started_at: string
           custom_stage_started_at: string | null
-          descricao_problema: string | null
           description: string | null
           entered_aguardando_cliente_at: string | null
           entered_em_atendimento_at: string | null
@@ -1786,19 +1784,16 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
-          ja_tentou: string | null
           kanban_stage_key: string | null
           opened_at: string
           organization: string | null
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
-          quem_reportou: string | null
           resolved_at: string | null
           sla_alert_sent: boolean
           sla_deadline: string | null
           sla_resolution_deadline: string | null
           sla_response_deadline: string | null
-          solucao_aplicada: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde: string | null
           status_ativo_key: string | null
@@ -1815,7 +1810,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          acao_tentada?: string | null
           active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
@@ -1832,7 +1826,6 @@ export type Database = {
           created_by?: string | null
           current_stage_started_at?: string
           custom_stage_started_at?: string | null
-          descricao_problema?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1840,19 +1833,16 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
-          ja_tentou?: string | null
           kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
-          quem_reportou?: string | null
           resolved_at?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
-          solucao_aplicada?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
@@ -1869,7 +1859,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          acao_tentada?: string | null
           active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
@@ -1886,7 +1875,6 @@ export type Database = {
           created_by?: string | null
           current_stage_started_at?: string
           custom_stage_started_at?: string | null
-          descricao_problema?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1894,19 +1882,16 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
-          ja_tentou?: string | null
           kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
-          quem_reportou?: string | null
           resolved_at?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
-          solucao_aplicada?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null

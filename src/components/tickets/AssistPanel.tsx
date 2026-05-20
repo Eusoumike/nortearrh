@@ -24,10 +24,6 @@ interface Props {
     category?: string | null;
     client_name?: string | null;
     client?: { name?: string; products?: string[] } | null;
-    descricao_problema?: string | null;
-    quem_reportou?: string | null;
-    acao_tentada?: string | null;
-    ja_tentou?: string | null;
   };
 }
 
@@ -68,10 +64,6 @@ export function AssistPanel({ ticket }: Props) {
           categoria: ticket.category ?? "",
           client_name: ticket.client_name ?? ticket.client?.name ?? "",
           products: ticket.client?.products ?? [],
-          descricao_problema: ticket.descricao_problema ?? "",
-          quem_reportou: ticket.quem_reportou ?? "",
-          acao_tentada: ticket.acao_tentada ?? "",
-          ja_tentou: ticket.ja_tentou ?? "",
           messages: payload.newMessages ?? [],
           action: payload.action,
         },
