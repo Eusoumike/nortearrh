@@ -122,21 +122,6 @@ export default function Clients() {
         actions={
 
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9"
-              onClick={() => syncPipedrive.mutate()}
-              disabled={syncPipedrive.isPending}
-              title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
-            >
-              {syncPipedrive.isPending ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-1.5 h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">Sincronizar</span>
-            </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-9">
