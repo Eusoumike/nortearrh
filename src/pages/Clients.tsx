@@ -135,8 +135,8 @@ export default function Clients() {
       <PageHeader
         title="Carteira de Clientes"
         subtitle={`${filtered.length} cliente${filtered.length === 1 ? "" : "s"}${q || productFilter !== "todos" ? " (filtrados)" : ""}`}
-      >
         actions={
+
           <>
             <Button
               variant="outline"
