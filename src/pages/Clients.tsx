@@ -123,13 +123,19 @@ export default function Clients() {
     onError: (e: any) => toast.error(`Pipedrive: ${e.message}`),
   });
 
+  const PRODUCT_CHIPS = [
+    { key: "todos", label: "Todos" },
+    { key: "rh_digital", label: "RH Digital" },
+    { key: "vr_beneficios", label: "VR Benefícios" },
+    { key: "ambos", label: "Ambos" },
+  ];
+
   return (
     <div className="space-y-4 p-4 md:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Clientes</h1>
-          <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} clientes</p>
-        </div>
+      <PageHeader
+        title="Carteira de Clientes"
+        subtitle={`${filtered.length} cliente${filtered.length === 1 ? "" : "s"}${q || productFilter !== "todos" ? " (filtrados)" : ""}`}
+      >
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
