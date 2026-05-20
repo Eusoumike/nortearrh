@@ -450,6 +450,50 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_cnpj_consultas: {
+        Row: {
+          cnpj: string
+          consultado_por: string | null
+          consultado_por_nome: string | null
+          created_at: string
+          deal_criado: string | null
+          id: string
+          razao_social: string | null
+          resultado: Json | null
+          situacao: string | null
+        }
+        Insert: {
+          cnpj: string
+          consultado_por?: string | null
+          consultado_por_nome?: string | null
+          created_at?: string
+          deal_criado?: string | null
+          id?: string
+          razao_social?: string | null
+          resultado?: Json | null
+          situacao?: string | null
+        }
+        Update: {
+          cnpj?: string
+          consultado_por?: string | null
+          consultado_por_nome?: string | null
+          created_at?: string
+          deal_criado?: string | null
+          id?: string
+          razao_social?: string | null
+          resultado?: Json | null
+          situacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_cnpj_consultas_deal_criado_fkey"
+            columns: ["deal_criado"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_ticket_stages: {
         Row: {
           ativo: boolean
