@@ -42,10 +42,7 @@ export function Breadcrumbs() {
         const { data } = await supabase.from("clients").select("company, name").eq("id", dynamicSegment).maybeSingle();
         return data?.company || data?.name || null;
       }
-      if (parent === "crm") {
-        const { data } = await supabase.from("deals").select("company_name, title").eq("id", dynamicSegment).maybeSingle();
-        return data?.company_name || data?.title || null;
-      }
+      return null;
       return null;
     },
   });
