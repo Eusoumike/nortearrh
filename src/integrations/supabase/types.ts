@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      assist_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assist_conversations_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assist_solutions: {
+        Row: {
+          categoria: string | null
+          confirmado_em: string | null
+          created_at: string
+          id: string
+          links: string[] | null
+          problema: string | null
+          solucao: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          confirmado_em?: string | null
+          created_at?: string
+          id?: string
+          links?: string[] | null
+          problema?: string | null
+          solucao?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          confirmado_em?: string | null
+          created_at?: string
+          id?: string
+          links?: string[] | null
+          problema?: string | null
+          solucao?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assist_solutions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           concluido: boolean
@@ -1144,6 +1217,9 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
+          percentual_rh: number
+          percentual_rh_tipo: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
+          percentual_vr: number
           updated_at: string
         }
         Insert: {
@@ -1154,6 +1230,9 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
+          percentual_rh?: number
+          percentual_rh_tipo?: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
+          percentual_vr?: number
           updated_at?: string
         }
         Update: {
@@ -1164,6 +1243,9 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
+          percentual_rh?: number
+          percentual_rh_tipo?: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
+          percentual_vr?: number
           updated_at?: string
         }
         Relationships: []
@@ -1679,6 +1761,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          acao_tentada: string | null
           active_custom_stage_key: string | null
           anydesk_id: string | null
           anydesk_senha: string | null
@@ -1695,6 +1778,7 @@ export type Database = {
           created_by: string | null
           current_stage_started_at: string
           custom_stage_started_at: string | null
+          descricao_problema: string | null
           description: string | null
           entered_aguardando_cliente_at: string | null
           entered_em_atendimento_at: string | null
@@ -1702,16 +1786,19 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
+          ja_tentou: string | null
           kanban_stage_key: string | null
           opened_at: string
           organization: string | null
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
+          quem_reportou: string | null
           resolved_at: string | null
           sla_alert_sent: boolean
           sla_deadline: string | null
           sla_resolution_deadline: string | null
           sla_response_deadline: string | null
+          solucao_aplicada: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde: string | null
           status_ativo_key: string | null
@@ -1728,6 +1815,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acao_tentada?: string | null
           active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
@@ -1744,6 +1832,7 @@ export type Database = {
           created_by?: string | null
           current_stage_started_at?: string
           custom_stage_started_at?: string | null
+          descricao_problema?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1751,16 +1840,19 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          ja_tentou?: string | null
           kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          quem_reportou?: string | null
           resolved_at?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
+          solucao_aplicada?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
@@ -1777,6 +1869,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acao_tentada?: string | null
           active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
@@ -1793,6 +1886,7 @@ export type Database = {
           created_by?: string | null
           current_stage_started_at?: string
           custom_stage_started_at?: string | null
+          descricao_problema?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1800,16 +1894,19 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          ja_tentou?: string | null
           kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          quem_reportou?: string | null
           resolved_at?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
+          solucao_aplicada?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
@@ -2040,6 +2137,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "manager" | "agent" | "viewer"
@@ -2118,6 +2216,7 @@ export type Database = {
         | "primeira_mensalidade"
         | "recorrencia"
         | "primeira_carga_vr"
+      tipo_repasse_rh_padrao: "primeira_mensalidade" | "recorrencia"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2330,6 +2429,7 @@ export const Constants = {
         "recorrencia",
         "primeira_carga_vr",
       ],
+      tipo_repasse_rh_padrao: ["primeira_mensalidade", "recorrencia"],
     },
   },
 } as const

@@ -202,7 +202,7 @@ export default function ClientDetail() {
   const vrUltimo = lancamentosVr?.[0];
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="max-w-full space-y-4 overflow-hidden p-6">
       <Link to="/clientes" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" /> Voltar para clientes
       </Link>

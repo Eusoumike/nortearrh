@@ -3,17 +3,25 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Eye, EyeOff } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban } from "@/components/TicketKanban";
+import { cn } from "@/lib/utils";
+
+const SHOW_RESOLVED_KEY = "nortear_show_resolved_tickets";
 
 export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
+  const [showResolved, setShowResolved] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SHOW_RESOLVED_KEY) === "1";
+  });
 
   // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
@@ -22,6 +30,16 @@ export default function Tickets() {
   const clientFilter = searchParams.get("client"); // nome (client_name/organization)
 
   const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientFilter;
+  // Se o filtro especial "resolved=7d" estiver ativo ou o usuário filtrou status=resolvido, força mostrar resolvidos
+  const includeResolved = showResolved || statusFilter === "resolvido" || resolvedWindow === "7d";
+
+  const toggleShowResolved = () => {
+    const next = !showResolved;
+    setShowResolved(next);
+    try {
+      window.localStorage.setItem(SHOW_RESOLVED_KEY, next ? "1" : "0");
+    } catch {}
+  };
 
   // Sincroniza select com URL quando muda externamente
   useEffect(() => {
@@ -57,7 +75,7 @@ export default function Tickets() {
   };
 
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter],
+    queryKey: ["tickets", statusFilter, priorityFilter, includeResolved],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
@@ -66,6 +84,7 @@ export default function Tickets() {
         .limit(200);
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
+      else if (!includeResolved) query = query.not("status", "in", "(resolvido,fechado)");
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
 
       const { data, error } = await query;
@@ -73,6 +92,24 @@ export default function Tickets() {
       return data;
     },
   });
+
+  // Contagem de chamados resolvidos hoje (para o badge do botão)
+  const { data: resolvedTodayCount = 0 } = useQuery({
+    queryKey: ["tickets", "resolved-today-count"],
+    queryFn: async () => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const { count, error } = await supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["resolvido", "fechado"])
+        .gte("resolved_at", start.toISOString());
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+
 
   const filtered = useMemo(() => {
     const list = tickets ?? [];
@@ -131,6 +168,26 @@ export default function Tickets() {
               {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            size="sm"
+            variant={showResolved ? "default" : "outline"}
+            onClick={toggleShowResolved}
+            className={cn("h-8 gap-1.5 text-xs", showResolved && "shadow-sm")}
+            aria-pressed={showResolved}
+            title={showResolved ? "Ocultar chamados resolvidos" : "Mostrar chamados resolvidos"}
+          >
+            {showResolved ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            <span>Mostrar resolvidos</span>
+            {resolvedTodayCount > 0 && (
+              <span className={cn(
+                "ml-0.5 rounded-full px-1.5 py-px font-mono text-[10px] font-semibold",
+                showResolved ? "bg-primary-foreground/20 text-primary-foreground" : "bg-success/15 text-success",
+              )}>
+                {resolvedTodayCount}
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -150,9 +207,24 @@ export default function Tickets() {
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : (
-          <TicketKanban tickets={filtered as any} />
+          <TicketKanbanWithAssist tickets={filtered as any} showResolved={includeResolved} />
         )}
       </div>
     </div>
   );
+}
+
+function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; showResolved: boolean }) {
+  const { data: assistedIds } = useQuery({
+    queryKey: ["assist-conversation-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assist_conversations" as any)
+        .select("ticket_id");
+      if (error) return new Set<string>();
+      return new Set<string>(((data as any[]) ?? []).map((r: any) => r.ticket_id).filter(Boolean));
+    },
+    staleTime: 60_000,
+  });
+  return <TicketKanban tickets={tickets} showResolved={showResolved} assistedIds={assistedIds ?? new Set()} />;
 }

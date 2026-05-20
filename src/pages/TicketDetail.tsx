@@ -34,6 +34,7 @@ import { TicketTasksSummary } from "@/components/TicketTasksSummary";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
+import { AssistPanel } from "@/components/tickets/AssistPanel";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -68,6 +69,13 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   mudanca_status: FileText,
 };
 
+const QUEM_REPORTOU_LABEL: Record<string, string> = {
+  colaborador: "Colaborador",
+  gestor: "Gestor",
+  administrador: "Administrador",
+  rh: "RH",
+};
+
 export default function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -76,6 +84,8 @@ export default function TicketDetail() {
   const [now, setNow] = useState(() => Date.now());
   const [editOpen, setEditOpen] = useState(false);
   const canDelete = role === "admin" || role === "manager";
+  const [resolveOpen, setResolveOpen] = useState(false);
+  const [resolveSolution, setResolveSolution] = useState("");
 
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
@@ -190,6 +200,36 @@ export default function TicketDetail() {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
       toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const resolveWithSolution = useMutation({
+    mutationFn: async (solucao: string) => {
+      const trimmed = solucao.trim();
+      const patch: any = { status: "resolvido" };
+      if (trimmed) patch.solucao_aplicada = trimmed;
+      const { error } = await supabase.from("tickets").update(patch).eq("id", id!);
+      if (error) throw error;
+      if (trimmed && ticket) {
+        const problema = [(ticket as any).title, (ticket as any).descricao_problema]
+          .filter(Boolean)
+          .join(" — ");
+        await supabase.from("assist_solutions" as any).insert({
+          ticket_id: id!,
+          categoria: (ticket as any).category ?? null,
+          problema,
+          solucao: trimmed,
+          confirmado_em: new Date().toISOString(),
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket", id] });
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Chamado resolvido.");
+      setResolveOpen(false);
+      setResolveSolution("");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -471,6 +511,44 @@ export default function TicketDetail() {
                 {ticket.description}
               </p>
             )}
+            {((ticket as any).descricao_problema || (ticket as any).quem_reportou || (ticket as any).acao_tentada || (ticket as any).ja_tentou) && (
+              <div className="space-y-1.5 border-t border-border/60 pt-3 text-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Detalhes do problema
+                </p>
+                {(ticket as any).descricao_problema && (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    <span className="mr-1">📝</span>
+                    <span className="font-medium">Descrição:</span> {(ticket as any).descricao_problema}
+                  </p>
+                )}
+                {(ticket as any).quem_reportou && (
+                  <div>
+                    <ToneBadge tone="info" size="sm">
+                      👤 {QUEM_REPORTOU_LABEL[(ticket as any).quem_reportou] ?? (ticket as any).quem_reportou}
+                    </ToneBadge>
+                  </div>
+                )}
+                {(ticket as any).acao_tentada && (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    <span className="mr-1">🎯</span>
+                    <span className="font-medium">Tentando fazer:</span> {(ticket as any).acao_tentada}
+                  </p>
+                )}
+                {(ticket as any).ja_tentou && (
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    <span className="mr-1">🔄</span>
+                    <span className="font-medium">Já tentou:</span> {(ticket as any).ja_tentou}
+                  </p>
+                )}
+                {(ticket as any).solucao_aplicada && (
+                  <p className="whitespace-pre-wrap leading-relaxed border-t border-border/40 pt-2 mt-2">
+                    <span className="mr-1">✅</span>
+                    <span className="font-medium">Solução aplicada:</span> {(ticket as any).solucao_aplicada}
+                  </p>
+                )}
+              </div>
+            )}
             {ticket.client && (
               <div className="space-y-3 border-t border-border/60 pt-3">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -591,6 +669,9 @@ export default function TicketDetail() {
               </div>
             )}
           </div>
+
+          {/* Nortear Assist — copiloto de IA */}
+          <AssistPanel ticket={ticket as any} />
 
           {/* Atendimentos */}
           <div>
@@ -863,7 +944,14 @@ export default function TicketDetail() {
           {/* Status */}
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-            <Select value={effectiveStatusTyped} onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}>
+            <Select value={effectiveStatusTyped} onValueChange={(v) => {
+              if (v === "resolvido" && ticket.status !== "resolvido" && ticket.status !== "fechado") {
+                setResolveSolution((ticket as any).solucao_aplicada ?? "");
+                setResolveOpen(true);
+                return;
+              }
+              updateStatus.mutate(v as TicketStatus);
+            }}>
               <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
@@ -976,6 +1064,44 @@ export default function TicketDetail() {
       </div>
 
       <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
+
+      <AlertDialog open={resolveOpen} onOpenChange={setResolveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar solução aplicada</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opcional, mas recomendado. A solução alimenta a base do Nortear Assist e ajuda em chamados similares.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            rows={5}
+            value={resolveSolution}
+            onChange={(e) => setResolveSolution(e.target.value)}
+            placeholder="Ex: Verificado em Configurações → Perfis de acesso. O motivo de abono não estava cadastrado. Adicionado em Configurações → Motivos de abono."
+            className="text-sm"
+          />
+          <AlertDialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setResolveOpen(false);
+                setResolveSolution("");
+                updateStatus.mutate("resolvido");
+              }}
+              disabled={resolveWithSolution.isPending || updateStatus.isPending}
+            >
+              Pular
+            </Button>
+            <Button
+              onClick={() => resolveWithSolution.mutate(resolveSolution)}
+              disabled={resolveWithSolution.isPending || !resolveSolution.trim()}
+            >
+              {resolveWithSolution.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar solução
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { RhDigitalTab } from "@/components/financeiro/RhDigitalTab";
 import { LancamentosTab } from "@/components/financeiro/LancamentosTab";
 import { DocumentosTab } from "@/components/financeiro/DocumentosTab";
 import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
+import { CalculadoraMigracao } from "@/components/financeiro/CalculadoraMigracao";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
@@ -40,6 +41,7 @@ export default function Financeiro() {
         <TabsList className="w-full justify-start overflow-x-auto md:w-auto">
           <TabsTrigger value="visao-geral">Visão geral</TabsTrigger>
           <TabsTrigger value="vr">VR Benefícios</TabsTrigger>
+          <TabsTrigger value="calculadora">Calculadora de Migração</TabsTrigger>
           <TabsTrigger value="ponto">RH Digital</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
@@ -52,6 +54,10 @@ export default function Financeiro() {
 
         <TabsContent value="vr" className="mt-4">
           <VrTab />
+        </TabsContent>
+
+        <TabsContent value="calculadora" className="mt-4">
+          <CalculadoraMigracao />
         </TabsContent>
 
         <TabsContent value="ponto" className="mt-4">

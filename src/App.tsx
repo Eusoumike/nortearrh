@@ -22,6 +22,8 @@ import Financeiro from "./pages/Financeiro";
 import Nps from "./pages/Nps";
 import NpsForm from "./pages/NpsForm";
 import NotFound from "./pages/NotFound.tsx";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -35,6 +37,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/pesquisa" element={<NpsForm />} />
           <Route path="/pesquisa/:token" element={<NpsForm />} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

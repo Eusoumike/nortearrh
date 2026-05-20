@@ -61,7 +61,7 @@ export function VrTab() {
   const [editing, setEditing] = useState<LancamentoVR | null>(null);
   const [toDelete, setToDelete] = useState<Row | null>(null);
   const [toFill, setToFill] = useState<Row | null>(null);
-  const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string } | null>(null);
+  const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string; primeira_carga_id?: string } | null>(null);
   const [search, setSearch] = useState("");
 
   const competencia = ymdFirst(month);
@@ -124,22 +124,31 @@ export function VrTab() {
   });
 
   const cancelMut = useMutation({
-    mutationFn: async (clientId: string) => {
+    mutationFn: async (payload: { client_id: string; primeira_carga_id?: string }) => {
       const today = format(new Date(), "yyyy-MM-dd");
-      const { error, count } = await supabase
+      // 1) Remove recorrências futuras pendentes (sem valor preenchido)
+      const { error: delErr, count } = await supabase
         .from("lancamentos_vr")
         .delete({ count: "exact" })
-        .eq("client_id", clientId)
+        .eq("client_id", payload.client_id)
         .eq("tipo", "recorrencia")
         .is("valor_base", null)
         .gt("competencia", today);
-      if (error) throw error;
+      if (delErr) throw delErr;
+
+      // 2) Marca a primeira carga como encerrada via observações
+      if (payload.primeira_carga_id) {
+        const dataStr = format(new Date(), "dd/MM/yyyy");
+        const { error: upErr } = await supabase
+          .from("lancamentos_vr")
+          .update({ observacoes: `Contrato VR encerrado em ${dataStr}` })
+          .eq("id", payload.primeira_carga_id);
+        if (upErr) throw upErr;
+      }
       return count ?? 0;
     },
-    onSuccess: (count) => {
-      toast.success(
-        `Contrato VR encerrado. ${count} recorrência${count === 1 ? "" : "s"} pendente${count === 1 ? "" : "s"} removida${count === 1 ? "" : "s"}.`,
-      );
+    onSuccess: () => {
+      toast.success("Contrato VR encerrado. Recorrências futuras removidas.");
       qc.invalidateQueries({ queryKey: ["financeiro-vr"] });
       qc.invalidateQueries({ queryKey: ["financeiro-vr-tab"] });
       setToCancel(null);
@@ -249,19 +258,27 @@ export function VrTab() {
               {filteredData.map((r) => {
                 const tone = vencimentoTone(r.fidelidade_vencimento);
                 const aguardandoValor = r.valor_base == null;
+                const encerrado = !!r.observacoes?.toLowerCase().includes("contrato vr encerrado");
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
-                      {r.client_id ? (
-                        <Link
-                          to={`/clientes/${r.client_id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {r.cliente_nome}
-                        </Link>
-                      ) : (
-                        r.cliente_nome
-                      )}
+                      <div className="flex items-center gap-2">
+                        {r.client_id ? (
+                          <Link
+                            to={`/clientes/${r.client_id}`}
+                            className="text-primary hover:underline"
+                          >
+                            {r.cliente_nome}
+                          </Link>
+                        ) : (
+                          r.cliente_nome
+                        )}
+                        {encerrado && (
+                          <Badge className="border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20">
+                            Encerrado
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground tabular-nums">{formatCnpj(r.cnpj) || "—"}</TableCell>
                     <TableCell>
@@ -327,6 +344,7 @@ export function VrTab() {
                               setToCancel({
                                 client_id: r.client_id!,
                                 cliente_nome: r.cliente_nome,
+                                primeira_carga_id: r.id,
                               })
                             }
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -431,7 +449,7 @@ export function VrTab() {
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                if (toCancel) cancelMut.mutate(toCancel.client_id);
+                if (toCancel) cancelMut.mutate({ client_id: toCancel.client_id, primeira_carga_id: toCancel.primeira_carga_id });
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

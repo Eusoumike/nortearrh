@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPlus } from "lucide-react";
+import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPlus, AlertTriangle, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,9 @@ type Parceiro = {
   contato: string | null;
   ativo: boolean;
   observacoes: string | null;
+  percentual_vr: number;
+  percentual_rh_tipo: "primeira_mensalidade" | "recorrencia";
+  percentual_rh: number;
 };
 type Config = {
   id: string;
@@ -97,7 +100,7 @@ export function ParceirosTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("parceiros")
-        .select("id, nome, contato, ativo, observacoes")
+        .select("id, nome, contato, ativo, observacoes, percentual_vr, percentual_rh_tipo, percentual_rh")
         .order("nome");
       if (error) throw error;
       return (data ?? []) as Parceiro[];
@@ -242,6 +245,12 @@ export function ParceirosTab() {
                       <Badge variant={p.ativo ? "default" : "secondary"}>{p.ativo ? "Ativo" : "Inativo"}</Badge>
                     </CardTitle>
                     {p.contato && <div className="text-xs text-muted-foreground">{p.contato}</div>}
+                    <div className="text-xs text-muted-foreground">
+                      VR: {formatPercent(p.percentual_vr)} ·{" "}
+                      RH: {p.percentual_rh_tipo === "primeira_mensalidade"
+                        ? "Primeira mensalidade (100%)"
+                        : `${formatPercent(p.percentual_rh)} recorrência`}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" variant="outline" onClick={() => setVincularFor(p)}>
@@ -333,6 +342,9 @@ export function ParceirosTab() {
           );
         })}
       </div>
+
+      {/* INCONSISTÊNCIAS */}
+      <InconsistenciasRepasse />
 
       {/* REPASSES */}
       <Card>
@@ -458,27 +470,44 @@ function ParceiroDialog({
   const [nome, setNome] = useState("");
   const [contato, setContato] = useState("");
   const [obs, setObs] = useState("");
+  const [pctVr, setPctVr] = useState<string>("0");
+  const [rhTipo, setRhTipo] = useState<"primeira_mensalidade" | "recorrencia">("primeira_mensalidade");
+  const [pctRh, setPctRh] = useState<string>("0");
 
   useMemo(() => {
     if (open) {
       setNome(parceiro?.nome ?? "");
       setContato(parceiro?.contato ?? "");
       setObs(parceiro?.observacoes ?? "");
+      setPctVr(parceiro ? String(parceiro.percentual_vr ?? 0) : "0");
+      setRhTipo(parceiro?.percentual_rh_tipo ?? "primeira_mensalidade");
+      setPctRh(parceiro ? String(parceiro.percentual_rh ?? 0) : "0");
     }
   }, [open, parceiro]);
+
+  const vrNum = Number(pctVr || 0);
+  const rhNum = Number(pctRh || 0);
+  const vrInvalid = isNaN(vrNum) || vrNum < 0 || vrNum > 50;
+  const rhInvalid = rhTipo === "recorrencia" && (isNaN(rhNum) || rhNum < 0 || rhNum > 10);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!nome.trim()) throw new Error("Nome é obrigatório");
+      if (vrInvalid) throw new Error("% VR Benefícios deve estar entre 0 e 50.");
+      if (rhInvalid) throw new Error("% RH Digital recorrência deve estar entre 0 e 10.");
+      const payload = {
+        nome: nome.trim(),
+        contato: contato.trim() || null,
+        observacoes: obs.trim() || null,
+        percentual_vr: vrNum,
+        percentual_rh_tipo: rhTipo,
+        percentual_rh: rhTipo === "recorrencia" ? rhNum : 0,
+      };
       if (parceiro) {
-        const { error } = await supabase.from("parceiros").update({
-          nome: nome.trim(), contato: contato.trim() || null, observacoes: obs.trim() || null,
-        }).eq("id", parceiro.id);
+        const { error } = await supabase.from("parceiros").update(payload).eq("id", parceiro.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("parceiros").insert({
-          nome: nome.trim(), contato: contato.trim() || null, observacoes: obs.trim() || null,
-        });
+        const { error } = await supabase.from("parceiros").insert({ ...payload, ativo: true });
         if (error) throw error;
       }
     },
@@ -492,7 +521,7 @@ function ParceiroDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{parceiro ? "Editar parceiro" : "Novo parceiro"}</DialogTitle>
         </DialogHeader>
@@ -507,12 +536,76 @@ function ParceiroDialog({
           </div>
           <div className="grid gap-1.5">
             <Label>Observações</Label>
-            <Textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} />
+            <Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
+          </div>
+
+          <div className="rounded-md border p-3 space-y-3">
+            <div className="text-sm font-medium">Comissões do parceiro</div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">RH Digital</div>
+              <div className="grid gap-1.5">
+                <Label>Tipo de repasse</Label>
+                <Select value={rhTipo} onValueChange={(v) => setRhTipo(v as any)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primeira_mensalidade">Primeira mensalidade — repasse único de 100%</SelectItem>
+                    <SelectItem value="recorrencia">Recorrência — % mensal (máx. 10%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {rhTipo === "recorrencia" ? (
+                <div className="grid gap-1.5">
+                  <Label>% recorrência RH Digital</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={10}
+                    placeholder="Ex: 5"
+                    value={pctRh}
+                    onChange={(e) => setPctRh(e.target.value)}
+                  />
+                  {rhInvalid && (
+                    <p className="text-xs text-destructive">Valor deve estar entre 0 e 10%.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Repasse mensal enquanto o cliente estiver ativo.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  100% da primeira mensalidade — pagamento único.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <div className="text-xs font-medium text-muted-foreground">VR Benefícios</div>
+              <div className="grid gap-1.5">
+                <Label>% sobre primeira carga</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  max={50}
+                  placeholder="Ex: 17.5"
+                  value={pctVr}
+                  onChange={(e) => setPctVr(e.target.value)}
+                />
+                {vrInvalid && (
+                  <p className="text-xs text-destructive">Valor deve estar entre 0 e 50%.</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Repasse único sobre a comissão da primeira carga.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !nome.trim()}>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || !nome.trim() || vrInvalid || rhInvalid}>
             {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
           </Button>
         </DialogFooter>
@@ -534,31 +627,48 @@ export function VincularClienteDialog({
   const [produto, setProduto] = useState<"rh_digital" | "vr_beneficios">("rh_digital");
   const [tipo, setTipo] = useState<"primeira_mensalidade" | "recorrencia" | "primeira_carga_vr">("primeira_mensalidade");
   const [percentual, setPercentual] = useState<string>("100");
+  const [usouPadrao, setUsouPadrao] = useState(true);
 
-  useMemo(() => {
-    if (open) {
-      setClient(defaultClient ?? null);
-      setProduto("rh_digital");
-      setTipo("primeira_mensalidade");
+  const applyPadrao = (
+    p: "rh_digital" | "vr_beneficios",
+    t: "primeira_mensalidade" | "recorrencia" | "primeira_carga_vr",
+  ) => {
+    if (!parceiro) return;
+    if (p === "vr_beneficios") {
+      setPercentual(String(parceiro.percentual_vr ?? 0));
+    } else if (t === "recorrencia") {
+      setPercentual(String(parceiro.percentual_rh ?? 0));
+    } else {
       setPercentual("100");
     }
-  }, [open, defaultClient]);
+    setUsouPadrao(true);
+  };
+
+  useMemo(() => {
+    if (open && parceiro) {
+      setClient(defaultClient ?? null);
+      setProduto("rh_digital");
+      const t = parceiro.percentual_rh_tipo ?? "primeira_mensalidade";
+      setTipo(t);
+      setPercentual(t === "recorrencia" ? String(parceiro.percentual_rh ?? 0) : "100");
+      setUsouPadrao(true);
+    }
+  }, [open, parceiro, defaultClient]);
 
   const handleProduto = (p: "rh_digital" | "vr_beneficios") => {
     setProduto(p);
     if (p === "vr_beneficios") {
       setTipo("primeira_carga_vr");
-      setPercentual("");
+      applyPadrao(p, "primeira_carga_vr");
     } else {
-      setTipo("primeira_mensalidade");
-      setPercentual("100");
+      const t = parceiro?.percentual_rh_tipo ?? "primeira_mensalidade";
+      setTipo(t);
+      applyPadrao(p, t);
     }
   };
   const handleTipo = (t: typeof tipo) => {
     setTipo(t);
-    if (t === "primeira_mensalidade") setPercentual("100");
-    else if (t === "recorrencia") setPercentual("10");
-    else setPercentual("");
+    applyPadrao(produto, t);
   };
 
   // preview valor
@@ -569,11 +679,10 @@ export function VincularClienteDialog({
       if (!client?.id) return 0;
       if (produto === "rh_digital") {
         const { data } = await supabase
-          .from("contratos_rh_digital")
+          .from("parcelas_rh_digital")
           .select("valor_nortear")
           .eq("client_id", client.id)
-          .eq("ativo", true)
-          .order("created_at", { ascending: false })
+          .order("competencia", { ascending: true })
           .limit(1)
           .maybeSingle();
         return Number((data as any)?.valor_nortear ?? 0);
@@ -582,6 +691,7 @@ export function VincularClienteDialog({
           .from("lancamentos_vr")
           .select("valor_comissao")
           .eq("client_id", client.id)
+          .eq("tipo", "primeira_carga")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -590,12 +700,26 @@ export function VincularClienteDialog({
     },
   });
   const preview = previewBase * (Number(percentual || 0) / 100);
+  const semBase = previewBase === 0;
+
+  // limites por tipo
+  const maxPct = tipo === "primeira_carga_vr" ? 50 : tipo === "recorrencia" ? 10 : 100;
+  const isFixoPrimeiraMensalidade = produto === "rh_digital" && tipo === "primeira_mensalidade";
 
   const save = useMutation({
     mutationFn: async () => {
       if (!parceiro || !client) throw new Error("Selecione cliente e parceiro");
-      const pct = Number(percentual);
-      if (isNaN(pct) || pct < 0 || pct > 100) throw new Error("Percentual inválido");
+      const pct = isFixoPrimeiraMensalidade ? 100 : Number(percentual);
+      if (isNaN(pct) || pct < 0) throw new Error("Percentual inválido");
+      if (pct > maxPct) {
+        throw new Error(
+          tipo === "primeira_carga_vr"
+            ? "Percentual máximo para VR Benefícios é 50%."
+            : tipo === "recorrencia"
+            ? "Percentual máximo para recorrência RH Digital é 10%."
+            : "Percentual inválido.",
+        );
+      }
       const { error } = await supabase.from("configuracoes_parceiro").upsert({
         parceiro_id: parceiro.id,
         client_id: client.id,
@@ -605,7 +729,6 @@ export function VincularClienteDialog({
         ativo: true,
       }, { onConflict: "parceiro_id,client_id,produto,tipo_repasse" });
       if (error) throw error;
-      // Vincula parceiro ao cliente
       await supabase.from("clients").update({ parceiro_id: parceiro.id }).eq("id", client.id);
     },
     onSuccess: () => {
@@ -617,6 +740,9 @@ export function VincularClienteDialog({
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const pctNum = isFixoPrimeiraMensalidade ? 100 : Number(percentual || 0);
+  const pctInvalid = !isFixoPrimeiraMensalidade && (isNaN(pctNum) || pctNum < 0 || pctNum > maxPct);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -647,37 +773,95 @@ export function VincularClienteDialog({
             </div>
             <div className="grid gap-1.5">
               <Label>Tipo de repasse *</Label>
-              <Select value={tipo} onValueChange={(v) => handleTipo(v as any)}>
+              <Select
+                value={tipo}
+                onValueChange={(v) => handleTipo(v as any)}
+                disabled={produto === "vr_beneficios"}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {produto === "rh_digital" ? (
                     <>
-                      <SelectItem value="primeira_mensalidade">Primeira mensalidade</SelectItem>
-                      <SelectItem value="recorrencia">Recorrente</SelectItem>
+                      <SelectItem value="primeira_mensalidade">Primeira mensalidade (100% — único)</SelectItem>
+                      <SelectItem value="recorrencia">Recorrência mensal (máx. 10%)</SelectItem>
                     </>
                   ) : (
-                    <SelectItem value="primeira_carga_vr">Primeira carga</SelectItem>
+                    <SelectItem value="primeira_carga_vr">Primeira carga (máx. 50%)</SelectItem>
                   )}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Percentual (0–100) *</Label>
-            <Input
-              type="number" step="0.01" min={0} max={100}
-              value={percentual} onChange={(e) => setPercentual(e.target.value)}
-            />
-          </div>
+
+          {isFixoPrimeiraMensalidade ? (
+            <div className="grid gap-1.5">
+              <Label>Percentual</Label>
+              <Input type="number" value={100} disabled />
+              <p className="text-xs text-muted-foreground">
+                100% da primeira mensalidade — repasse único, não editável.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-1.5">
+              <Label>
+                {tipo === "primeira_carga_vr"
+                  ? "% sobre primeira carga (máx. 50%) *"
+                  : "% mensal de recorrência (máx. 10%) *"}
+              </Label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                max={maxPct}
+                value={percentual}
+                onChange={(e) => { setPercentual(e.target.value); setUsouPadrao(false); }}
+              />
+              {usouPadrao && parceiro && (
+                <p className="text-xs text-primary">
+                  Padrão do parceiro — editável para este cliente.
+                </p>
+              )}
+              {pctInvalid && (
+                <p className="text-xs text-destructive">
+                  Valor deve estar entre 0 e {maxPct}%.
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {tipo === "primeira_carga_vr"
+                  ? "O repasse ao parceiro é sobre a comissão da primeira carga recebida pela Nortear."
+                  : "Repasse mensal enquanto o cliente estiver ativo."}
+              </p>
+            </div>
+          )}
+
           <div className="rounded-md border bg-muted/40 p-3 text-sm">
-            <div className="text-xs text-muted-foreground">Repasse estimado</div>
-            <div className="text-lg font-semibold tabular-nums">{BRL.format(preview)}</div>
-            <div className="text-xs text-muted-foreground">Base estimada: {BRL.format(previewBase)}</div>
+            <div className="text-xs text-muted-foreground">
+              {isFixoPrimeiraMensalidade
+                ? "Repasse único"
+                : tipo === "primeira_carga_vr"
+                ? "Repasse estimado (primeira carga)"
+                : "Repasse mensal estimado"}
+            </div>
+            {semBase && client ? (
+              <div className="text-xs text-amber-600">
+                {produto === "vr_beneficios"
+                  ? "Aguardando primeiro lançamento VR para este cliente."
+                  : "Aguardando primeiro lançamento RH para este cliente."}
+              </div>
+            ) : (
+              <>
+                <div className="text-lg font-semibold tabular-nums">{BRL.format(preview)}</div>
+                <div className="text-xs text-muted-foreground">Base estimada: {BRL.format(previewBase)}</div>
+              </>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !client || !parceiro}>
+          <Button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !client || !parceiro || pctInvalid}
+          >
             {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar vínculo
           </Button>
         </DialogFooter>
@@ -685,6 +869,7 @@ export function VincularClienteDialog({
     </Dialog>
   );
 }
+
 
 function ConfirmarRepasseDialog({
   repasse, onOpenChange,
@@ -733,5 +918,305 @@ function ConfirmarRepasseDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ---------- Inconsistências de Repasse ---------- */
+
+type Inconsistencia = {
+  key: string;
+  origem_id: string;
+  client_id: string;
+  cliente_nome: string;
+  parceiro_id: string;
+  parceiro_nome: string;
+  produto: "rh_digital" | "vr_beneficios";
+  tipo_repasse: "primeira_mensalidade" | "recorrencia" | "primeira_carga_vr";
+  percentual: number;
+  valor_base: number;
+  valor_repasse: number;
+  competencia: string;
+};
+
+function InconsistenciasRepasse() {
+  const qc = useQueryClient();
+  const [fixingKey, setFixingKey] = useState<string | null>(null);
+
+  const { data: inconsistencias = [], isLoading } = useQuery({
+    queryKey: ["repasses-inconsistencias"],
+    queryFn: async (): Promise<Inconsistencia[]> => {
+      const [{ data: configs }, { data: parceirosAll }, { data: vrLanc }, { data: rhParc }, { data: repassesAll }] =
+        await Promise.all([
+          supabase
+            .from("configuracoes_parceiro")
+            .select("id, parceiro_id, client_id, produto, tipo_repasse, percentual, ativo")
+            .eq("ativo", true),
+          supabase.from("parceiros").select("id, nome, ativo"),
+          supabase
+            .from("lancamentos_vr")
+            .select("id, client_id, cliente_nome, competencia, valor_comissao, tipo")
+            .eq("tipo", "primeira_carga"),
+          supabase
+            .from("parcelas_rh_digital")
+            .select("id, client_id, cliente_nome, competencia, valor_nortear, status")
+            .eq("status", "pago"),
+          supabase
+            .from("repasses_parceiro")
+            .select("parceiro_id, client_id, produto, tipo_repasse, competencia, origem_id"),
+        ]);
+
+      const parceiroById = new Map((parceirosAll ?? []).map((p: any) => [p.id, p]));
+      const repasseExists = (
+        parceiro_id: string,
+        client_id: string,
+        produto: string,
+        tipo_repasse: string,
+        competencia: string,
+        origem_id: string,
+      ) =>
+        (repassesAll ?? []).some(
+          (r: any) =>
+            r.parceiro_id === parceiro_id &&
+            r.client_id === client_id &&
+            r.produto === produto &&
+            r.tipo_repasse === tipo_repasse &&
+            (r.origem_id === origem_id ||
+              (tipo_repasse === "recorrencia" && r.competencia === competencia) ||
+              tipo_repasse === "primeira_mensalidade" ||
+              tipo_repasse === "primeira_carga_vr"),
+        );
+
+      const out: Inconsistencia[] = [];
+
+      // VR primeira_carga
+      for (const l of vrLanc ?? []) {
+        if (!l.client_id || l.valor_comissao == null) continue;
+        const cfgs = (configs ?? []).filter(
+          (c: any) =>
+            c.client_id === l.client_id &&
+            c.produto === "vr_beneficios" &&
+            Number(c.percentual) > 0,
+        );
+        for (const c of cfgs as any[]) {
+          const p = parceiroById.get(c.parceiro_id);
+          if (!p?.ativo) continue;
+          if (
+            repasseExists(c.parceiro_id, l.client_id, "vr_beneficios", "primeira_carga_vr", l.competencia, l.id)
+          )
+            continue;
+          out.push({
+            key: `vr-${l.id}-${c.parceiro_id}`,
+            origem_id: l.id,
+            client_id: l.client_id,
+            cliente_nome: l.cliente_nome,
+            parceiro_id: c.parceiro_id,
+            parceiro_nome: p.nome,
+            produto: "vr_beneficios",
+            tipo_repasse: "primeira_carga_vr",
+            percentual: Number(c.percentual),
+            valor_base: Number(l.valor_comissao),
+            valor_repasse: Math.round(Number(l.valor_comissao) * Number(c.percentual)) / 100,
+            competencia: l.competencia,
+          });
+        }
+      }
+
+      // RH parcelas pagas
+      for (const p of rhParc ?? []) {
+        if (!p.client_id || p.valor_nortear == null) continue;
+        const cfgs = (configs ?? []).filter(
+          (c: any) =>
+            c.client_id === p.client_id &&
+            c.produto === "rh_digital" &&
+            Number(c.percentual) > 0,
+        );
+        for (const c of cfgs as any[]) {
+          const parc = parceiroById.get(c.parceiro_id);
+          if (!parc?.ativo) continue;
+          const tipo = c.tipo_repasse === "recorrencia" ? "recorrencia" : "primeira_mensalidade";
+          if (repasseExists(c.parceiro_id, p.client_id, "rh_digital", tipo, p.competencia, p.id)) continue;
+          out.push({
+            key: `rh-${p.id}-${c.parceiro_id}`,
+            origem_id: p.id,
+            client_id: p.client_id,
+            cliente_nome: p.cliente_nome,
+            parceiro_id: c.parceiro_id,
+            parceiro_nome: parc.nome,
+            produto: "rh_digital",
+            tipo_repasse: tipo,
+            percentual: Number(c.percentual),
+            valor_base: Number(p.valor_nortear),
+            valor_repasse: Math.round(Number(p.valor_nortear) * Number(c.percentual)) / 100,
+            competencia: p.competencia,
+          });
+        }
+      }
+
+      return out;
+    },
+  });
+
+  const corrigir = useMutation({
+    mutationFn: async (item: Inconsistencia) => {
+      const { error } = await supabase.from("repasses_parceiro").insert({
+        parceiro_id: item.parceiro_id,
+        parceiro_nome: item.parceiro_nome,
+        client_id: item.client_id,
+        cliente_nome: item.cliente_nome,
+        produto: item.produto,
+        tipo_repasse: item.tipo_repasse,
+        percentual: item.percentual,
+        valor_base: item.valor_base,
+        valor_repasse: item.valor_repasse,
+        competencia: item.competencia,
+        origem_id: item.origem_id,
+        status: "pendente",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Repasse gerado.");
+      qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
+      qc.invalidateQueries({ queryKey: ["repasses-inconsistencias"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+    onSettled: () => setFixingKey(null),
+  });
+
+  const corrigirTodos = useMutation({
+    mutationFn: async (items: Inconsistencia[]) => {
+      const payload = items.map((item) => ({
+        parceiro_id: item.parceiro_id,
+        parceiro_nome: item.parceiro_nome,
+        client_id: item.client_id,
+        cliente_nome: item.cliente_nome,
+        produto: item.produto,
+        tipo_repasse: item.tipo_repasse,
+        percentual: item.percentual,
+        valor_base: item.valor_base,
+        valor_repasse: item.valor_repasse,
+        competencia: item.competencia,
+        origem_id: item.origem_id,
+        status: "pendente" as const,
+      }));
+      const { error } = await supabase.from("repasses_parceiro").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: (_d, items) => {
+      toast.success(`${items.length} repasse(s) gerado(s).`);
+      qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
+      qc.invalidateQueries({ queryKey: ["repasses-inconsistencias"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <div className="flex items-center gap-2">
+          <AlertTriangle
+            className={
+              inconsistencias.length > 0
+                ? "h-4 w-4 text-amber-500"
+                : "h-4 w-4 text-muted-foreground"
+            }
+          />
+          <CardTitle className="text-base">Inconsistências de repasse</CardTitle>
+          {inconsistencias.length > 0 && (
+            <Badge className="bg-amber-500 text-white hover:bg-amber-500/90">
+              {inconsistencias.length}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => qc.invalidateQueries({ queryKey: ["repasses-inconsistencias"] })}
+            disabled={isLoading}
+          >
+            {isLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+            Reverificar
+          </Button>
+          {inconsistencias.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() => corrigirTodos.mutate(inconsistencias)}
+              disabled={corrigirTodos.isPending}
+            >
+              {corrigirTodos.isPending ? (
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              ) : (
+                <Wrench className="mr-2 h-3 w-3" />
+              )}
+              Corrigir todos
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando…
+          </div>
+        ) : inconsistencias.length === 0 ? (
+          <div className="py-4 text-center text-sm text-muted-foreground">
+            Nenhuma inconsistência detectada. Todos os lançamentos elegíveis possuem repasse correspondente.
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Parceiro</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Competência</TableHead>
+                  <TableHead className="text-right">%</TableHead>
+                  <TableHead className="text-right">Base</TableHead>
+                  <TableHead className="text-right">Repasse</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inconsistencias.map((it) => (
+                  <TableRow key={it.key}>
+                    <TableCell>{it.cliente_nome}</TableCell>
+                    <TableCell>{it.parceiro_nome}</TableCell>
+                    <TableCell>{PRODUTO_LABEL[it.produto]}</TableCell>
+                    <TableCell>{TIPO_LABEL[it.tipo_repasse]}</TableCell>
+                    <TableCell>{formatBRDate(it.competencia)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPercent(it.percentual)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{BRL.format(it.valor_base)}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">
+                      {BRL.format(it.valor_repasse)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={fixingKey === it.key && corrigir.isPending}
+                        onClick={() => {
+                          setFixingKey(it.key);
+                          corrigir.mutate(it);
+                        }}
+                      >
+                        {fixingKey === it.key && corrigir.isPending ? (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Wrench className="mr-2 h-3 w-3" />
+                        )}
+                        Corrigir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

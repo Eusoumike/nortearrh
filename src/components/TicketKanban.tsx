@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PriorityBadge } from "@/components/badges";
+import { Sparkles } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -42,6 +44,8 @@ interface KanbanTicket {
 
 interface Props {
   tickets: KanbanTicket[];
+  showResolved?: boolean;
+  assistedIds?: Set<string>;
 }
 
 // Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
@@ -66,7 +70,7 @@ function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   return Math.max(0, (now - new Date(t.current_stage_started_at).getTime()) / 1000);
 }
 
-const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: KanbanTicket; now: number; isOverlay?: boolean }) {
+const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssist = false }: { t: KanbanTicket; now: number; isOverlay?: boolean; hasAssist?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const navigate = useNavigate();
   const elapsed = timeOnCurrentStage(t, now);
@@ -96,7 +100,17 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
         <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary">
           #{t.ticket_number}
         </span>
-        <PriorityBadge priority={t.priority} />
+        <div className="flex items-center gap-1.5">
+          {hasAssist && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Sparkles className="h-3 w-3 text-accent" />
+              </TooltipTrigger>
+              <TooltipContent side="top">Assist consultado</TooltipContent>
+            </Tooltip>
+          )}
+          <PriorityBadge priority={t.priority} />
+        </div>
       </div>
       <p className="line-clamp-2 text-xs font-semibold leading-snug">{t.title}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
@@ -112,7 +126,7 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false }: { t: 
   );
 });
 
-function Column({ status, tickets, now }: { status: TicketStatus; tickets: KanbanTicket[]; now: number }) {
+function Column({ status, tickets, now, assistedIds }: { status: TicketStatus; tickets: KanbanTicket[]; now: number; assistedIds?: Set<string> }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const stripe = STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40";
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -178,7 +192,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
           <p className="py-6 text-center text-[11px] text-muted-foreground/70">Nenhum chamado</p>
         ) : (
           <>
-            {visibleTickets.map((t) => <TicketCard key={t.id} t={t} now={now} />)}
+            {visibleTickets.map((t) => <TicketCard key={t.id} t={t} now={now} hasAssist={assistedIds?.has(t.id)} />)}
             {hasMore && (
               <button
                 type="button"
@@ -196,7 +210,7 @@ function Column({ status, tickets, now }: { status: TicketStatus; tickets: Kanba
 }
 const MemoColumn = memo(Column);
 
-export function TicketKanban({ tickets }: Props) {
+export function TicketKanban({ tickets, showResolved = false, assistedIds }: Props) {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -282,8 +296,8 @@ export function TicketKanban({ tickets }: Props) {
             padding: "0 16px 16px",
           }}
         >
-          {STATUS_FLOW.map((status) => (
-            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} />
+          {STATUS_FLOW.filter((s) => showResolved || s !== "resolvido").map((status) => (
+            <MemoColumn key={status} status={status} tickets={grouped[status]} now={now} assistedIds={assistedIds} />
           ))}
         </div>
       </div>
