@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Briefcase, Bell, Filter } from "lucide-react";
+import { Plus, Briefcase, Bell, Filter, Search } from "lucide-react";
+import { CnpjSearchDialog } from "@/components/crm/CnpjSearchDialog";
 import { toast } from "sonner";
 import {
   DndContext, DragEndEvent, DragStartEvent, DragOverlay,
@@ -229,9 +230,14 @@ export default function CrmPipeline() {
             </p>
           </div>
         </div>
-        <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4" /> Novo Negócio
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setCnpjDialogOpen(true)}>
+            <Search className="h-4 w-4" /> Buscar CNPJ
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4" /> Novo Negócio
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
