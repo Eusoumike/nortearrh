@@ -46,6 +46,8 @@ export function Breadcrumbs() {
       return null;
     },
   });
+    },
+  });
 
   if (parts.length === 0) {
     return <span className="text-sm font-medium text-foreground">Dashboard</span>;
