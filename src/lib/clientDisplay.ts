@@ -1,3 +1,5 @@
+import { formatCnpj } from "./formatters";
+
 /**
  * Helpers para exibir clientes nos seletores do sistema.
  *
@@ -22,9 +24,11 @@ export function getClientPrimary(c: ClientLike): string {
 }
 
 export function getClientSecondary(c: ClientLike): string {
-  if (c.contact_name) return c.contact_name;
-  if (c.company && c.name) return c.name;
-  return "";
+  const parts: string[] = [];
+  if (c.contact_name) parts.push(c.contact_name);
+  else if (c.company && c.name) parts.push(c.name);
+  if (c.cnpj) parts.push(formatCnpj(c.cnpj));
+  return parts.join(" · ");
 }
 
 export function getClientLabel(c: ClientLike): string {

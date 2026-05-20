@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatBrazilDate, timeAgo } from "@/lib/formatters";
+import { formatBrazilDate, timeAgo, formatCnpj } from "@/lib/formatters";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { IniciarOnboardingDialog } from "@/components/IniciarOnboardingDialog";
 
@@ -237,7 +237,7 @@ export default function ClientDetail() {
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">CNPJ</dt>
-                <dd className="font-mono">{client.cnpj || "—"}</dd>
+                <dd className="font-mono">{client.cnpj ? formatCnpj(client.cnpj) : "—"}</dd>
               </div>
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Produto(s) contratado(s)</dt>
