@@ -288,6 +288,7 @@ export default function CrmPipeline() {
       <DealDialog open={dialogOpen} onOpenChange={setDialogOpen} deal={editing} onSaved={() => qc.invalidateQueries({ queryKey: ["deals"] })} />
       <WinDealDialog open={!!winDeal} onOpenChange={(o) => !o && setWinDeal(null)} deal={winDeal} onDone={() => qc.invalidateQueries({ queryKey: ["deals"] })} />
       <LoseDealDialog open={!!loseDeal} onOpenChange={(o) => !o && setLoseDeal(null)} deal={loseDeal} onDone={() => qc.invalidateQueries({ queryKey: ["deals"] })} />
+      <CnpjSearchDialog open={cnpjDialogOpen} onOpenChange={setCnpjDialogOpen} onCreated={() => qc.invalidateQueries({ queryKey: ["deals"] })} />
     </div>
   );
 }
