@@ -7,7 +7,9 @@ import { StatusBadge, PriorityBadge, HealthBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText, Rocket, ListChecks, Calendar, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { timeAgo, formatDuration, formatBrazilDateTime } from "@/lib/formatters";
 import { CHANNEL_LABEL, STATUS_LABEL, TIMED_STAGES, type TicketStatus } from "@/lib/constants";
@@ -15,6 +17,7 @@ import { isOpenStatus, isSlaOverdue, isSlaApproaching, isSlaAlerting } from "@/l
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
 import { exportTicketsCsv, exportTicketsPdf, type ExportTicket } from "@/lib/exporters";
+
 
 interface KPIProps {
   label: string;
