@@ -67,7 +67,7 @@ export default function MyTasks() {
       if (!user) return [];
       const { data, error } = await supabase
         .from("tasks")
-        .select("*, ticket:tickets(id, ticket_number, title, status)")
+        .select("*, ticket:tickets!tasks_ticket_id_fkey(id, ticket_number, title, status)")
         .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
         .order("due_date", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
