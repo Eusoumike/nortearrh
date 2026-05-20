@@ -451,8 +451,16 @@ export default function TicketDetail() {
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* COLUNA ESQUERDA */}
         <div className="space-y-6 min-w-0">
-          {/* Header — bloco com fundo sutil */}
-          <div className="rounded-xl border border-border bg-gradient-to-br from-surface to-surface-muted/40 p-5 space-y-3 shadow-sm">
+          {/* Header — bloco com fundo sutil + acento de prioridade à esquerda */}
+          <div
+            className={cn(
+              "rounded-xl border border-border bg-gradient-to-br from-surface to-surface-muted/40 p-5 space-y-3 shadow-sm border-l-4",
+              ticket.priority === "urgente" && "border-l-danger",
+              ticket.priority === "alta" && "border-l-warning",
+              ticket.priority === "media" && "border-l-primary",
+              ticket.priority === "baixa" && "border-l-muted-foreground/40",
+            )}
+          >
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-mono font-medium text-muted-foreground">#{ticket.ticket_number}</span>
