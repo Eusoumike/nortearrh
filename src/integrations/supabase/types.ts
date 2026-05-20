@@ -152,10 +152,15 @@ export type Database = {
           desconto_percentual: number
           document: string | null
           email: string | null
+          estado: string | null
+          faixa_colaboradores: string | null
           fonte_indicacao: string | null
+          fornecedor_beneficios: string[] | null
+          fornecedor_rh_digital: string[] | null
           health: Database["public"]["Enums"]["client_health"]
           health_reason: string | null
           id: string
+          modulos_ativos: string[] | null
           name: string
           notes: string | null
           nps_data: string | null
@@ -165,8 +170,11 @@ export type Database = {
           parceiro_id: string | null
           phone: string | null
           pipedrive_person_id: string | null
+          potencial_cross: string[] | null
           product: string | null
           products: string[]
+          segmento: string | null
+          status_nortear: string | null
           tags: string[] | null
           updated_at: string
           valor_com_desconto: number | null
@@ -189,10 +197,15 @@ export type Database = {
           desconto_percentual?: number
           document?: string | null
           email?: string | null
+          estado?: string | null
+          faixa_colaboradores?: string | null
           fonte_indicacao?: string | null
+          fornecedor_beneficios?: string[] | null
+          fornecedor_rh_digital?: string[] | null
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
+          modulos_ativos?: string[] | null
           name: string
           notes?: string | null
           nps_data?: string | null
@@ -202,8 +215,11 @@ export type Database = {
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
+          segmento?: string | null
+          status_nortear?: string | null
           tags?: string[] | null
           updated_at?: string
           valor_com_desconto?: number | null
@@ -226,10 +242,15 @@ export type Database = {
           desconto_percentual?: number
           document?: string | null
           email?: string | null
+          estado?: string | null
+          faixa_colaboradores?: string | null
           fonte_indicacao?: string | null
+          fornecedor_beneficios?: string[] | null
+          fornecedor_rh_digital?: string[] | null
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
+          modulos_ativos?: string[] | null
           name?: string
           notes?: string | null
           nps_data?: string | null
@@ -239,8 +260,11 @@ export type Database = {
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
+          segmento?: string | null
+          status_nortear?: string | null
           tags?: string[] | null
           updated_at?: string
           valor_com_desconto?: number | null
@@ -468,8 +492,190 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_activities: {
+        Row: {
+          agendado_para: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          descricao: string | null
+          id: string
+          prioridade: string
+          realizado_em: string | null
+          resultado: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          agendado_para?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          descricao?: string | null
+          id?: string
+          prioridade?: string
+          realizado_em?: string | null
+          resultado?: string | null
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          agendado_para?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          descricao?: string | null
+          id?: string
+          prioridade?: string
+          realizado_em?: string | null
+          resultado?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_contacts: {
+        Row: {
+          cargo: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          email: string | null
+          id: string
+          nome: string
+          notas: string | null
+          papel: string | null
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          papel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          papel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_contacts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_history: {
+        Row: {
+          campo: string
+          changed_at: string
+          changed_by: string | null
+          deal_id: string
+          id: string
+          valor_antigo: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo: string
+          changed_at?: string
+          changed_by?: string | null
+          deal_id: string
+          id?: string
+          valor_antigo?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo?: string
+          changed_at?: string
+          changed_by?: string | null
+          deal_id?: string
+          id?: string
+          valor_antigo?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
+          canal_origem: string | null
           client_id: string | null
           company_name: string
           contact_email: string | null
@@ -477,19 +683,35 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           created_by: string | null
+          estado: string | null
+          etiqueta: string | null
           expected_close_date: string | null
+          extensoes: string[] | null
+          faixa_colaboradores: string | null
+          fonte_indicacao: string | null
           id: string
+          lost_at: string | null
+          motivo_perda: string | null
+          notas: string | null
           notes: string | null
+          origem_lead: string | null
           owner_id: string | null
           pipedrive_deal_id: string | null
+          plano_contratado: string | null
           position: number
+          probabilidade: string | null
           product: Database["public"]["Enums"]["deal_product"] | null
+          quem_implanta: string | null
+          segmento: string | null
           stage: Database["public"]["Enums"]["deal_stage"]
+          stage_changed_at: string
           title: string
           updated_at: string
           value: number
+          won_at: string | null
         }
         Insert: {
+          canal_origem?: string | null
           client_id?: string | null
           company_name: string
           contact_email?: string | null
@@ -497,19 +719,35 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          estado?: string | null
+          etiqueta?: string | null
           expected_close_date?: string | null
+          extensoes?: string[] | null
+          faixa_colaboradores?: string | null
+          fonte_indicacao?: string | null
           id?: string
+          lost_at?: string | null
+          motivo_perda?: string | null
+          notas?: string | null
           notes?: string | null
+          origem_lead?: string | null
           owner_id?: string | null
           pipedrive_deal_id?: string | null
+          plano_contratado?: string | null
           position?: number
+          probabilidade?: string | null
           product?: Database["public"]["Enums"]["deal_product"] | null
+          quem_implanta?: string | null
+          segmento?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
+          stage_changed_at?: string
           title: string
           updated_at?: string
           value?: number
+          won_at?: string | null
         }
         Update: {
+          canal_origem?: string | null
           client_id?: string | null
           company_name?: string
           contact_email?: string | null
@@ -517,17 +755,32 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          estado?: string | null
+          etiqueta?: string | null
           expected_close_date?: string | null
+          extensoes?: string[] | null
+          faixa_colaboradores?: string | null
+          fonte_indicacao?: string | null
           id?: string
+          lost_at?: string | null
+          motivo_perda?: string | null
+          notas?: string | null
           notes?: string | null
+          origem_lead?: string | null
           owner_id?: string | null
           pipedrive_deal_id?: string | null
+          plano_contratado?: string | null
           position?: number
+          probabilidade?: string | null
           product?: Database["public"]["Enums"]["deal_product"] | null
+          quem_implanta?: string | null
+          segmento?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
+          stage_changed_at?: string
           title?: string
           updated_at?: string
           value?: number
+          won_at?: string | null
         }
         Relationships: [
           {
@@ -1420,6 +1673,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_metas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          mes: string
+          produto: string
+          quantidade_meta: number
+          updated_at: string
+          valor_meta: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mes: string
+          produto?: string
+          quantidade_meta?: number
+          updated_at?: string
+          valor_meta?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mes?: string
+          produto?: string
+          quantidade_meta?: number
+          updated_at?: string
+          valor_meta?: number
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {
