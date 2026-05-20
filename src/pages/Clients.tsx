@@ -241,25 +241,20 @@ export default function Clients() {
       </div>
 
 
-      <Card className="p-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, empresa ou e-mail…" className="h-9 pl-8" />
-        </div>
-      </Card>
-
       {isLoading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <p className="mt-3 text-sm font-medium">Nenhum cliente cadastrado</p>
-          <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
+        <Card>
+          <EmptyState
+            icon={Building2}
+            title={q || productFilter !== "todos" ? "Nenhum cliente nesse filtro" : "Nenhum cliente cadastrado"}
+            description={q || productFilter !== "todos" ? "Tente ajustar os filtros ou a busca." : "Comece cadastrando seu primeiro cliente."}
+            action={!q && productFilter === "todos" ? { label: "Novo Cliente", icon: Plus, onClick: () => setOpen(true) } : undefined}
+          />
         </Card>
+
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((c) => (
