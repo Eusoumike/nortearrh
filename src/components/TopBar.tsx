@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo, Briefcase } from "lucide-react";
+import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
@@ -105,26 +105,7 @@ export function TopBar() {
     };
   }, [qc]);
 
-  // Atividades CRM próximas / atrasadas
-  const { data: crmActivities } = useQuery({
-    queryKey: ["crm-activities-due"],
-    queryFn: async () => {
-      const inOneHour = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from("deal_activities")
-        .select("id, titulo, tipo, agendado_para, deal_id, status")
-        .eq("status", "pendente")
-        .not("agendado_para", "is", null)
-        .lte("agendado_para", inOneHour)
-        .order("agendado_para", { ascending: true })
-        .limit(10);
-      if (error) throw error;
-      return data ?? [];
-    },
-    refetchInterval: 60_000,
-  });
-
-  const alertCount = (alerts?.length ?? 0) + (crmActivities?.length ?? 0);
+  const alertCount = alerts?.length ?? 0;
 
   // Busca global multi-módulos
   const { data: searchResults, isFetching: isSearching } = useQuery({
@@ -135,7 +116,7 @@ export function TopBar() {
       const numeric = safe.replace(/^#/, "");
       const like = `%${safe}%`;
 
-      const [ticketsRes, clientsRes, implantacoesRes, tasksRes, dealsRes] = await Promise.all([
+      const [ticketsRes, clientsRes, implantacoesRes, tasksRes] = await Promise.all([
         supabase
           .from("tickets")
           .select("id, ticket_number, title, status, client_name, organization")
@@ -162,12 +143,6 @@ export function TopBar() {
           .ilike("title", like)
           .order("created_at", { ascending: false })
           .limit(8),
-        supabase
-          .from("deals")
-          .select("id, title, company_name, contact_name, stage")
-          .or(`title.ilike.${like},company_name.ilike.${like},contact_name.ilike.${like}`)
-          .order("created_at", { ascending: false })
-          .limit(8),
       ]);
 
       return {
@@ -175,7 +150,6 @@ export function TopBar() {
         clients: clientsRes.data ?? [],
         implantacoes: implantacoesRes.data ?? [],
         tasks: tasksRes.data ?? [],
-        deals: dealsRes.data ?? [],
       };
     },
   });
@@ -184,8 +158,7 @@ export function TopBar() {
     (searchResults?.tickets.length ?? 0) +
     (searchResults?.clients.length ?? 0) +
     (searchResults?.implantacoes.length ?? 0) +
-    (searchResults?.tasks.length ?? 0) +
-    (searchResults?.deals.length ?? 0);
+    (searchResults?.tasks.length ?? 0);
 
   const goTo = (path: string) => {
     setSearchOpen(false);
@@ -230,7 +203,7 @@ export function TopBar() {
           <PopoverContent align="end" className="w-80 p-0">
             <div className="border-b border-border px-3 py-2">
               <p className="text-sm font-semibold">Notificações</p>
-              <p className="text-xs text-muted-foreground">Alertas SLA e atividades do CRM.</p>
+              <p className="text-xs text-muted-foreground">Alertas de SLA dos chamados.</p>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {alertCount === 0 ? (
@@ -246,20 +219,6 @@ export function TopBar() {
                       </div>
                       {a.sla_resolution_deadline && (
                         <p className="mt-0.5 text-[10px] text-muted-foreground">vence {timeAgo(a.sla_resolution_deadline)}</p>
-                      )}
-                    </Link>
-                  ))}
-                  {crmActivities?.map((a: any) => (
-                    <Link key={`act-${a.id}`} to={a.deal_id ? `/crm/${a.deal_id}` : "/crm/atividades"} className="block px-3 py-2 hover:bg-surface-muted">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary">CRM</span>
-                        <p className="flex-1 truncate text-xs font-medium">{a.titulo}</p>
-                      </div>
-                      {a.agendado_para && (
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          {new Date(a.agendado_para).getTime() < Date.now() ? "atrasada " : ""}
-                          {timeAgo(a.agendado_para)}
-                        </p>
                       )}
                     </Link>
                   ))}
@@ -390,28 +349,6 @@ export function TopBar() {
                 </CommandGroup>
               )}
 
-              {(searchResults?.deals.length ?? 0) > 0 && (
-                <CommandGroup heading="Negócios (CRM)">
-                  {searchResults!.deals.map((d: any) => (
-                    <CommandItem
-                      key={`de-${d.id}`}
-                      value={`de ${d.title} ${d.company_name ?? ""} ${d.contact_name ?? ""}`}
-                      onSelect={() => goTo(`/crm`)}
-                      className="flex items-start gap-2"
-                    >
-                      <Briefcase className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{d.title}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {d.company_name ?? ""}
-                          {d.company_name && d.stage ? " · " : ""}
-                          {d.stage ?? ""}
-                        </p>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
             </>
           )}
         </CommandList>

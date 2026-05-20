@@ -111,22 +111,6 @@ export default function Dashboard() {
     },
   });
 
-  const { data: crmToday = [] } = useQuery({
-    queryKey: ["dashboard-crm-today"],
-    queryFn: async () => {
-      const start = new Date(); start.setHours(0,0,0,0);
-      const end = new Date(); end.setHours(23,59,59,999);
-      const { data } = await supabase
-        .from("deal_activities")
-        .select("id, titulo, tipo, agendado_para, deal_id, deals(company_name)")
-        .eq("status", "pendente")
-        .gte("agendado_para", start.toISOString())
-        .lte("agendado_para", end.toISOString())
-        .order("agendado_para", { ascending: true })
-        .limit(8);
-      return data ?? [];
-    },
-  });
 
 
   const stats = useMemo(() => {
@@ -296,8 +280,8 @@ export default function Dashboard() {
       </div>
 
       {/* ZONA 2 — Atenção imediata */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3 flex h-full min-h-[320px] flex-col p-5">
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="flex h-full min-h-[320px] flex-col p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold">Chamados que precisam de atenção</h2>
             <Link to="/tickets?open=1" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver todos <ArrowUpRight className="h-3 w-3" /></Link>
@@ -322,30 +306,8 @@ export default function Dashboard() {
             </div>
           )}
         </Card>
-
-        <Card className="lg:col-span-2 flex h-full min-h-[320px] flex-col p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Atividades CRM de hoje</h2>
-            <Link to="/crm/atividades" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver todas <ArrowUpRight className="h-3 w-3" /></Link>
-          </div>
-          {crmToday.length === 0 ? (
-            <EmptyState icon={Calendar} title="Nenhuma atividade para hoje" description="Aproveite para planejar a próxima ação." />
-          ) : (
-            <div className="divide-y divide-border">
-              {crmToday.map((a: any) => (
-                <Link key={a.id} to={a.deal_id ? `/crm/${a.deal_id}` : "/crm/atividades"} className="flex items-center gap-3 px-2 py-2.5 transition-colors hover:bg-surface-muted">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"><Calendar className="h-4 w-4" /></div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{a.titulo}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{a.deals?.company_name ?? "—"}</p>
-                  </div>
-                  <span className="shrink-0 text-[11px] text-muted-foreground">{a.agendado_para ? new Date(a.agendado_para).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—"}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
+
 
 
       {/* Tempo médio por etapa */}

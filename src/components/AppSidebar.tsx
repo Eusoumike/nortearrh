@@ -4,7 +4,6 @@ import {
   Sparkles,
   Rocket,
   Headphones,
-  Briefcase,
   DollarSign,
   TrendingUp,
   CheckSquare,
@@ -13,9 +12,6 @@ import {
   ChevronDown,
   LogOut,
   LucideIcon,
-  Kanban,
-  ListChecks,
-  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -57,21 +53,6 @@ const sections: NavSection[] = [
   {
     label: "Início",
     items: [{ key: "dashboard", title: "Dashboard", icon: LayoutDashboard, url: "/" }],
-  },
-  {
-    label: "Vendas",
-    items: [
-      {
-        key: "crm",
-        title: "CRM",
-        icon: Briefcase,
-        children: [
-          { title: "Pipeline", url: "/crm/pipeline", icon: Kanban },
-          { title: "Atividades", url: "/crm/atividades", icon: ListChecks },
-          { title: "Analytics", url: "/crm/analytics", icon: BarChart3 },
-        ],
-      },
-    ],
   },
   {
     label: "Operação",

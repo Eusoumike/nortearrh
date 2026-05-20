@@ -26,7 +26,7 @@ import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
+import { Plus, Search, Building2, Mail, Phone, Loader2, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, pipedrive_person_id, created_at")
+        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, created_at")
         .order("name");
       if (error) throw error;
       return data;
@@ -106,22 +106,6 @@ export default function Clients() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const syncPipedrive = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("pipedrive-sync");
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { inserted: number; unique_clients: number; skipped_existing: number };
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["clients-min"] });
-      toast.success(
-        `Sincronização concluída: ${data.inserted} novos · ${data.skipped_existing} já existiam`,
-      );
-    },
-    onError: (e: any) => toast.error(`Pipedrive: ${e.message}`),
-  });
 
   const PRODUCT_CHIPS = [
     { key: "todos", label: "Todos" },
@@ -138,21 +122,6 @@ export default function Clients() {
         actions={
 
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9"
-              onClick={() => syncPipedrive.mutate()}
-              disabled={syncPipedrive.isPending}
-              title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
-            >
-              {syncPipedrive.isPending ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-1.5 h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">Sincronizar</span>
-            </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-9">
