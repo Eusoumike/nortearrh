@@ -349,28 +349,6 @@ export function TopBar() {
                 </CommandGroup>
               )}
 
-              {(searchResults?.deals.length ?? 0) > 0 && (
-                <CommandGroup heading="Negócios (CRM)">
-                  {searchResults!.deals.map((d: any) => (
-                    <CommandItem
-                      key={`de-${d.id}`}
-                      value={`de ${d.title} ${d.company_name ?? ""} ${d.contact_name ?? ""}`}
-                      onSelect={() => goTo(`/crm`)}
-                      className="flex items-start gap-2"
-                    >
-                      <Briefcase className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{d.title}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {d.company_name ?? ""}
-                          {d.company_name && d.stage ? " · " : ""}
-                          {d.stage ?? ""}
-                        </p>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
             </>
           )}
         </CommandList>
