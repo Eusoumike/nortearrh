@@ -153,9 +153,7 @@ export default function ClientDetail() {
     },
   });
 
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+
 
   if (isLoading || !client) {
     return (
