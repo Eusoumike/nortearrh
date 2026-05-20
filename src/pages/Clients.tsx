@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 
 export default function Clients() {
   const [q, setQ] = useState("");
+  const [productFilter, setProductFilter] = useState<string>("todos");
   const [open, setOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
