@@ -24,16 +24,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Plus, Search, Building2, Mail, Phone, Loader2, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
+import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 
 export default function Clients() {
   const [q, setQ] = useState("");
-  const [productFilter, setProductFilter] = useState<string>("todos");
   const [open, setOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
@@ -45,23 +41,16 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, created_at")
+        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, pipedrive_person_id, created_at")
         .order("name");
       if (error) throw error;
       return data;
     },
   });
 
-  const filtered = (clients ?? []).filter((c: any) => {
-    if (q && !(c.name?.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase()) || c.cnpj?.includes(q))) return false;
-    if (productFilter !== "todos") {
-      const products: string[] = c.products ?? [];
-      if (productFilter === "ambos" && !(products.includes("rh_digital") && products.includes("vr_beneficios"))) return false;
-      if (productFilter === "rh_digital" && !products.includes("rh_digital")) return false;
-      if (productFilter === "vr_beneficios" && !products.includes("vr_beneficios")) return false;
-    }
-    return true;
-  });
+  const filtered = (clients ?? []).filter((c) =>
+    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
+  );
 
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
@@ -106,124 +95,125 @@ export default function Clients() {
     onError: (e: any) => toast.error(e.message),
   });
 
-
-  const PRODUCT_CHIPS = [
-    { key: "todos", label: "Todos" },
-    { key: "rh_digital", label: "RH Digital" },
-    { key: "vr_beneficios", label: "VR Benefícios" },
-    { key: "ambos", label: "Ambos" },
-  ];
+  const syncPipedrive = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("pipedrive-sync");
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as { inserted: number; unique_clients: number; skipped_existing: number };
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["clients-min"] });
+      toast.success(
+        `Sincronização concluída: ${data.inserted} novos · ${data.skipped_existing} já existiam`,
+      );
+    },
+    onError: (e: any) => toast.error(`Pipedrive: ${e.message}`),
+  });
 
   return (
     <div className="space-y-4 p-4 md:p-6">
-      <PageHeader
-        title="Carteira de Clientes"
-        subtitle={`${filtered.length} cliente${filtered.length === 1 ? "" : "s"}${q || productFilter !== "todos" ? " (filtrados)" : ""}`}
-        actions={
-
-          <>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="h-9">
-                  <Plus className="mr-1.5 h-4 w-4" /> Novo Cliente
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
-                <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
-                  <div className="space-y-1.5">
-                    <Label>Nome *</Label>
-                    <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Empresa</Label>
-                      <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Status</Label>
-                      <Select value={form.health} onValueChange={(v) => setForm({ ...form, health: v as ClientHealth })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(HEALTH_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>E-mail</Label>
-                      <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Telefone</Label>
-                      <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                    </div>
-                  </div>
-                  {form.health !== "saudavel" && (
-                    <div className="space-y-1.5">
-                      <Label>Motivo</Label>
-                      <Input value={form.health_reason} onChange={(e) => setForm({ ...form, health_reason: e.target.value })} placeholder="Ex.: contrato em renovação" />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label>Notas</Label>
-                    <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                    <Button type="submit" disabled={create.isPending || !form.name}>
-                      {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Salvar
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </>
-        }
-      />
-
-      {/* Filtros chips de produto + busca */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {PRODUCT_CHIPS.map((c) => {
-            const active = productFilter === c.key;
-            return (
-              <button
-                key={c.key}
-                onClick={() => setProductFilter(c.key)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {c.label}
-              </button>
-            );
-          })}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Clientes</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} clientes</p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa, CNPJ, contato…" className="h-9 pl-8" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => syncPipedrive.mutate()}
+            disabled={syncPipedrive.isPending}
+            title="Importa deals ganhos do Pipedrive como clientes (dedup por organização)"
+          >
+            {syncPipedrive.isPending ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-1.5 h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Sincronizar Pipedrive</span>
+            <span className="sm:hidden">Sync</span>
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-9 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
+                <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Novo cliente</span><span className="sm:hidden">Novo</span>
+              </Button>
+            </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
+            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
+              <div className="space-y-1.5">
+                <Label>Nome *</Label>
+                <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Empresa</Label>
+                  <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select value={form.health} onValueChange={(v) => setForm({ ...form, health: v as ClientHealth })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(HEALTH_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>E-mail</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Telefone</Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+              </div>
+              {form.health !== "saudavel" && (
+                <div className="space-y-1.5">
+                  <Label>Motivo</Label>
+                  <Input value={form.health_reason} onChange={(e) => setForm({ ...form, health_reason: e.target.value })} placeholder="Ex.: contrato em renovação" />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Notas</Label>
+                <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={create.isPending || !form.name} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+                  {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+          </Dialog>
         </div>
       </div>
 
+      <Card className="p-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, empresa ou e-mail…" className="h-9 pl-8" />
+        </div>
+      </Card>
 
       {isLoading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={Building2}
-            title={q || productFilter !== "todos" ? "Nenhum cliente nesse filtro" : "Nenhum cliente cadastrado"}
-            description={q || productFilter !== "todos" ? "Tente ajustar os filtros ou a busca." : "Comece cadastrando seu primeiro cliente."}
-            action={!q && productFilter === "todos" ? { label: "Novo Cliente", icon: Plus, onClick: () => setOpen(true) } : undefined}
-          />
+        <Card className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="mt-3 text-sm font-medium">Nenhum cliente cadastrado</p>
+          <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
         </Card>
-
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((c) => (
@@ -232,11 +222,28 @@ export default function Clients() {
               <div className="relative z-10 pointer-events-none">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{c.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate font-medium">{c.name}</p>
+                      {(() => {
+                        if (!c.pipedrive_person_id || !c.created_at) return null;
+                        const ageMs = Date.now() - new Date(c.created_at).getTime();
+                        if (ageMs < 0 || ageMs >= 48 * 60 * 60 * 1000) return null;
+                        return (
+                          <ToneBadge tone="warning" size="sm" dot className="shrink-0">
+                            Novo
+                          </ToneBadge>
+                        );
+                      })()}
+                    </div>
                     {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
+                    {c.pipedrive_person_id && (
+                      <ToneBadge tone="warning" size="sm">
+                        Pipedrive
+                      </ToneBadge>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">

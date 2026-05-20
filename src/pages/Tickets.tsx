@@ -1,29 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/ui/page-header";
-import { Filter, X, Eye, EyeOff, Plus } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban } from "@/components/TicketKanban";
-import { cn } from "@/lib/utils";
-
-
-const SHOW_RESOLVED_KEY = "nortear_show_resolved_tickets";
 
 export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
-  const [showResolved, setShowResolved] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(SHOW_RESOLVED_KEY) === "1";
-  });
 
   // URL-driven special filters: open (não resolvidos), sla=overdue|approaching, resolved=7d, client=<nome>
   const openOnly = searchParams.get("open") === "1";
@@ -32,16 +22,6 @@ export default function Tickets() {
   const clientFilter = searchParams.get("client"); // nome (client_name/organization)
 
   const hasSpecialFilter = openOnly || !!slaMode || !!resolvedWindow || !!clientFilter;
-  // Se o filtro especial "resolved=7d" estiver ativo ou o usuário filtrou status=resolvido, força mostrar resolvidos
-  const includeResolved = showResolved || statusFilter === "resolvido" || resolvedWindow === "7d";
-
-  const toggleShowResolved = () => {
-    const next = !showResolved;
-    setShowResolved(next);
-    try {
-      window.localStorage.setItem(SHOW_RESOLVED_KEY, next ? "1" : "0");
-    } catch {}
-  };
 
   // Sincroniza select com URL quando muda externamente
   useEffect(() => {
@@ -77,7 +57,7 @@ export default function Tickets() {
   };
 
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter, includeResolved],
+    queryKey: ["tickets", statusFilter, priorityFilter],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
@@ -86,7 +66,6 @@ export default function Tickets() {
         .limit(200);
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
-      else if (!includeResolved) query = query.not("status", "in", "(resolvido,fechado)");
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
 
       const { data, error } = await query;
@@ -94,24 +73,6 @@ export default function Tickets() {
       return data;
     },
   });
-
-  // Contagem de chamados resolvidos hoje (para o badge do botão)
-  const { data: resolvedTodayCount = 0 } = useQuery({
-    queryKey: ["tickets", "resolved-today-count"],
-    queryFn: async () => {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const { count, error } = await supabase
-        .from("tickets")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["resolvido", "fechado"])
-        .gte("resolved_at", start.toISOString());
-      if (error) return 0;
-      return count ?? 0;
-    },
-    refetchInterval: 60_000,
-  });
-
 
   const filtered = useMemo(() => {
     const list = tickets ?? [];
@@ -146,77 +107,31 @@ export default function Tickets() {
     ? `Cliente: ${clientFilter}`
     : null;
 
-  const navigate = useNavigate();
-  const activeCount = (tickets ?? []).filter((t: any) => isOpenStatus(t.status)).length;
-  const STATUS_CHIPS: { key: string; label: string }[] = [
-    { key: "all", label: "Todos" },
-    { key: "novo", label: "Novo" },
-    { key: "em_atendimento", label: "Em atendimento" },
-    { key: "aguardando_cliente", label: "Aguardando" },
-    { key: "suporte_vera_n1", label: "Suporte N1" },
-    { key: "abertura_chamado_n2", label: "N2" },
-    { key: "resolvido", label: "Resolvido" },
-  ];
-
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:p-6">
-      <PageHeader
-        title="Central de Chamados"
-        subtitle={`${activeCount} chamado${activeCount === 1 ? "" : "s"} ativo${activeCount === 1 ? "" : "s"} · ${filtered.length} exibido${filtered.length === 1 ? "" : "s"}`}
-        actions={
-          <>
-            <Select value={priorityFilter} onValueChange={updatePriority}>
-              <SelectTrigger className="h-9 w-[140px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas prioridades</SelectItem>
-                {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              size="sm"
-              variant={showResolved ? "default" : "outline"}
-              onClick={toggleShowResolved}
-              className="h-9 gap-1.5"
-              aria-pressed={showResolved}
-            >
-              {showResolved ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Resolvidos</span>
-              {resolvedTodayCount > 0 && (
-                <span className={cn(
-                  "rounded-full px-1.5 py-px font-mono text-[10px] font-semibold",
-                  showResolved ? "bg-primary-foreground/20 text-primary-foreground" : "bg-success/15 text-success",
-                )}>
-                  {resolvedTodayCount}
-                </span>
-              )}
-            </Button>
-            <Button size="sm" className="h-9 gap-1.5" onClick={() => navigate("/tickets/novo")}>
-              <Plus className="h-3.5 w-3.5" /> Novo Chamado
-            </Button>
-          </>
-        }
-      />
-
-      {/* Filtros chips sempre visíveis */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-        {STATUS_CHIPS.map((c) => {
-          const active = statusFilter === c.key;
-          return (
-            <button
-              key={c.key}
-              onClick={() => updateStatus(c.key)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-border/80",
-              )}
-            >
-              {c.label}
-            </button>
-          );
-        })}
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
+      {/* Header com filtros à direita */}
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Tickets</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} ticket{filtered.length === 1 ? "" : "s"}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <Select value={statusFilter} onValueChange={updateStatus}>
+            <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {STATUS_FLOW.map((k) => <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={updatePriority}>
+            <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas prioridades</SelectItem>
+              {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {specialLabel && (
@@ -230,30 +145,14 @@ export default function Tickets() {
         </div>
       )}
 
-
       {/* Kanban (preenche restante) */}
       <div className="min-h-0 flex-1">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : (
-          <TicketKanbanWithAssist tickets={filtered as any} showResolved={includeResolved} />
+          <TicketKanban tickets={filtered as any} />
         )}
       </div>
     </div>
   );
-}
-
-function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; showResolved: boolean }) {
-  const { data: assistedIds } = useQuery({
-    queryKey: ["assist-conversation-ids"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("assist_conversations" as any)
-        .select("ticket_id");
-      if (error) return new Set<string>();
-      return new Set<string>(((data as any[]) ?? []).map((r: any) => r.ticket_id).filter(Boolean));
-    },
-    staleTime: 60_000,
-  });
-  return <TicketKanban tickets={tickets} showResolved={showResolved} assistedIds={assistedIds ?? new Set()} />;
 }

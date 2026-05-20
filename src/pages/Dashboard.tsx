@@ -7,9 +7,7 @@ import { StatusBadge, PriorityBadge, HealthBadge } from "@/components/badges";
 import { SLAIndicator } from "@/components/SLAIndicator";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText, Rocket, ListChecks, Calendar, CheckCircle2 } from "lucide-react";
+import { Ticket, Users, Clock, AlertTriangle, TrendingUp, ArrowUpRight, BellRing, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { timeAgo, formatDuration, formatBrazilDateTime } from "@/lib/formatters";
 import { CHANNEL_LABEL, STATUS_LABEL, TIMED_STAGES, type TicketStatus } from "@/lib/constants";
@@ -17,7 +15,6 @@ import { isOpenStatus, isSlaOverdue, isSlaApproaching, isSlaAlerting } from "@/l
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 import { useMemo } from "react";
 import { exportTicketsCsv, exportTicketsPdf, type ExportTicket } from "@/lib/exporters";
-
 
 interface KPIProps {
   label: string;
@@ -94,24 +91,6 @@ export default function Dashboard() {
       return data;
     },
   });
-
-  const { data: implCount = 0 } = useQuery({
-    queryKey: ["dashboard-impl-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("implantacoes").select("id", { count: "exact", head: true }).neq("etapa", "finalizado");
-      return count ?? 0;
-    },
-  });
-
-  const { data: pendingTasks = 0 } = useQuery({
-    queryKey: ["dashboard-tasks-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("tasks").select("id", { count: "exact", head: true }).neq("status", "concluida");
-      return count ?? 0;
-    },
-  });
-
-
 
   const stats = useMemo(() => {
     if (!tickets) return null;
@@ -245,70 +224,36 @@ export default function Dashboard() {
     );
   }
 
-  const slaRate = stats.open > 0 ? Math.round(((stats.open - stats.overdue) / stats.open) * 100) : 100;
-
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Pulso da operação em tempo real."
-        actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 gap-1.5">
-                <Download className="h-3.5 w-3.5" /> Exportar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("csv")}>
-                <FileSpreadsheet className="mr-2 h-3.5 w-3.5" /> Exportar CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("pdf")}>
-                <FileText className="mr-2 h-3.5 w-3.5" /> Exportar PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        }
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Visão geral</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">Pulso da operação em tempo real.</p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 self-start sm:self-auto">
+              <Download className="h-3.5 w-3.5" /> Exportar
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              <FileSpreadsheet className="mr-2 h-3.5 w-3.5" /> Exportar CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              <FileText className="mr-2 h-3.5 w-3.5" /> Exportar PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-      {/* ZONA 1 — KPIs principais */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPI label="Chamados Abertos" value={stats.open} icon={Ticket} tone="primary" to="/tickets?open=1" />
-        <KPI label="Em Implantação" value={implCount} icon={Rocket} tone="warning" to="/implantacao" />
-        <KPI label="Tarefas Pendentes" value={pendingTasks} icon={ListChecks} tone="primary" to="/tarefas" />
-        <KPI label="Taxa SLA" value={`${slaRate}%`} icon={CheckCircle2} tone={slaRate >= 90 ? "success" : slaRate >= 70 ? "warning" : "danger"} hint={`${stats.overdue} estourado${stats.overdue === 1 ? "" : "s"}`} to="/tickets?sla=overdue" />
+        <KPI label="Tickets abertos" value={stats.open} icon={Ticket} tone="primary" to="/tickets?open=1" />
+        <KPI label="SLA estourado" value={stats.overdue} icon={AlertTriangle} tone="danger" hint={stats.overdue === 0 ? "Tudo dentro do prazo." : "Requer atenção"} to="/tickets?sla=overdue" />
+        <KPI label="Próximos do SLA" value={stats.approachingSla.length} icon={BellRing} tone="warning" hint=">80% do prazo consumido" to="/tickets?sla=approaching" />
+        <KPI label="Resolvidos (7d)" value={stats.resolvedThisWeek} icon={TrendingUp} tone="success" to="/tickets?resolved=7d" />
       </div>
-
-      {/* ZONA 2 — Atenção imediata */}
-      <div className="grid grid-cols-1 gap-4">
-        <Card className="flex h-full min-h-[320px] flex-col p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Chamados que precisam de atenção</h2>
-            <Link to="/tickets?open=1" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver todos <ArrowUpRight className="h-3 w-3" /></Link>
-          </div>
-          {recentTickets.filter((t: any) => ["novo", "em_atendimento"].includes(t.status)).length === 0 ? (
-            <EmptyState icon={CheckCircle2} title="Tudo em dia" description="Nenhum chamado aguardando ação." />
-          ) : (
-            <div className="divide-y divide-border">
-              {recentTickets.filter((t: any) => ["novo", "em_atendimento"].includes(t.status)).slice(0, 6).map((t: any) => {
-                const priorityColor = t.priority === "urgente" || t.priority === "critica" ? "border-l-danger" : t.priority === "alta" ? "border-l-warning" : "border-l-success";
-                return (
-                  <Link key={t.id} to={`/tickets/${t.id}`} className={`flex items-center gap-3 border-l-2 ${priorityColor} px-3 py-2.5 transition-colors hover:bg-surface-muted`}>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{t.client?.name ?? t.client_name ?? "Sem cliente"}</p>
-                      <p className="truncate text-xs text-muted-foreground">{t.title}</p>
-                    </div>
-                    <PriorityBadge priority={t.priority} />
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{timeAgo(t.opened_at ?? t.created_at)}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      </div>
-
-
 
       {/* Tempo médio por etapa */}
       <div>

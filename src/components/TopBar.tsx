@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo } from "lucide-react";
+import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
@@ -9,7 +9,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import { timeAgo } from "@/lib/formatters";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
 import {
   CommandDialog,
   CommandEmpty,
@@ -18,7 +17,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-
 
 
 export function TopBar() {
@@ -116,7 +114,7 @@ export function TopBar() {
       const numeric = safe.replace(/^#/, "");
       const like = `%${safe}%`;
 
-      const [ticketsRes, clientsRes, implantacoesRes, tasksRes] = await Promise.all([
+      const [ticketsRes, clientsRes, implantacoesRes, tasksRes, dealsRes] = await Promise.all([
         supabase
           .from("tickets")
           .select("id, ticket_number, title, status, client_name, organization")
@@ -143,6 +141,12 @@ export function TopBar() {
           .ilike("title", like)
           .order("created_at", { ascending: false })
           .limit(8),
+        supabase
+          .from("deals")
+          .select("id, title, company_name, contact_name, stage")
+          .or(`title.ilike.${like},company_name.ilike.${like},contact_name.ilike.${like}`)
+          .order("created_at", { ascending: false })
+          .limit(8),
       ]);
 
       return {
@@ -150,6 +154,7 @@ export function TopBar() {
         clients: clientsRes.data ?? [],
         implantacoes: implantacoesRes.data ?? [],
         tasks: tasksRes.data ?? [],
+        deals: dealsRes.data ?? [],
       };
     },
   });
@@ -158,7 +163,8 @@ export function TopBar() {
     (searchResults?.tickets.length ?? 0) +
     (searchResults?.clients.length ?? 0) +
     (searchResults?.implantacoes.length ?? 0) +
-    (searchResults?.tasks.length ?? 0);
+    (searchResults?.tasks.length ?? 0) +
+    (searchResults?.deals.length ?? 0);
 
   const goTo = (path: string) => {
     setSearchOpen(false);
@@ -167,25 +173,21 @@ export function TopBar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
-      <SidebarTrigger className="h-8 w-8 shrink-0" />
-      <div className="min-w-0 flex-1 hidden sm:block">
-        <Breadcrumbs />
-      </div>
-      <div className="hidden md:flex w-72 lg:w-96 shrink-0">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
+      <SidebarTrigger className="h-8 w-8" />
+      <div className="hidden md:flex flex-1 max-w-md">
         <button
           onClick={() => setSearchOpen(true)}
           className="group inline-flex w-full items-center gap-2 rounded-md border border-input bg-surface-muted px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1 truncate">Buscar chamados, clientes, empresas…</span>
+          <span className="flex-1">Buscar tickets, clientes, empresas…</span>
           <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
           </kbd>
         </button>
       </div>
       <div className="ml-auto flex items-center gap-1">
-
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme} title="Trocar tema">
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
@@ -202,23 +204,22 @@ export function TopBar() {
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 p-0">
             <div className="border-b border-border px-3 py-2">
-              <p className="text-sm font-semibold">Notificações</p>
-              <p className="text-xs text-muted-foreground">Alertas de SLA dos chamados.</p>
+              <p className="text-sm font-semibold">Alertas de SLA</p>
+              <p className="text-xs text-muted-foreground">Chamados com mais de 80% do prazo consumido.</p>
             </div>
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               {alertCount === 0 ? (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhuma notificação.</p>
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum alerta ativo.</p>
               ) : (
                 <div className="divide-y divide-border">
-                  {alerts?.map((a: any) => (
-                    <Link key={`sla-${a.id}`} to={`/tickets/${a.id}`} className="block px-3 py-2 hover:bg-surface-muted">
+                  {alerts!.map((a: any) => (
+                    <Link key={a.id} to={`/tickets/${a.id}`} className="block px-3 py-2 hover:bg-surface-muted">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-warning">SLA</span>
                         <span className="font-mono text-[10px] text-muted-foreground">#{a.ticket_number}</span>
                         <p className="flex-1 truncate text-xs font-medium">{a.title}</p>
                       </div>
                       {a.sla_resolution_deadline && (
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">vence {timeAgo(a.sla_resolution_deadline)}</p>
+                        <p className="text-[10px] text-muted-foreground">vence {timeAgo(a.sla_resolution_deadline)}</p>
                       )}
                     </Link>
                   ))}
@@ -349,6 +350,28 @@ export function TopBar() {
                 </CommandGroup>
               )}
 
+              {(searchResults?.deals.length ?? 0) > 0 && (
+                <CommandGroup heading="Negócios (CRM)">
+                  {searchResults!.deals.map((d: any) => (
+                    <CommandItem
+                      key={`de-${d.id}`}
+                      value={`de ${d.title} ${d.company_name ?? ""} ${d.contact_name ?? ""}`}
+                      onSelect={() => goTo(`/crm`)}
+                      className="flex items-start gap-2"
+                    >
+                      <Briefcase className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{d.title}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {d.company_name ?? ""}
+                          {d.company_name && d.stage ? " · " : ""}
+                          {d.stage ?? ""}
+                        </p>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
             </>
           )}
         </CommandList>

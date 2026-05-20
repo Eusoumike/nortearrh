@@ -79,25 +79,21 @@ export type Database = {
           desconto_percentual: number
           document: string | null
           email: string | null
-          estado: string | null
-          faixa_colaboradores: string | null
           fonte_indicacao: string | null
-          fornecedor_beneficios: string[] | null
-          fornecedor_rh_digital: string[] | null
           health: Database["public"]["Enums"]["client_health"]
           health_reason: string | null
           id: string
-          modulos_ativos: string[] | null
           name: string
           notes: string | null
+          nps_data: string | null
+          nps_score: number | null
+          nps_token: string | null
           onboarding_iniciado_em: string | null
           parceiro_id: string | null
           phone: string | null
-          potencial_cross: string[] | null
+          pipedrive_person_id: string | null
           product: string | null
           products: string[]
-          segmento: string | null
-          status_nortear: string | null
           tags: string[] | null
           updated_at: string
           valor_com_desconto: number | null
@@ -120,25 +116,21 @@ export type Database = {
           desconto_percentual?: number
           document?: string | null
           email?: string | null
-          estado?: string | null
-          faixa_colaboradores?: string | null
           fonte_indicacao?: string | null
-          fornecedor_beneficios?: string[] | null
-          fornecedor_rh_digital?: string[] | null
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
-          modulos_ativos?: string[] | null
           name: string
           notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
-          potencial_cross?: string[] | null
+          pipedrive_person_id?: string | null
           product?: string | null
           products?: string[]
-          segmento?: string | null
-          status_nortear?: string | null
           tags?: string[] | null
           updated_at?: string
           valor_com_desconto?: number | null
@@ -161,25 +153,21 @@ export type Database = {
           desconto_percentual?: number
           document?: string | null
           email?: string | null
-          estado?: string | null
-          faixa_colaboradores?: string | null
           fonte_indicacao?: string | null
-          fornecedor_beneficios?: string[] | null
-          fornecedor_rh_digital?: string[] | null
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
-          modulos_ativos?: string[] | null
           name?: string
           notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
-          potencial_cross?: string[] | null
+          pipedrive_person_id?: string | null
           product?: string | null
           products?: string[]
-          segmento?: string | null
-          status_nortear?: string | null
           tags?: string[] | null
           updated_at?: string
           valor_com_desconto?: number | null
@@ -244,6 +232,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: true
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "config_comissoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -400,6 +395,84 @@ export type Database = {
         }
         Relationships: []
       }
+      deals: {
+        Row: {
+          client_id: string | null
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          owner_id: string | null
+          pipedrive_deal_id: string | null
+          position: number
+          product: Database["public"]["Enums"]["deal_product"] | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          title: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          client_id?: string | null
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          pipedrive_deal_id?: string | null
+          position?: number
+          product?: Database["public"]["Enums"]["deal_product"] | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          title: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          client_id?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          pipedrive_deal_id?: string | null
+          position?: number
+          product?: Database["public"]["Enums"]["deal_product"] | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          title?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos_financeiros: {
         Row: {
           arquivo_nome: string | null
@@ -458,6 +531,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_financeiros_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -733,6 +813,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "implantacoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "implantacoes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -812,10 +899,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_lancamentos_ponto_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lancamentos_ponto_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_ponto_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -887,10 +988,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_lancamentos_vr_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lancamentos_vr_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_vr_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -939,6 +1054,87 @@ export type Database = {
           },
         ]
       }
+      nps_responses: {
+        Row: {
+          atendimento_evolucao: string | null
+          client_id: string | null
+          comentario_adicional: string | null
+          confianca_informacoes: number | null
+          created_at: string
+          email: string
+          empresa: string
+          experiencia_geral: string | null
+          feedback_aberto: string | null
+          frequencia_uso: string | null
+          id: string
+          nome: string
+          nota_atendimento: number | null
+          nps_score: number | null
+          source: string
+          sugestao_melhoria: string | null
+          tempo_cliente: string | null
+          tempo_resposta: string | null
+          token: string | null
+        }
+        Insert: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string
+          email: string
+          empresa: string
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string
+          nome: string
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Update: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string
+          email?: string
+          empresa?: string
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string
+          nome?: string
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_responses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parceiros: {
         Row: {
           ativo: boolean
@@ -948,9 +1144,6 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
-          percentual_rh: number
-          percentual_rh_tipo: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
-          percentual_vr: number
           updated_at: string
         }
         Insert: {
@@ -961,9 +1154,6 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
-          percentual_rh?: number
-          percentual_rh_tipo?: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
-          percentual_vr?: number
           updated_at?: string
         }
         Update: {
@@ -974,9 +1164,6 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
-          percentual_rh?: number
-          percentual_rh_tipo?: Database["public"]["Enums"]["tipo_repasse_rh_padrao"]
-          percentual_vr?: number
           updated_at?: string
         }
         Relationships: []
@@ -1152,39 +1339,6 @@ export type Database = {
           },
         ]
       }
-      sales_metas: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          mes: string
-          produto: string
-          quantidade_meta: number
-          updated_at: string
-          valor_meta: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          mes: string
-          produto?: string
-          quantidade_meta?: number
-          updated_at?: string
-          valor_meta?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          mes?: string
-          produto?: string
-          quantidade_meta?: number
-          updated_at?: string
-          valor_meta?: number
-        }
-        Relationships: []
-      }
       system_settings: {
         Row: {
           created_at: string
@@ -1192,6 +1346,9 @@ export type Database = {
           percentual_ponto: number
           percentual_vr_primeira_carga: number
           percentual_vr_recorrencia: number
+          pipedrive_api_token: string | null
+          pipedrive_connected_at: string | null
+          pipedrive_user_name: string | null
           timezone: string
           updated_at: string
           updated_by: string | null
@@ -1202,6 +1359,9 @@ export type Database = {
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
           percentual_vr_recorrencia?: number
+          pipedrive_api_token?: string | null
+          pipedrive_connected_at?: string | null
+          pipedrive_user_name?: string | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -1212,6 +1372,9 @@ export type Database = {
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
           percentual_vr_recorrencia?: number
+          pipedrive_api_token?: string | null
+          pipedrive_connected_at?: string | null
+          pipedrive_user_name?: string | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -1273,6 +1436,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1509,7 +1679,6 @@ export type Database = {
       }
       tickets: {
         Row: {
-          acao_tentada: string | null
           active_custom_stage_key: string | null
           anydesk_id: string | null
           anydesk_senha: string | null
@@ -1526,7 +1695,6 @@ export type Database = {
           created_by: string | null
           current_stage_started_at: string
           custom_stage_started_at: string | null
-          descricao_problema: string | null
           description: string | null
           entered_aguardando_cliente_at: string | null
           entered_em_atendimento_at: string | null
@@ -1534,19 +1702,16 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
-          ja_tentou: string | null
           kanban_stage_key: string | null
           opened_at: string
           organization: string | null
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
-          quem_reportou: string | null
           resolved_at: string | null
           sla_alert_sent: boolean
           sla_deadline: string | null
           sla_resolution_deadline: string | null
           sla_response_deadline: string | null
-          solucao_aplicada: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde: string | null
           status_ativo_key: string | null
@@ -1563,7 +1728,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          acao_tentada?: string | null
           active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
@@ -1580,7 +1744,6 @@ export type Database = {
           created_by?: string | null
           current_stage_started_at?: string
           custom_stage_started_at?: string | null
-          descricao_problema?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1588,19 +1751,16 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
-          ja_tentou?: string | null
           kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
-          quem_reportou?: string | null
           resolved_at?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
-          solucao_aplicada?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
@@ -1617,7 +1777,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          acao_tentada?: string | null
           active_custom_stage_key?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
@@ -1634,7 +1793,6 @@ export type Database = {
           created_by?: string | null
           current_stage_started_at?: string
           custom_stage_started_at?: string | null
-          descricao_problema?: string | null
           description?: string | null
           entered_aguardando_cliente_at?: string | null
           entered_em_atendimento_at?: string | null
@@ -1642,19 +1800,16 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
-          ja_tentou?: string | null
           kanban_stage_key?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
-          quem_reportou?: string | null
           resolved_at?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
-          solucao_aplicada?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
@@ -1679,6 +1834,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_tickets_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tickets_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
@@ -1690,6 +1852,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1748,7 +1917,105 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      clients_safe: {
+        Row: {
+          account_owner: string | null
+          address: string | null
+          anydesk_id: string | null
+          anydesk_senha: string | null
+          billing_email: string | null
+          cnpj: string | null
+          company: string | null
+          contact_name: string | null
+          created_at: string | null
+          created_by: string | null
+          document: string | null
+          email: string | null
+          health: Database["public"]["Enums"]["client_health"] | null
+          health_reason: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          nps_data: string | null
+          nps_score: number | null
+          nps_token: string | null
+          phone: string | null
+          pipedrive_person_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          account_owner?: string | null
+          address?: string | null
+          anydesk_id?: never
+          anydesk_senha?: never
+          billing_email?: string | null
+          cnpj?: string | null
+          company?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          health?: Database["public"]["Enums"]["client_health"] | null
+          health_reason?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
+          phone?: string | null
+          pipedrive_person_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          account_owner?: string | null
+          address?: string | null
+          anydesk_id?: never
+          anydesk_senha?: never
+          billing_email?: string | null
+          cnpj?: string | null
+          company?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          health?: Database["public"]["Enums"]["client_health"] | null
+          health_reason?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
+          phone?: string | null
+          pipedrive_person_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_account_owner_fkey"
+            columns: ["account_owner"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_remove_user_access: {
@@ -1773,7 +2040,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "manager" | "agent" | "viewer"
@@ -1852,7 +2118,6 @@ export type Database = {
         | "primeira_mensalidade"
         | "recorrencia"
         | "primeira_carga_vr"
-      tipo_repasse_rh_padrao: "primeira_mensalidade" | "recorrencia"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2065,7 +2330,6 @@ export const Constants = {
         "recorrencia",
         "primeira_carga_vr",
       ],
-      tipo_repasse_rh_padrao: ["primeira_mensalidade", "recorrencia"],
     },
   },
 } as const
