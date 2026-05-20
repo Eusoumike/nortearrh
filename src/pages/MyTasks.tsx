@@ -147,27 +147,21 @@ export default function MyTasks() {
   }, [tasks, filter, q]);
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <ListChecks className="h-5 w-5 text-primary" />
-            Minhas tarefas
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Tarefas atribuídas a você ou criadas por você, em todos os chamados.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar tarefa, chamado, #número…"
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
+    <div className="space-y-4 p-4 md:p-6">
+      <PageHeader
+        title="Tarefas"
+        subtitle={`${counts.abertas} pendente${counts.abertas === 1 ? "" : "s"} · ${counts.concluidas} concluída${counts.concluidas === 1 ? "" : "s"}`}
+        actions={
+          <>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar tarefa, chamado, #número…"
+                className="h-9 pl-8 text-sm"
+              />
+            </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
