@@ -90,9 +90,13 @@ export type Database = {
           modulos_ativos: string[] | null
           name: string
           notes: string | null
+          nps_data: string | null
+          nps_score: number | null
+          nps_token: string | null
           onboarding_iniciado_em: string | null
           parceiro_id: string | null
           phone: string | null
+          pipedrive_person_id: string | null
           potencial_cross: string[] | null
           product: string | null
           products: string[]
@@ -131,9 +135,13 @@ export type Database = {
           modulos_ativos?: string[] | null
           name: string
           notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
+          pipedrive_person_id?: string | null
           potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
@@ -172,9 +180,13 @@ export type Database = {
           modulos_ativos?: string[] | null
           name?: string
           notes?: string | null
+          nps_data?: string | null
+          nps_score?: number | null
+          nps_token?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
+          pipedrive_person_id?: string | null
           potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
@@ -397,6 +409,102 @@ export type Database = {
           sla_hours?: number
           stage_key?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      deal_history: {
+        Row: {
+          campo: string
+          changed_by: string | null
+          created_at: string
+          deal_id: string
+          id: string
+          valor_antigo: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo: string
+          changed_by?: string | null
+          created_at?: string
+          deal_id: string
+          id?: string
+          valor_antigo?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo?: string
+          changed_by?: string | null
+          created_at?: string
+          deal_id?: string
+          id?: string
+          valor_antigo?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          client_id: string | null
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          expected_close_date: string | null
+          id: string
+          lost_at: string | null
+          notes: string | null
+          owner_id: string | null
+          product: Database["public"]["Enums"]["deal_product"] | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          stage_changed_at: string
+          title: string
+          updated_at: string
+          value: number
+          won_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_at?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          product?: Database["public"]["Enums"]["deal_product"] | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          stage_changed_at?: string
+          title: string
+          updated_at?: string
+          value?: number
+          won_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_at?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          product?: Database["public"]["Enums"]["deal_product"] | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          stage_changed_at?: string
+          title?: string
+          updated_at?: string
+          value?: number
+          won_at?: string | null
         }
         Relationships: []
       }
@@ -938,6 +1046,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      nps_responses: {
+        Row: {
+          atendimento_evolucao: string | null
+          client_id: string | null
+          comentario_adicional: string | null
+          confianca_informacoes: number | null
+          created_at: string
+          email: string
+          empresa: string
+          experiencia_geral: string | null
+          feedback_aberto: string | null
+          frequencia_uso: string | null
+          id: string
+          nome: string
+          nota_atendimento: number | null
+          nps_score: number | null
+          source: string
+          sugestao_melhoria: string | null
+          tempo_cliente: string | null
+          tempo_resposta: string | null
+          token: string | null
+        }
+        Insert: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string
+          email?: string
+          empresa?: string
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string
+          nome?: string
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Update: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string
+          email?: string
+          empresa?: string
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string
+          nome?: string
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Relationships: []
       }
       parceiros: {
         Row: {
