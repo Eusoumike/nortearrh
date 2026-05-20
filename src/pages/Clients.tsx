@@ -227,6 +227,7 @@ export default function Clients() {
                       <p className="truncate font-medium">{c.name}</p>
                     </div>
                     {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
+                    {c.cnpj && <p className="truncate font-mono text-[11px] text-muted-foreground">{formatCnpj(c.cnpj)}</p>}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
