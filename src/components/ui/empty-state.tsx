@@ -1,13 +1,20 @@
 import { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
 
 interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
   description?: string;
-  action?: { label: string; onClick: () => void; icon?: LucideIcon };
+  action?: ReactNode | { label: string; onClick: () => void; icon?: LucideIcon };
   className?: string;
+}
+
+function isActionObject(
+  a: NonNullable<EmptyStateProps["action"]>,
+): a is { label: string; onClick: () => void; icon?: LucideIcon } {
+  return typeof a === "object" && a !== null && "label" in (a as any) && "onClick" in (a as any);
 }
 
 export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
@@ -22,12 +29,16 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {description && <p className="text-xs text-muted-foreground max-w-sm">{description}</p>}
       </div>
-      {action && (
-        <Button size="sm" onClick={action.onClick} className="mt-1">
-          {action.icon && <action.icon className="h-3.5 w-3.5" />}
-          {action.label}
-        </Button>
-      )}
+      {action ? (
+        isActionObject(action) ? (
+          <Button size="sm" onClick={action.onClick} className="mt-1">
+            {action.icon && <action.icon className="h-3.5 w-3.5" />}
+            {action.label}
+          </Button>
+        ) : (
+          <div className="mt-1">{action}</div>
+        )
+      ) : null}
     </div>
   );
 }
