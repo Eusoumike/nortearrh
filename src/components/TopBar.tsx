@@ -105,26 +105,7 @@ export function TopBar() {
     };
   }, [qc]);
 
-  // Atividades CRM próximas / atrasadas
-  const { data: crmActivities } = useQuery({
-    queryKey: ["crm-activities-due"],
-    queryFn: async () => {
-      const inOneHour = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from("deal_activities")
-        .select("id, titulo, tipo, agendado_para, deal_id, status")
-        .eq("status", "pendente")
-        .not("agendado_para", "is", null)
-        .lte("agendado_para", inOneHour)
-        .order("agendado_para", { ascending: true })
-        .limit(10);
-      if (error) throw error;
-      return data ?? [];
-    },
-    refetchInterval: 60_000,
-  });
-
-  const alertCount = (alerts?.length ?? 0) + (crmActivities?.length ?? 0);
+  const alertCount = alerts?.length ?? 0;
 
   // Busca global multi-módulos
   const { data: searchResults, isFetching: isSearching } = useQuery({
