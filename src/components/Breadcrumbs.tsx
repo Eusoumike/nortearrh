@@ -43,9 +43,6 @@ export function Breadcrumbs() {
         return data?.company || data?.name || null;
       }
       return null;
-      return null;
-    },
-  });
     },
   });
 
