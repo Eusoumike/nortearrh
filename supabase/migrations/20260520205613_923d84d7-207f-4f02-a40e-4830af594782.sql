@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks DROP CONSTRAINT IF EXISTS fk_tasks_ticket;
