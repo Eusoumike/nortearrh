@@ -9,9 +9,13 @@ import {
   TrendingUp,
   CheckSquare,
   LayoutDashboard,
-  Lock,
+  Star,
   ChevronDown,
+  LogOut,
   LucideIcon,
+  Kanban,
+  ListChecks,
+  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -33,81 +37,58 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth, signOut } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NavChild = { title: string; url: string };
-type NavGroup = {
+type NavChild = { title: string; url: string; icon?: LucideIcon };
+type NavItem = {
   key: string;
   title: string;
   icon: LucideIcon;
-  children?: NavChild[];
   url?: string;
-  disabled?: boolean;
+  children?: NavChild[];
   adminOnly?: boolean;
 };
+type NavSection = { label: string; items: NavItem[] };
 
-const groups: NavGroup[] = [
+const sections: NavSection[] = [
   {
-    key: "dashboard",
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    url: "/",
+    label: "Início",
+    items: [{ key: "dashboard", title: "Dashboard", icon: LayoutDashboard, url: "/" }],
   },
   {
-    key: "suporte",
-    title: "Suporte",
-    icon: Headphones,
-    children: [
-      { title: "Chamados", url: "/tickets" },
+    label: "Vendas",
+    items: [
+      {
+        key: "crm",
+        title: "CRM",
+        icon: Briefcase,
+        children: [
+          { title: "Pipeline", url: "/crm/pipeline", icon: Kanban },
+          { title: "Atividades", url: "/crm/atividades", icon: ListChecks },
+          { title: "Analytics", url: "/crm/analytics", icon: BarChart3 },
+        ],
+      },
     ],
   },
   {
-    key: "tarefas",
-    title: "Tarefas",
-    icon: CheckSquare,
-    url: "/tarefas",
-  },
-  {
-    key: "clientes",
-    title: "Clientes",
-    icon: Users,
-    children: [{ title: "Carteira", url: "/clientes" }],
-  },
-  {
-    key: "onboarding",
-    title: "Onboarding",
-    icon: Rocket,
-    children: [
-      { title: "Implantação", url: "/implantacao" },
+    label: "Operação",
+    items: [
+      { key: "tickets", title: "Chamados", icon: Headphones, url: "/tickets" },
+      { key: "tarefas", title: "Tarefas", icon: CheckSquare, url: "/tarefas" },
+      { key: "implantacao", title: "Implantação", icon: Rocket, url: "/implantacao" },
+      { key: "clientes", title: "Clientes", icon: Users, url: "/clientes" },
     ],
   },
   {
-    key: "crm",
-    title: "CRM",
-    icon: Briefcase,
-    children: [
-      { title: "Pipeline", url: "/crm/pipeline" },
-      { title: "Atividades", url: "/crm/atividades" },
-      { title: "Analytics", url: "/crm/analytics" },
+    label: "Gestão",
+    items: [
+      { key: "financeiro", title: "Financeiro", icon: DollarSign, url: "/financeiro", adminOnly: true },
+      { key: "performance", title: "Performance", icon: TrendingUp, url: "/performance" },
+      { key: "nps", title: "NPS", icon: Star, url: "/nps" },
     ],
-  },
-  {
-    key: "financeiro",
-    title: "Financeiro",
-    icon: DollarSign,
-    url: "/financeiro",
-    adminOnly: true,
-  },
-  {
-    key: "performance",
-    title: "Performance",
-    icon: TrendingUp,
-    url: "/performance",
   },
 ];
 
@@ -117,19 +98,97 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
 
-  const isChildActive = (url: string) => {
+  const isActive = (url: string) => {
     const path = url.split("?")[0];
+    if (path === "/") return pathname === "/";
     return pathname === path || pathname.startsWith(path + "/");
   };
 
-  const initialOpen = () =>
+  const allItems = sections.flatMap((s) => s.items);
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(
-      groups.map((g) => [g.key, g.children?.some((c) => isChildActive(c.url)) ?? false]),
+      allItems
+        .filter((i) => i.children)
+        .map((i) => [i.key, i.children!.some((c) => isActive(c.url))]),
+    ),
+  );
+
+  const renderItem = (item: NavItem) => {
+    if (item.adminOnly && role !== "admin") return null;
+
+    if (!item.children) {
+      return (
+        <SidebarMenuItem key={item.key}>
+          <SidebarMenuButton asChild tooltip={item.title} isActive={isActive(item.url!)}>
+            <NavLink
+              to={item.url!}
+              activeClassName="!bg-sidebar-accent !text-sidebar-primary !font-medium"
+              className="rounded-lg"
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.title}</span>
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
+
+    const isOpen = openMap[item.key] ?? false;
+    const hasActive = item.children.some((c) => isActive(c.url));
+
+    if (collapsed) {
+      return (
+        <SidebarMenuItem key={item.key}>
+          <SidebarMenuButton asChild tooltip={item.title} isActive={hasActive}>
+            <NavLink to={item.children[0].url}>
+              <item.icon className="h-4 w-4" />
+              <span>{item.title}</span>
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
+
+    return (
+      <Collapsible
+        key={item.key}
+        open={isOpen}
+        onOpenChange={(o) => setOpenMap((m) => ({ ...m, [item.key]: o }))}
+      >
+        <SidebarMenuItem>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton
+              className={cn("rounded-lg", hasActive && "bg-sidebar-accent/50 text-sidebar-primary font-medium")}
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.title}</span>
+              <ChevronDown
+                className={cn("ml-auto h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")}
+              />
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <SidebarMenuSub>
+              {item.children.map((c) => (
+                <SidebarMenuSubItem key={c.url}>
+                  <SidebarMenuSubButton asChild isActive={isActive(c.url)}>
+                    <NavLink
+                      to={c.url}
+                      activeClassName="!bg-sidebar-accent !text-sidebar-primary !font-medium"
+                      className="rounded-md"
+                    >
+                      {c.icon && <c.icon className="h-3.5 w-3.5" />}
+                      <span className="text-xs">{c.title}</span>
+                    </NavLink>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        </SidebarMenuItem>
+      </Collapsible>
     );
-
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>(initialOpen);
-
-  const visibleGroups = groups.filter((g) => !g.adminOnly || role === "admin");
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -141,125 +200,51 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">Nortear</span>
-              <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Connect</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/60">
+                Connect
+              </span>
             </div>
           )}
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Navegação</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleGroups.map((g) => {
-                if (g.disabled) {
-                  return (
-                    <SidebarMenuItem key={g.key}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SidebarMenuButton
-                            className="cursor-not-allowed opacity-50"
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <g.icon className="h-4 w-4" />
-                            <span>{g.title}</span>
-                            {!collapsed && <Lock className="ml-auto h-3 w-3" />}
-                          </SidebarMenuButton>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">Em breve</TooltipContent>
-                      </Tooltip>
-                    </SidebarMenuItem>
-                  );
-                }
-
-                if (!g.children || g.children.length === 0) {
-                  return (
-                    <SidebarMenuItem key={g.key}>
-                      <SidebarMenuButton asChild tooltip={g.title}>
-                        <NavLink
-                          to={g.url ?? "#"}
-                          activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground"
-                        >
-                          <g.icon className="h-4 w-4" />
-                          <span>{g.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                }
-
-                const isOpen = openMap[g.key] ?? false;
-                const hasActive = g.children.some((c) => isChildActive(c.url));
-
-                // Collapsed sidebar: render as flat icon button linking to first child
-                if (collapsed) {
-                  return (
-                    <SidebarMenuItem key={g.key}>
-                      <SidebarMenuButton asChild tooltip={g.title}>
-                        <NavLink to={g.children[0].url}>
-                          <g.icon className="h-4 w-4" />
-                          <span>{g.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                }
-
-                return (
-                  <Collapsible
-                    key={g.key}
-                    open={isOpen}
-                    onOpenChange={(o) => setOpenMap((m) => ({ ...m, [g.key]: o }))}
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          className={cn(hasActive && "bg-sidebar-accent/50 text-sidebar-accent-foreground")}
-                        >
-                          <g.icon className="h-4 w-4" />
-                          <span>{g.title}</span>
-                          <ChevronDown
-                            className={cn(
-                              "ml-auto h-3.5 w-3.5 transition-transform",
-                              isOpen && "rotate-180",
-                            )}
-                          />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {g.children.map((c) => (
-                            <SidebarMenuSubItem key={c.url}>
-                              <SidebarMenuSubButton asChild isActive={isChildActive(c.url)}>
-                                <NavLink
-                                  to={c.url}
-                                  activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground"
-                                >
-                                  <span>{c.title}</span>
-                                </NavLink>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {sections.map((section) => {
+          const visible = section.items.filter((i) => !i.adminOnly || role === "admin");
+          if (visible.length === 0) return null;
+          return (
+            <SidebarGroup key={section.label}>
+              {!collapsed && (
+                <SidebarGroupLabel className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/60">
+                  {section.label}
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>{visible.map(renderItem)}</SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
 
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Configurações">
-                  <NavLink to="/configuracoes" activeClassName="!bg-sidebar-accent !text-sidebar-accent-foreground">
+                <SidebarMenuButton asChild tooltip="Configurações" isActive={isActive("/configuracoes")}>
+                  <NavLink
+                    to="/configuracoes"
+                    activeClassName="!bg-sidebar-accent !text-sidebar-primary !font-medium"
+                    className="rounded-lg"
+                  >
                     <Settings className="h-4 w-4" />
                     <span>Configurações</span>
                   </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Sair" onClick={signOut} className="rounded-lg">
+                  <LogOut className="h-4 w-4" />
+                  <span>Sair</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -276,7 +261,9 @@ export function AppSidebar() {
                 <span className="truncate text-xs font-medium text-sidebar-foreground">
                   {user?.user_metadata?.full_name ?? user?.email}
                 </span>
-                <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">{role ?? "—"}</span>
+                <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">
+                  {role ?? "—"}
+                </span>
               </div>
               <Button
                 size="icon"
