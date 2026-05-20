@@ -61,12 +61,8 @@ export default function Settings() {
   const isAdmin = role === "admin";
   const qc = useQueryClient();
 
-  // === Pipedrive ===
-  const [pipedriveToken, setPipedriveToken] = useState("");
-  const [pipedriveTesting, setPipedriveTesting] = useState(false);
-  const [pipedriveStatus, setPipedriveStatus] = useState<
-    { ok: true; name: string } | { ok: false; msg: string } | null
-  >(null);
+  // === Timezone ===
+
 
   // === Timezone ===
   const [systemTz, setSystemTz] = useState("America/Sao_Paulo");
