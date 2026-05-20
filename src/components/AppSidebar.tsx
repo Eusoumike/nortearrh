@@ -59,21 +59,6 @@ const sections: NavSection[] = [
     items: [{ key: "dashboard", title: "Dashboard", icon: LayoutDashboard, url: "/" }],
   },
   {
-    label: "Vendas",
-    items: [
-      {
-        key: "crm",
-        title: "CRM",
-        icon: Briefcase,
-        children: [
-          { title: "Pipeline", url: "/crm/pipeline", icon: Kanban },
-          { title: "Atividades", url: "/crm/atividades", icon: ListChecks },
-          { title: "Analytics", url: "/crm/analytics", icon: BarChart3 },
-        ],
-      },
-    ],
-  },
-  {
     label: "Operação",
     items: [
       { key: "tickets", title: "Chamados", icon: Headphones, url: "/tickets" },
