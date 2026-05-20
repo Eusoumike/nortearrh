@@ -95,6 +95,40 @@ export default function Dashboard() {
     },
   });
 
+  const { data: implCount = 0 } = useQuery({
+    queryKey: ["dashboard-impl-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("implantacoes").select("id", { count: "exact", head: true }).neq("etapa", "finalizado");
+      return count ?? 0;
+    },
+  });
+
+  const { data: pendingTasks = 0 } = useQuery({
+    queryKey: ["dashboard-tasks-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("tasks").select("id", { count: "exact", head: true }).neq("status", "concluida");
+      return count ?? 0;
+    },
+  });
+
+  const { data: crmToday = [] } = useQuery({
+    queryKey: ["dashboard-crm-today"],
+    queryFn: async () => {
+      const start = new Date(); start.setHours(0,0,0,0);
+      const end = new Date(); end.setHours(23,59,59,999);
+      const { data } = await supabase
+        .from("deal_activities")
+        .select("id, titulo, tipo, agendado_para, deal_id, deals(company_name)")
+        .eq("status", "pendente")
+        .gte("agendado_para", start.toISOString())
+        .lte("agendado_para", end.toISOString())
+        .order("agendado_para", { ascending: true })
+        .limit(8);
+      return data ?? [];
+    },
+  });
+
+
   const stats = useMemo(() => {
     if (!tickets) return null;
     const now = Date.now();
