@@ -14,6 +14,9 @@ import MyTasks from "./pages/MyTasks";
 import Implantacao from "./pages/Implantacao";
 import Performance from "./pages/Performance";
 import CrmPipeline from "./pages/CrmPipeline";
+import CrmDealDetail from "./pages/CrmDealDetail";
+import CrmActivities from "./pages/CrmActivities";
+import CrmAnalytics from "./pages/CrmAnalytics";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
@@ -54,6 +57,9 @@ const App = () => (
             <Route path="/performance" element={<Performance />} />
             <Route path="/crm" element={<CrmPipeline />} />
             <Route path="/crm/pipeline" element={<CrmPipeline />} />
+            <Route path="/crm/atividades" element={<CrmActivities />} />
+            <Route path="/crm/analytics" element={<CrmAnalytics />} />
+            <Route path="/crm/:id" element={<CrmDealDetail />} />
             <Route path="/nps" element={<Nps />} />
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/configuracoes" element={<Settings />} />

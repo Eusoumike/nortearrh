@@ -29,6 +29,8 @@ import { toast } from "sonner";
 import { formatBrazilDate, timeAgo } from "@/lib/formatters";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { IniciarOnboardingDialog } from "@/components/IniciarOnboardingDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { STATUS_NORTEAR_OPTIONS } from "@/lib/crmOptions";
 
 const PRODUCT_LABEL: Record<string, string> = {
   rh_digital: "RH Digital",
@@ -71,7 +73,7 @@ export default function ClientDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id")
+        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id, status_nortear, fornecedor_beneficios, fornecedor_rh_digital, modulos_ativos, potencial_cross, segmento, estado, faixa_colaboradores")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -470,6 +472,65 @@ export default function ClientDetail() {
               </div>
             </Card>
           )}
+
+          {/* Perfil Nortear */}
+          <Card className="p-5">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Perfil Nortear
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-1 text-[11px] font-medium text-muted-foreground">Status Nortear</p>
+                <Select
+                  value={client.status_nortear ?? "ativo_saudavel"}
+                  onValueChange={async (v) => {
+                    const { error } = await supabase.from("clients").update({ status_nortear: v }).eq("id", client.id);
+                    if (error) toast.error(error.message);
+                    else {
+                      toast.success("Status atualizado");
+                      qc.invalidateQueries({ queryKey: ["client", id] });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUS_NORTEAR_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.emoji} {o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {[
+                ["Segmento", client.segmento],
+                ["Estado (UF)", client.estado],
+                ["Faixa de colaboradores", client.faixa_colaboradores],
+              ].map(([label, val]) => (
+                <div key={label as string}>
+                  <p className="mb-1 text-[11px] font-medium text-muted-foreground">{label}</p>
+                  <p className="text-sm">{(val as string) || "—"}</p>
+                </div>
+              ))}
+            </div>
+            {[
+              ["Módulos ativos", client.modulos_ativos],
+              ["Fornecedor de benefícios", client.fornecedor_beneficios],
+              ["Fornecedor de RH digital", client.fornecedor_rh_digital],
+              ["Potencial cross-sell", client.potencial_cross],
+            ].map(([label, arr]) => (
+              <div key={label as string} className="mt-3">
+                <p className="mb-1 text-[11px] font-medium text-muted-foreground">{label}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(arr as string[] | null)?.length ? (
+                    (arr as string[]).map((v) => (
+                      <Badge key={v} variant="secondary" className="text-[10px]">{v}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </Card>
 
           {client.notes && (
             <Card className="p-5">
