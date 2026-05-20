@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatBrazilDate, timeAgo } from "@/lib/formatters";
+import { formatBrazilDate, timeAgo, formatCnpj } from "@/lib/formatters";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { IniciarOnboardingDialog } from "@/components/IniciarOnboardingDialog";
 
