@@ -52,9 +52,16 @@ export default function Clients() {
     },
   });
 
-  const filtered = (clients ?? []).filter((c) =>
-    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = (clients ?? []).filter((c: any) => {
+    if (q && !(c.name?.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase()) || c.cnpj?.includes(q))) return false;
+    if (productFilter !== "todos") {
+      const products: string[] = c.products ?? [];
+      if (productFilter === "ambos" && !(products.includes("rh_digital") && products.includes("vr_beneficios"))) return false;
+      if (productFilter === "rh_digital" && !products.includes("rh_digital")) return false;
+      if (productFilter === "vr_beneficios" && !products.includes("vr_beneficios")) return false;
+    }
+    return true;
+  });
 
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
