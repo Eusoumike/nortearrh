@@ -182,67 +182,7 @@ export default function Settings() {
     return () => clearInterval(t);
   }, [systemTz]);
 
-  // ----- Ações: Pipedrive -----
-  async function handleTestPipedrive() {
-    if (!pipedriveToken.trim()) {
-      toast({ title: "Informe o token", variant: "destructive" });
-      return;
-    }
-    setPipedriveTesting(true);
-    setPipedriveStatus(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("pipedrive-validate-token", {
-        body: { token: pipedriveToken.trim() },
-      });
-      if (error) throw error;
-      if (!data?.ok) {
-        setPipedriveStatus({ ok: false, msg: data?.error ?? "Token inválido" });
-        toast({ title: "Token inválido", description: data?.error, variant: "destructive" });
-        return;
-      }
 
-      const upsert = {
-        ...(systemSettings?.id ? { id: systemSettings.id } : {}),
-        pipedrive_api_token: pipedriveToken.trim(),
-        pipedrive_user_name: data.user.name,
-        pipedrive_connected_at: new Date().toISOString(),
-        timezone: systemTz,
-        updated_by: user!.id,
-      };
-      const { error: upErr } = await supabase.from("system_settings").upsert(upsert);
-      if (upErr) throw upErr;
-
-      setPipedriveStatus({ ok: true, name: data.user.name });
-      toast({ title: "Conectado", description: `Pipedrive: ${data.user.name}` });
-      qc.invalidateQueries({ queryKey: ["system-settings"] });
-    } catch (e: any) {
-      setPipedriveStatus({ ok: false, msg: e.message ?? "Erro" });
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    } finally {
-      setPipedriveTesting(false);
-    }
-  }
-
-  async function handleRemovePipedrive() {
-    if (!systemSettings?.id) return;
-    const { error } = await supabase
-      .from("system_settings")
-      .update({
-        pipedrive_api_token: null,
-        pipedrive_user_name: null,
-        pipedrive_connected_at: null,
-        updated_by: user!.id,
-      })
-      .eq("id", systemSettings.id);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-      return;
-    }
-    setPipedriveToken("");
-    setPipedriveStatus(null);
-    toast({ title: "Desconectado do Pipedrive" });
-    qc.invalidateQueries({ queryKey: ["system-settings"] });
-  }
 
   // ----- Ações: Timezone -----
   async function handleSaveTimezone() {
