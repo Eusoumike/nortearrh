@@ -262,7 +262,7 @@ export function AppSidebar() {
                   {user?.user_metadata?.full_name ?? user?.email}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">
-                  {role === "admin" ? "Admin" : role === "atendente" ? "Atendente" : role ?? "—"}
+                  {role ?? "—"}
                 </span>
               </div>
               <Button
