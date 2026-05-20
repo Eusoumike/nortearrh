@@ -80,6 +80,7 @@ export default function CrmPipeline() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [cnpjDialogOpen, setCnpjDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [winDeal, setWinDeal] = useState<Deal | null>(null);
