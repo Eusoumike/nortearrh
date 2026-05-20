@@ -29,6 +29,8 @@ import { toast } from "sonner";
 import { formatBrazilDate, timeAgo } from "@/lib/formatters";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { IniciarOnboardingDialog } from "@/components/IniciarOnboardingDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { STATUS_NORTEAR_OPTIONS } from "@/lib/crmOptions";
 
 const PRODUCT_LABEL: Record<string, string> = {
   rh_digital: "RH Digital",
