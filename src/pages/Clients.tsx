@@ -106,22 +106,6 @@ export default function Clients() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const syncPipedrive = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("pipedrive-sync");
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { inserted: number; unique_clients: number; skipped_existing: number };
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["clients-min"] });
-      toast.success(
-        `Sincronização concluída: ${data.inserted} novos · ${data.skipped_existing} já existiam`,
-      );
-    },
-    onError: (e: any) => toast.error(`Pipedrive: ${e.message}`),
-  });
 
   const PRODUCT_CHIPS = [
     { key: "todos", label: "Todos" },
