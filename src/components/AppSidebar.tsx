@@ -8,7 +8,7 @@ import {
   TrendingUp,
   CheckSquare,
   LayoutDashboard,
-  Star,
+  
   ChevronDown,
   LogOut,
   LucideIcon,
