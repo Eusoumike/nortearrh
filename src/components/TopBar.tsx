@@ -203,7 +203,7 @@ export function TopBar() {
           <PopoverContent align="end" className="w-80 p-0">
             <div className="border-b border-border px-3 py-2">
               <p className="text-sm font-semibold">Notificações</p>
-              <p className="text-xs text-muted-foreground">Alertas SLA e atividades do CRM.</p>
+              <p className="text-xs text-muted-foreground">Alertas de SLA dos chamados.</p>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {alertCount === 0 ? (
@@ -219,20 +219,6 @@ export function TopBar() {
                       </div>
                       {a.sla_resolution_deadline && (
                         <p className="mt-0.5 text-[10px] text-muted-foreground">vence {timeAgo(a.sla_resolution_deadline)}</p>
-                      )}
-                    </Link>
-                  ))}
-                  {crmActivities?.map((a: any) => (
-                    <Link key={`act-${a.id}`} to={a.deal_id ? `/crm/${a.deal_id}` : "/crm/atividades"} className="block px-3 py-2 hover:bg-surface-muted">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary">CRM</span>
-                        <p className="flex-1 truncate text-xs font-medium">{a.titulo}</p>
-                      </div>
-                      {a.agendado_para && (
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          {new Date(a.agendado_para).getTime() < Date.now() ? "atrasada " : ""}
-                          {timeAgo(a.agendado_para)}
-                        </p>
                       )}
                     </Link>
                   ))}
