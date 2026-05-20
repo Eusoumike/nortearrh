@@ -26,6 +26,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ToneBadge } from "@/components/ui/tone-badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import {
   Plus, Loader2, GripVertical, Copy, Trash2, Send, Settings2, Search, X, Eye, EyeOff,
