@@ -450,44 +450,6 @@ export default function Settings() {
 
             {activeCategory === "integracoes" && isAdmin && (
               <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Integração Pipedrive</CardTitle>
-                    <CardDescription>
-                      Cole o API Token do Pipedrive. Ele fica salvo no banco com acesso restrito a admins.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pipedrive-token">API Token</Label>
-                      <Input id="pipedrive-token" type="password" placeholder="Cole o token aqui"
-                        value={pipedriveToken} onChange={(e) => setPipedriveToken(e.target.value)} autoComplete="off" />
-                    </div>
-                    {pipedriveStatus && (
-                      <div className={`flex items-center gap-2 rounded-md border p-3 text-sm ${
-                        pipedriveStatus.ok
-                          ? "border-success/30 bg-success/10 text-success"
-                          : "border-destructive/30 bg-destructive/10 text-destructive"
-                      }`}>
-                        {pipedriveStatus.ok ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                        <span>
-                          {pipedriveStatus.ok
-                            ? `Conectado como ${pipedriveStatus.name}`
-                            : `Token inválido — ${(pipedriveStatus as { ok: false; msg: string }).msg}`}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={handleTestPipedrive} disabled={pipedriveTesting}>
-                        {pipedriveTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Salvar e Testar
-                      </Button>
-                      {systemSettings?.pipedrive_api_token && (
-                        <Button variant="outline" onClick={handleRemovePipedrive}>Remover</Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
 
                 <Card>
                   <CardHeader>
