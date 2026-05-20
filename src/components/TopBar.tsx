@@ -158,8 +158,7 @@ export function TopBar() {
     (searchResults?.tickets.length ?? 0) +
     (searchResults?.clients.length ?? 0) +
     (searchResults?.implantacoes.length ?? 0) +
-    (searchResults?.tasks.length ?? 0) +
-    (searchResults?.deals.length ?? 0);
+    (searchResults?.tasks.length ?? 0);
 
   const goTo = (path: string) => {
     setSearchOpen(false);
