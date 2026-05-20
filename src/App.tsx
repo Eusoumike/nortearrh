@@ -18,8 +18,6 @@ import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
 import Settings from "./pages/Settings";
 import Financeiro from "./pages/Financeiro";
-import Nps from "./pages/Nps";
-import NpsForm from "./pages/NpsForm";
 import NotFound from "./pages/NotFound.tsx";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
