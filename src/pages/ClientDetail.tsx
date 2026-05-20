@@ -237,7 +237,7 @@ export default function ClientDetail() {
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">CNPJ</dt>
-                <dd className="font-mono">{client.cnpj || "—"}</dd>
+                <dd className="font-mono">{client.cnpj ? formatCnpj(client.cnpj) : "—"}</dd>
               </div>
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Produto(s) contratado(s)</dt>
