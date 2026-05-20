@@ -26,6 +26,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ToneBadge } from "@/components/ui/tone-badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import {
   Plus, Loader2, GripVertical, Copy, Trash2, Send, Settings2, Search, X, Eye, EyeOff,
@@ -347,28 +348,25 @@ export default function Implantacao() {
   const visibleStages = stages.filter((s) => !s.hidden);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
-      {/* Header (fixo) */}
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Implantação</h1>
-          <p className="text-xs text-muted-foreground md:text-sm">
-            Onboarding de novos clientes com checklist e mensagens prontas para WhatsApp.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9" onClick={() => setOpenCustomize(true)}>
-            <Settings2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Personalizar etapas</span>
-            <span className="sm:hidden">Etapas</span>
-          </Button>
-          <Button size="sm" onClick={() => setOpenNew(true)} className="h-9 bg-gradient-brand text-primary-foreground hover:opacity-90">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Novo Cliente</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
-        </div>
-      </div>
+    <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:p-6">
+      <PageHeader
+        title="Implantação"
+        subtitle="Onboarding de novos clientes com checklist e mensagens prontas para WhatsApp."
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="h-9" onClick={() => setOpenCustomize(true)}>
+              <Settings2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Personalizar etapas</span>
+              <span className="sm:hidden">Etapas</span>
+            </Button>
+            <Button size="sm" onClick={() => setOpenNew(true)} className="h-9">
+              <Plus className="h-4 w-4" />
+              Nova Implantação
+            </Button>
+          </>
+        }
+      />
+
 
       {/* Kanban (preenche restante) */}
       <div className="min-h-0 flex-1">

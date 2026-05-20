@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ListChecks, Search, Plus, Loader2, Pencil } from "lucide-react";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatBrazilDateTime } from "@/lib/formatters";
@@ -145,27 +147,21 @@ export default function MyTasks() {
   }, [tasks, filter, q]);
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <ListChecks className="h-5 w-5 text-primary" />
-            Minhas tarefas
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Tarefas atribuídas a você ou criadas por você, em todos os chamados.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar tarefa, chamado, #número…"
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
+    <div className="space-y-4 p-4 md:p-6">
+      <PageHeader
+        title="Tarefas"
+        subtitle={`${counts.abertas} pendente${counts.abertas === 1 ? "" : "s"} · ${counts.concluidas} concluída${counts.concluidas === 1 ? "" : "s"}`}
+        actions={
+          <>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar tarefa, chamado, #número…"
+                className="h-9 pl-8 text-sm"
+              />
+            </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
@@ -231,8 +227,10 @@ export default function MyTasks() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>
+        }
+      />
+
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as TaskFilter)}>
         <TabsList>
@@ -253,9 +251,13 @@ export default function MyTasks() {
             <Skeleton className="h-12" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            Nenhuma tarefa nessa visão.
-          </p>
+          <EmptyState
+            icon={ListChecks}
+            title="Nenhuma tarefa nessa visão"
+            description="Crie uma nova tarefa ou ajuste os filtros."
+            action={{ label: "Nova Tarefa", icon: Plus, onClick: () => setOpen(true) }}
+          />
+
         ) : (
           <div className="divide-y divide-border">
             {filtered.map((t: any) => {
