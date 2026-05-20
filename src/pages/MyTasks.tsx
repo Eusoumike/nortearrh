@@ -227,8 +227,10 @@ export default function MyTasks() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>
+        }
+      />
+
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as TaskFilter)}>
         <TabsList>
