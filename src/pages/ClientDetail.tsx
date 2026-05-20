@@ -442,56 +442,6 @@ export default function ClientDetail() {
               </Card>
             )}
 
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">NPS</h3>
-                <Star className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-              {npsLatest ? (
-                <div className="space-y-2">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-semibold tabular-nums">{npsLatest.nps_score ?? "—"}</span>
-                    {npsLatest.nps_score != null && (
-                      <Badge
-                        className={
-                          npsLatest.nps_score >= 9
-                            ? "bg-success/15 text-success hover:bg-success/15"
-                            : npsLatest.nps_score >= 7
-                              ? "bg-warning/15 text-warning hover:bg-warning/15"
-                              : "bg-destructive/15 text-destructive hover:bg-destructive/15"
-                        }
-                      >
-                        {npsLatest.nps_score >= 9 ? "Promotor" : npsLatest.nps_score >= 7 ? "Neutro" : "Detrator"}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {npsLatest.nome} · {formatBrazilDate(npsLatest.created_at)}
-                  </p>
-                  {npsLatest.feedback_aberto && (
-                    <p className="line-clamp-3 rounded-md bg-surface-muted/50 p-2 text-xs italic">
-                      "{npsLatest.feedback_aberto}"
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="py-2 text-center text-xs text-muted-foreground">Sem respostas ainda.</p>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={() => sendSurvey.mutate()}
-                disabled={sendSurvey.isPending}
-              >
-                {sendSurvey.isPending ? (
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-3.5 w-3.5" />
-                )}
-                Enviar pesquisa NPS
-              </Button>
-            </Card>
 
             <Card className="p-5">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
