@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import { timeAgo } from "@/lib/formatters";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import {
   CommandDialog,
   CommandEmpty,
@@ -17,6 +18,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+
 
 
 export function TopBar() {
@@ -192,21 +194,25 @@ export function TopBar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
-      <SidebarTrigger className="h-8 w-8" />
-      <div className="hidden md:flex flex-1 max-w-md">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur-md md:px-4">
+      <SidebarTrigger className="h-8 w-8 shrink-0" />
+      <div className="min-w-0 flex-1 hidden sm:block">
+        <Breadcrumbs />
+      </div>
+      <div className="hidden md:flex w-72 lg:w-96 shrink-0">
         <button
           onClick={() => setSearchOpen(true)}
           className="group inline-flex w-full items-center gap-2 rounded-md border border-input bg-surface-muted px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1">Buscar tickets, clientes, empresas…</span>
+          <span className="flex-1 truncate">Buscar chamados, clientes, empresas…</span>
           <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
           </kbd>
         </button>
       </div>
       <div className="ml-auto flex items-center gap-1">
+
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme} title="Trocar tema">
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
