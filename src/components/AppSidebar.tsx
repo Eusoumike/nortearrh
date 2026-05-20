@@ -90,7 +90,11 @@ const groups: NavGroup[] = [
     key: "crm",
     title: "CRM",
     icon: Briefcase,
-    children: [{ title: "Pipeline", url: "/crm/pipeline" }],
+    children: [
+      { title: "Pipeline", url: "/crm/pipeline" },
+      { title: "Atividades", url: "/crm/atividades" },
+      { title: "Analytics", url: "/crm/analytics" },
+    ],
   },
   {
     key: "financeiro",
