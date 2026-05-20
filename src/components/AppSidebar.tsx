@@ -68,7 +68,7 @@ const sections: NavSection[] = [
     items: [
       { key: "financeiro", title: "Financeiro", icon: DollarSign, url: "/financeiro", adminOnly: true },
       { key: "performance", title: "Performance", icon: TrendingUp, url: "/performance" },
-      { key: "nps", title: "NPS", icon: Star, url: "/nps" },
+      
     ],
   },
 ];
