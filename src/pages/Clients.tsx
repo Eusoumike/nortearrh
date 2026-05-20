@@ -41,7 +41,7 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, pipedrive_person_id, created_at")
+        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, created_at")
         .order("name");
       if (error) throw error;
       return data;
@@ -224,26 +224,11 @@ export default function Clients() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <p className="truncate font-medium">{c.name}</p>
-                      {(() => {
-                        if (!c.pipedrive_person_id || !c.created_at) return null;
-                        const ageMs = Date.now() - new Date(c.created_at).getTime();
-                        if (ageMs < 0 || ageMs >= 48 * 60 * 60 * 1000) return null;
-                        return (
-                          <ToneBadge tone="warning" size="sm" dot className="shrink-0">
-                            Novo
-                          </ToneBadge>
-                        );
-                      })()}
                     </div>
                     {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
-                    {c.pipedrive_person_id && (
-                      <ToneBadge tone="warning" size="sm">
-                        Pipedrive
-                      </ToneBadge>
-                    )}
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
