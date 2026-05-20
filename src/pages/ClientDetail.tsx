@@ -11,10 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Mail,
-  Loader2,
   Pencil,
-  Star,
-  Send,
   Copy,
   Monitor,
   Rocket,
