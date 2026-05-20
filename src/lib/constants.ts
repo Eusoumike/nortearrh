@@ -114,7 +114,7 @@ export const CHANNEL_LABEL: Record<TicketChannel, string> = {
   // canais legados (mantidos só para compatibilidade com tickets antigos)
   chat: "Chat",
   portal: "Portal",
-  pipedrive: "Pipedrive",
+  
   outro: "Outro",
 };
 
