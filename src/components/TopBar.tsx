@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo, Briefcase } from "lucide-react";
+import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
@@ -114,7 +114,7 @@ export function TopBar() {
       const numeric = safe.replace(/^#/, "");
       const like = `%${safe}%`;
 
-      const [ticketsRes, clientsRes, implantacoesRes, tasksRes, dealsRes] = await Promise.all([
+      const [ticketsRes, clientsRes, implantacoesRes, tasksRes] = await Promise.all([
         supabase
           .from("tickets")
           .select("id, ticket_number, title, status, client_name, organization")
@@ -141,12 +141,6 @@ export function TopBar() {
           .ilike("title", like)
           .order("created_at", { ascending: false })
           .limit(8),
-        supabase
-          .from("deals")
-          .select("id, title, company_name, contact_name, stage")
-          .or(`title.ilike.${like},company_name.ilike.${like},contact_name.ilike.${like}`)
-          .order("created_at", { ascending: false })
-          .limit(8),
       ]);
 
       return {
@@ -154,7 +148,6 @@ export function TopBar() {
         clients: clientsRes.data ?? [],
         implantacoes: implantacoesRes.data ?? [],
         tasks: tasksRes.data ?? [],
-        deals: dealsRes.data ?? [],
       };
     },
   });
@@ -163,8 +156,7 @@ export function TopBar() {
     (searchResults?.tickets.length ?? 0) +
     (searchResults?.clients.length ?? 0) +
     (searchResults?.implantacoes.length ?? 0) +
-    (searchResults?.tasks.length ?? 0) +
-    (searchResults?.deals.length ?? 0);
+    (searchResults?.tasks.length ?? 0);
 
   const goTo = (path: string) => {
     setSearchOpen(false);
@@ -238,7 +230,7 @@ export function TopBar() {
         <CommandInput
           value={searchTerm}
           onValueChange={setSearchTerm}
-          placeholder="Buscar chamados, clientes, implantações, tarefas, negócios…"
+          placeholder="Buscar chamados, clientes, implantações, tarefas…"
         />
         <CommandList>
           {debouncedTerm.length < 2 ? (
@@ -350,28 +342,6 @@ export function TopBar() {
                 </CommandGroup>
               )}
 
-              {(searchResults?.deals.length ?? 0) > 0 && (
-                <CommandGroup heading="Negócios (CRM)">
-                  {searchResults!.deals.map((d: any) => (
-                    <CommandItem
-                      key={`de-${d.id}`}
-                      value={`de ${d.title} ${d.company_name ?? ""} ${d.contact_name ?? ""}`}
-                      onSelect={() => goTo(`/crm`)}
-                      className="flex items-start gap-2"
-                    >
-                      <Briefcase className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{d.title}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {d.company_name ?? ""}
-                          {d.company_name && d.stage ? " · " : ""}
-                          {d.stage ?? ""}
-                        </p>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
             </>
           )}
         </CommandList>

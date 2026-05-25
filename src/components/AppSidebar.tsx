@@ -4,7 +4,7 @@ import {
   Sparkles,
   Rocket,
   Headphones,
-  Briefcase,
+  
   DollarSign,
   TrendingUp,
   CheckSquare,
@@ -85,12 +85,6 @@ const groups: NavGroup[] = [
     children: [
       { title: "Implantação", url: "/implantacao" },
     ],
-  },
-  {
-    key: "crm",
-    title: "CRM",
-    icon: Briefcase,
-    children: [{ title: "Pipeline", url: "/crm/pipeline" }],
   },
   {
     key: "financeiro",
