@@ -52,8 +52,6 @@ const App = () => (
             <Route path="/clientes/:id" element={<ClientDetail />} />
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
             <Route path="/performance" element={<Performance />} />
-            <Route path="/crm" element={<CrmPipeline />} />
-            <Route path="/crm/pipeline" element={<CrmPipeline />} />
             <Route path="/nps" element={<Nps />} />
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/configuracoes" element={<Settings />} />
