@@ -230,7 +230,7 @@ export function TopBar() {
         <CommandInput
           value={searchTerm}
           onValueChange={setSearchTerm}
-          placeholder="Buscar chamados, clientes, implantações, tarefas, negócios…"
+          placeholder="Buscar chamados, clientes, implantações, tarefas…"
         />
         <CommandList>
           {debouncedTerm.length < 2 ? (
