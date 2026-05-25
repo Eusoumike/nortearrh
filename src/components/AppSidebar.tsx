@@ -87,12 +87,6 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    key: "crm",
-    title: "CRM",
-    icon: Briefcase,
-    children: [{ title: "Pipeline", url: "/crm/pipeline" }],
-  },
-  {
     key: "financeiro",
     title: "Financeiro",
     icon: DollarSign,
