@@ -114,7 +114,7 @@ export function TopBar() {
       const numeric = safe.replace(/^#/, "");
       const like = `%${safe}%`;
 
-      const [ticketsRes, clientsRes, implantacoesRes, tasksRes, dealsRes] = await Promise.all([
+      const [ticketsRes, clientsRes, implantacoesRes, tasksRes] = await Promise.all([
         supabase
           .from("tickets")
           .select("id, ticket_number, title, status, client_name, organization")
@@ -141,12 +141,6 @@ export function TopBar() {
           .ilike("title", like)
           .order("created_at", { ascending: false })
           .limit(8),
-        supabase
-          .from("deals")
-          .select("id, title, company_name, contact_name, stage")
-          .or(`title.ilike.${like},company_name.ilike.${like},contact_name.ilike.${like}`)
-          .order("created_at", { ascending: false })
-          .limit(8),
       ]);
 
       return {
@@ -154,7 +148,6 @@ export function TopBar() {
         clients: clientsRes.data ?? [],
         implantacoes: implantacoesRes.data ?? [],
         tasks: tasksRes.data ?? [],
-        deals: dealsRes.data ?? [],
       };
     },
   });
@@ -163,8 +156,7 @@ export function TopBar() {
     (searchResults?.tickets.length ?? 0) +
     (searchResults?.clients.length ?? 0) +
     (searchResults?.implantacoes.length ?? 0) +
-    (searchResults?.tasks.length ?? 0) +
-    (searchResults?.deals.length ?? 0);
+    (searchResults?.tasks.length ?? 0);
 
   const goTo = (path: string) => {
     setSearchOpen(false);
