@@ -4,7 +4,7 @@ import {
   Sparkles,
   Rocket,
   Headphones,
-  Briefcase,
+  
   DollarSign,
   TrendingUp,
   CheckSquare,
