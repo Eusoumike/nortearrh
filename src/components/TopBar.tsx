@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo, Briefcase } from "lucide-react";
+import { Search, Plus, Bell, Moon, Sun, Ticket as TicketIcon, Users, Rocket, ListTodo } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
