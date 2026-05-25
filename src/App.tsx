@@ -13,7 +13,7 @@ import TicketDetail from "./pages/TicketDetail";
 import MyTasks from "./pages/MyTasks";
 import Implantacao from "./pages/Implantacao";
 import Performance from "./pages/Performance";
-import CrmPipeline from "./pages/CrmPipeline";
+
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
