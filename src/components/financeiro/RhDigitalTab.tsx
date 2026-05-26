@@ -416,6 +416,8 @@ export function RhDigitalTab() {
                   <TableHead className="text-right">Mensalidade</TableHead>
                   <TableHead className="text-right">% Nortear</TableHead>
                   <TableHead className="text-right">Valor Nortear</TableHead>
+                  <TableHead className="text-right">Acréscimos</TableHead>
+                  <TableHead className="text-right">Total recebido</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead className="w-[160px] text-right">Ações</TableHead>
@@ -426,6 +428,8 @@ export function RhDigitalTab() {
                   const customPerc = Number(p.percentual_nortear) !== PADRAO_PERC;
                   const contratoP = contratos.find((c) => c.id === p.contrato_id);
                   const isAnual = contratoP?.tipo_cobranca === "anual";
+                  const acr = Number(p.acrescimos ?? 0);
+                  const totalRec = Number(p.valor_total_recebido ?? p.valor_nortear ?? 0);
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
