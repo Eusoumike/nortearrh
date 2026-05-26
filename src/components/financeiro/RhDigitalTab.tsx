@@ -65,6 +65,8 @@ type Parcela = {
   valor_nortear: number;
   status: "pendente" | "pago" | "inadimplente";
   data_pagamento: string | null;
+  acrescimos: number | null;
+  valor_total_recebido: number | null;
 };
 
 type Contrato = {
@@ -113,7 +115,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
         .select(
-          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento",
+          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, acrescimos, valor_total_recebido",
         )
         .eq("competencia", competencia)
         .order("valor_nortear", { ascending: false });
@@ -187,6 +189,11 @@ export function RhDigitalTab() {
 
   const totalMensalidade = parcelas.reduce((s, p) => s + Number(p.valor_mensalidade), 0);
   const totalNortear = parcelas.reduce((s, p) => s + Number(p.valor_nortear), 0);
+  const totalAcrescimos = parcelas.reduce((s, p) => s + Number(p.acrescimos ?? 0), 0);
+  const totalRecebido = parcelas.reduce(
+    (s, p) => s + Number(p.valor_total_recebido ?? p.valor_nortear ?? 0),
+    0,
+  );
   const qtdPagos = parcelas.filter((p) => p.status === "pago").length;
   const qtdPendentes = parcelas.filter((p) => p.status === "pendente").length;
 
