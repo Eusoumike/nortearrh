@@ -1061,6 +1061,7 @@ export type Database = {
       }
       parcelas_rh_digital: {
         Row: {
+          acrescimos: number
           client_id: string | null
           cliente_nome: string
           competencia: string
@@ -1074,8 +1075,10 @@ export type Database = {
           updated_at: string
           valor_mensalidade: number
           valor_nortear: number
+          valor_total_recebido: number | null
         }
         Insert: {
+          acrescimos?: number
           client_id?: string | null
           cliente_nome: string
           competencia: string
@@ -1089,8 +1092,10 @@ export type Database = {
           updated_at?: string
           valor_mensalidade?: number
           valor_nortear?: number
+          valor_total_recebido?: number | null
         }
         Update: {
+          acrescimos?: number
           client_id?: string | null
           cliente_nome?: string
           competencia?: string
@@ -1104,6 +1109,7 @@ export type Database = {
           updated_at?: string
           valor_mensalidade?: number
           valor_nortear?: number
+          valor_total_recebido?: number | null
         }
         Relationships: [
           {

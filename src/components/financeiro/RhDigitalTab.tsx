@@ -65,6 +65,8 @@ type Parcela = {
   valor_nortear: number;
   status: "pendente" | "pago" | "inadimplente";
   data_pagamento: string | null;
+  acrescimos: number | null;
+  valor_total_recebido: number | null;
 };
 
 type Contrato = {
@@ -113,7 +115,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
         .select(
-          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento",
+          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, acrescimos, valor_total_recebido",
         )
         .eq("competencia", competencia)
         .order("valor_nortear", { ascending: false });
@@ -187,6 +189,11 @@ export function RhDigitalTab() {
 
   const totalMensalidade = parcelas.reduce((s, p) => s + Number(p.valor_mensalidade), 0);
   const totalNortear = parcelas.reduce((s, p) => s + Number(p.valor_nortear), 0);
+  const totalAcrescimos = parcelas.reduce((s, p) => s + Number(p.acrescimos ?? 0), 0);
+  const totalRecebido = parcelas.reduce(
+    (s, p) => s + Number(p.valor_total_recebido ?? p.valor_nortear ?? 0),
+    0,
+  );
   const qtdPagos = parcelas.filter((p) => p.status === "pago").length;
   const qtdPendentes = parcelas.filter((p) => p.status === "pendente").length;
 
@@ -409,6 +416,8 @@ export function RhDigitalTab() {
                   <TableHead className="text-right">Mensalidade</TableHead>
                   <TableHead className="text-right">% Nortear</TableHead>
                   <TableHead className="text-right">Valor Nortear</TableHead>
+                  <TableHead className="text-right">Acréscimos</TableHead>
+                  <TableHead className="text-right">Total recebido</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead className="w-[160px] text-right">Ações</TableHead>
@@ -419,6 +428,8 @@ export function RhDigitalTab() {
                   const customPerc = Number(p.percentual_nortear) !== PADRAO_PERC;
                   const contratoP = contratos.find((c) => c.id === p.contrato_id);
                   const isAnual = contratoP?.tipo_cobranca === "anual";
+                  const acr = Number(p.acrescimos ?? 0);
+                  const totalRec = Number(p.valor_total_recebido ?? p.valor_nortear ?? 0);
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
@@ -462,6 +473,30 @@ export function RhDigitalTab() {
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums">
                         {BRL.format(Number(p.valor_nortear))}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {acr > 0 ? (
+                          <Badge
+                            title="Acréscimos (juros/multa)"
+                            className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20"
+                          >
+                            + {BRL.format(acr)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className="text-right font-semibold tabular-nums"
+                        title={
+                          acr > 0
+                            ? `Valor Nortear ${BRL.format(Number(p.valor_nortear))} + acréscimos ${BRL.format(acr)}`
+                            : undefined
+                        }
+                      >
+                        <span className={cn(acr > 0 && "text-emerald-600")}>
+                          {BRL.format(totalRec)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={p.status} />
@@ -536,9 +571,26 @@ export function RhDigitalTab() {
                   <TableCell className="text-right font-semibold tabular-nums">
                     {BRL.format(totalNortear)}
                   </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {totalAcrescimos > 0 ? (
+                      <span className="text-amber-600">+ {BRL.format(totalAcrescimos)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    <span className={cn(totalAcrescimos > 0 && "text-emerald-600")}>
+                      {BRL.format(totalRecebido)}
+                    </span>
+                  </TableCell>
                   <TableCell colSpan={3} className="text-sm text-muted-foreground">
                     {qtdPagos} pago{qtdPagos === 1 ? "" : "s"} · {qtdPendentes} pendente
                     {qtdPendentes === 1 ? "" : "s"}
+                    {totalAcrescimos > 0 && (
+                      <>
+                        {" "}· {BRL.format(totalNortear)} mensalidades + {BRL.format(totalAcrescimos)} acréscimos
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               </TableFooter>
