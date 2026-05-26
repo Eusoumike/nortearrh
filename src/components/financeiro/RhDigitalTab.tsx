@@ -474,6 +474,30 @@ export function RhDigitalTab() {
                       <TableCell className="text-right font-semibold tabular-nums">
                         {BRL.format(Number(p.valor_nortear))}
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {acr > 0 ? (
+                          <Badge
+                            title="Acréscimos (juros/multa)"
+                            className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20"
+                          >
+                            + {BRL.format(acr)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className="text-right font-semibold tabular-nums"
+                        title={
+                          acr > 0
+                            ? `Valor Nortear ${BRL.format(Number(p.valor_nortear))} + acréscimos ${BRL.format(acr)}`
+                            : undefined
+                        }
+                      >
+                        <span className={cn(acr > 0 && "text-emerald-600")}>
+                          {BRL.format(totalRec)}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <StatusBadge status={p.status} />
                       </TableCell>
@@ -547,9 +571,26 @@ export function RhDigitalTab() {
                   <TableCell className="text-right font-semibold tabular-nums">
                     {BRL.format(totalNortear)}
                   </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {totalAcrescimos > 0 ? (
+                      <span className="text-amber-600">+ {BRL.format(totalAcrescimos)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    <span className={cn(totalAcrescimos > 0 && "text-emerald-600")}>
+                      {BRL.format(totalRecebido)}
+                    </span>
+                  </TableCell>
                   <TableCell colSpan={3} className="text-sm text-muted-foreground">
                     {qtdPagos} pago{qtdPagos === 1 ? "" : "s"} · {qtdPendentes} pendente
                     {qtdPendentes === 1 ? "" : "s"}
+                    {totalAcrescimos > 0 && (
+                      <>
+                        {" "}· {BRL.format(totalNortear)} mensalidades + {BRL.format(totalAcrescimos)} acréscimos
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               </TableFooter>
