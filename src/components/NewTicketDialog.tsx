@@ -351,6 +351,16 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 rows={3}
                 maxLength={2000}
               />
+              <AudioToggle
+                onConfirm={(text) =>
+                  setForm((f) => ({
+                    ...f,
+                    descricao_problema: f.descricao_problema
+                      ? `${f.descricao_problema}\n${text}`
+                      : text,
+                  }))
+                }
+              />
             </div>
 
             {/* Quem está com o problema | O que estava tentando fazer */}
