@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save } from "lucide-react";
+import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic } from "lucide-react";
+import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { cn } from "@/lib/utils";
 import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
 import {
