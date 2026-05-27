@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus, ChevronLeft, ChevronRight, Mic } from "lucide-react";
+import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -269,6 +270,7 @@ export default function TicketDetail() {
     time_spent_minutes: "" as string,
     is_internal: true,
   });
+  const [audioOpen, setAudioOpen] = useState(false);
 
   const addInteraction = useMutation({
     mutationFn: async () => {
@@ -830,6 +832,21 @@ export default function TicketDetail() {
                     className="resize-none rounded-none border-0 bg-card px-4 py-3 text-sm leading-relaxed focus-visible:ring-0"
                   />
 
+                  {audioOpen && (
+                    <div className="border-t border-border bg-surface-muted/30 px-3 py-2">
+                      <AudioTranscription
+                        onCancel={() => setAudioOpen(false)}
+                        onConfirm={(text) => {
+                          setNewInt((n) => ({
+                            ...n,
+                            summary: n.summary ? `${n.summary}\n${text}` : text,
+                          }));
+                          setAudioOpen(false);
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-muted/30 px-3 py-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
@@ -896,15 +913,27 @@ export default function TicketDetail() {
                         </PopoverContent>
                       </Popover>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => addInteraction.mutate()}
-                      disabled={!interactionFormReady || addInteraction.isPending}
-                      className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
-                    >
-                      {addInteraction.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
-                      Registrar
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAudioOpen((o) => !o)}
+                        className="h-8 border-border/60 bg-card px-2.5 text-xs"
+                        title="Gravar áudio e transcrever"
+                      >
+                        <Mic className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => addInteraction.mutate()}
+                        disabled={!interactionFormReady || addInteraction.isPending}
+                        className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
+                      >
+                        {addInteraction.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+                        Registrar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </TabsContent>

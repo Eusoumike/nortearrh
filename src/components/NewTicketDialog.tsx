@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save } from "lucide-react";
+import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic } from "lucide-react";
+import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { cn } from "@/lib/utils";
 import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
 import {
@@ -79,6 +80,31 @@ function addHoursToBrasiliaInput(localValue: string, hours: number): string {
   }).formatToParts(future);
   const get = (t: string) => parts.find((p) => p.type === t)?.value || "00";
   return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function AudioToggle({ onConfirm }: { onConfirm: (t: string) => void }) {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-1"
+      >
+        <Mic className="h-3 w-3" /> Gravar explicação
+      </button>
+    );
+  }
+  return (
+    <AudioTranscription
+      className="mt-2"
+      onCancel={() => setOpen(false)}
+      onConfirm={(t) => {
+        onConfirm(t);
+        setOpen(false);
+      }}
+    />
+  );
 }
 
 export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
@@ -349,6 +375,16 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 placeholder="Descreva o problema com mais detalhes... Ex: Cliente não consegue registrar ponto pelo app, a câmera abre mas não reconhece o rosto."
                 rows={3}
                 maxLength={2000}
+              />
+              <AudioToggle
+                onConfirm={(text) =>
+                  setForm((f) => ({
+                    ...f,
+                    descricao_problema: f.descricao_problema
+                      ? `${f.descricao_problema}\n${text}`
+                      : text,
+                  }))
+                }
               />
             </div>
 
