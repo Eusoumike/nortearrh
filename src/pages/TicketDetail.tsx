@@ -913,15 +913,27 @@ export default function TicketDetail() {
                         </PopoverContent>
                       </Popover>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => addInteraction.mutate()}
-                      disabled={!interactionFormReady || addInteraction.isPending}
-                      className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
-                    >
-                      {addInteraction.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
-                      Registrar
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAudioOpen((o) => !o)}
+                        className="h-8 border-border/60 bg-card px-2.5 text-xs"
+                        title="Gravar áudio e transcrever"
+                      >
+                        <Mic className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => addInteraction.mutate()}
+                        disabled={!interactionFormReady || addInteraction.isPending}
+                        className="bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
+                      >
+                        {addInteraction.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+                        Registrar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
