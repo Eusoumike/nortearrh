@@ -270,6 +270,7 @@ export default function TicketDetail() {
     time_spent_minutes: "" as string,
     is_internal: true,
   });
+  const [audioOpen, setAudioOpen] = useState(false);
 
   const addInteraction = useMutation({
     mutationFn: async () => {
