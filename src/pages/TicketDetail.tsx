@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone, FileText, Loader2, Calendar as CalendarIcon, Trash2, Pencil, ListChecks, Building2, History, Send, Monitor, Copy, Plus, ChevronLeft, ChevronRight, Mic } from "lucide-react";
+import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
