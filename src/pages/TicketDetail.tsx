@@ -832,6 +832,21 @@ export default function TicketDetail() {
                     className="resize-none rounded-none border-0 bg-card px-4 py-3 text-sm leading-relaxed focus-visible:ring-0"
                   />
 
+                  {audioOpen && (
+                    <div className="border-t border-border bg-surface-muted/30 px-3 py-2">
+                      <AudioTranscription
+                        onCancel={() => setAudioOpen(false)}
+                        onConfirm={(text) => {
+                          setNewInt((n) => ({
+                            ...n,
+                            summary: n.summary ? `${n.summary}\n${text}` : text,
+                          }));
+                          setAudioOpen(false);
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-muted/30 px-3 py-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Select value={newInt.type} onValueChange={(v) => setNewInt({ ...newInt, type: v as InteractionType })}>
