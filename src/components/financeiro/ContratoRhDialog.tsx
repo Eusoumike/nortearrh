@@ -263,6 +263,32 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
             )}
           </div>
 
+          {client && configParceiro && (configParceiro as any).parceiros && (
+            <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
+              <Handshake className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <div>
+                <div className="font-medium">
+                  Parceiro: {(configParceiro as any).parceiros.nome} —{" "}
+                  {configParceiro.tipo_repasse === "primeira_mensalidade"
+                    ? "1ª mensalidade"
+                    : "recorrência"}{" "}
+                  ({Number(configParceiro.percentual)}%)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Um repasse será gerado automaticamente ao confirmar o{" "}
+                  {configParceiro.tipo_repasse === "primeira_mensalidade"
+                    ? "primeiro pagamento"
+                    : "pagamento de cada parcela"}.
+                </div>
+              </div>
+            </div>
+          )}
+          {client && configParceiro === null && (
+            <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              Este cliente não possui parceiro vinculado para RH Digital. Configure em Financeiro → Parceiros se necessário.
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="valor-mensalidade-rh">
