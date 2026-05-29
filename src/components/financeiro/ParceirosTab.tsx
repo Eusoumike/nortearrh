@@ -266,9 +266,15 @@ export function ParceirosTab() {
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex flex-col gap-1">
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
                       {p.nome}
                       <Badge variant={p.ativo ? "default" : "secondary"}>{p.ativo ? "Ativo" : "Inativo"}</Badge>
+                      {t.oldPending > 0 && (
+                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {t.oldPending} pendente{t.oldPending > 1 ? "s" : ""} há mais de 30 dias
+                        </Badge>
+                      )}
                     </CardTitle>
                     {p.contato && <div className="text-xs text-muted-foreground">{p.contato}</div>}
                     <div className="text-xs text-muted-foreground">
