@@ -423,12 +423,13 @@ export function ParceirosTab() {
                   <TableHead className="text-right">Repasse</TableHead>
                   <TableHead>Competência</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Data pagamento</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRepasses.length === 0 && (
-                  <TableRow><TableCell colSpan={10} className="text-center text-xs text-muted-foreground">Nenhum repasse.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-xs text-muted-foreground">Nenhum repasse.</TableCell></TableRow>
                 )}
                 {filteredRepasses.map((r) => (
                   <TableRow key={r.id}>
@@ -444,14 +445,27 @@ export function ParceirosTab() {
                       <Badge
                         className={r.status === "pago" ? "bg-emerald-600 text-white hover:bg-emerald-600/90" : "bg-amber-500 text-white hover:bg-amber-500/90"}
                       >
-                        {r.status === "pago" ? "Pago" : "Pendente"}
+                        {r.status === "pago" ? "✓ Pago" : "⏳ Pendente"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {r.status === "pago" ? formatBRDate(r.data_pagamento) : "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         {r.status === "pendente" && (
                           <Button size="sm" variant="outline" onClick={() => setConfirmingPay(r)}>
-                            Confirmar pagamento
+                            ✓ Marcar como pago
+                          </Button>
+                        )}
+                        {r.status === "pago" && isAdmin && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Estornar pagamento"
+                            onClick={() => setEstornoRepasse(r)}
+                          >
+                            <RotateCcw className="h-4 w-4" />
                           </Button>
                         )}
                         <Button size="icon" variant="ghost" onClick={() => {
