@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMonths, format, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2 } from "lucide-react";
+import { Loader2, Handshake } from "lucide-react";
 import { toast } from "sonner";
+
 
 import {
   Dialog,
@@ -162,7 +163,24 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
     );
   }, [dataInicio, fidMeses]);
 
+  const { data: configParceiro } = useQuery({
+    queryKey: ["config-parceiro-rh", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("configuracoes_parceiro")
+        .select("percentual, tipo_repasse, ativo, parceiros(nome)")
+        .eq("client_id", client!.id)
+        .eq("produto", "rh_digital")
+        .eq("ativo", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const mutation = useMutation({
+
     mutationFn: async () => {
       if (!client) throw new Error("Selecione um cliente.");
       if (!dataInicio) throw new Error("Informe a data de início.");
@@ -244,6 +262,32 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
               <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>
             )}
           </div>
+
+          {client && configParceiro && (configParceiro as any).parceiros && (
+            <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
+              <Handshake className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <div>
+                <div className="font-medium">
+                  Parceiro: {(configParceiro as any).parceiros.nome} —{" "}
+                  {configParceiro.tipo_repasse === "primeira_mensalidade"
+                    ? "1ª mensalidade"
+                    : "recorrência"}{" "}
+                  ({Number(configParceiro.percentual)}%)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Um repasse será gerado automaticamente ao confirmar o{" "}
+                  {configParceiro.tipo_repasse === "primeira_mensalidade"
+                    ? "primeiro pagamento"
+                    : "pagamento de cada parcela"}.
+                </div>
+              </div>
+            </div>
+          )}
+          {client && configParceiro === null && (
+            <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              Este cliente não possui parceiro vinculado para RH Digital. Configure em Financeiro → Parceiros se necessário.
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
