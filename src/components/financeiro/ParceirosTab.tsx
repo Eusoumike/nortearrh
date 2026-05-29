@@ -255,7 +255,7 @@ export function ParceirosTab() {
           <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Nenhum parceiro cadastrado ainda.</CardContent></Card>
         )}
         {parceiros.map((p) => {
-          const t = totalsByParceiro[p.id] ?? { pendente: 0, pago: 0, clientes: new Set() };
+          const t = totalsByParceiro[p.id] ?? { pendente: 0, pago: 0, clientes: new Set<string>(), oldPending: 0 };
           const isOpen = !!expanded[p.id];
           const parceiroConfigs = configs.filter((c) => c.parceiro_id === p.id);
           const ultimoRepasse = (clientId: string) =>
