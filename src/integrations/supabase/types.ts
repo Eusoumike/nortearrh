@@ -1243,6 +1243,7 @@ export type Database = {
           data_pagamento: string | null
           id: string
           observacoes: string | null
+          observacoes_pagamento: string | null
           origem_id: string | null
           parceiro_id: string
           parceiro_nome: string
@@ -1262,6 +1263,7 @@ export type Database = {
           data_pagamento?: string | null
           id?: string
           observacoes?: string | null
+          observacoes_pagamento?: string | null
           origem_id?: string | null
           parceiro_id: string
           parceiro_nome: string
@@ -1281,6 +1283,7 @@ export type Database = {
           data_pagamento?: string | null
           id?: string
           observacoes?: string | null
+          observacoes_pagamento?: string | null
           origem_id?: string | null
           parceiro_id?: string
           parceiro_nome?: string
