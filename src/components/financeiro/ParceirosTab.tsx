@@ -219,6 +219,24 @@ export function ParceirosTab() {
   });
 
   const [confirmingPay, setConfirmingPay] = useState<Repasse | null>(null);
+  const [estornoRepasse, setEstornoRepasse] = useState<Repasse | null>(null);
+
+  const estornarRepasse = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("repasses_parceiro").update({
+        status: "pendente",
+        data_pagamento: null,
+        observacoes_pagamento: null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento estornado.");
+      qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
+      setEstornoRepasse(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <div className="space-y-4">
