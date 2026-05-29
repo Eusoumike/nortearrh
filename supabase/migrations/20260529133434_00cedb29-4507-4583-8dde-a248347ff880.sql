@@ -1,0 +1,1 @@
+ALTER TABLE public.repasses_parceiro ADD COLUMN IF NOT EXISTS observacoes_pagamento text;

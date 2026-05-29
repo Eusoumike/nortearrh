@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPlus, AlertTriangle, Wrench } from "lucide-react";
+import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPlus, AlertTriangle, Wrench, RotateCcw, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatPercent } from "@/lib/formatters";
@@ -85,6 +86,8 @@ const PRODUTO_LABEL: Record<string, string> = {
 
 export function ParceirosTab() {
   const qc = useQueryClient();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [openNovo, setOpenNovo] = useState(false);
   const [editingParceiro, setEditingParceiro] = useState<Parceiro | null>(null);
   const [vincularFor, setVincularFor] = useState<Parceiro | null>(null);
@@ -141,15 +144,20 @@ export function ParceirosTab() {
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.name ?? "—";
 
   const totalsByParceiro = useMemo(() => {
-    const map: Record<string, { pendente: number; pago: number; clientes: Set<string> }> = {};
+    const map: Record<string, { pendente: number; pago: number; clientes: Set<string>; oldPending: number }> = {};
+    const now = Date.now();
     for (const r of repasses) {
-      if (!map[r.parceiro_id]) map[r.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set() };
+      if (!map[r.parceiro_id]) map[r.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set(), oldPending: 0 };
       if (r.client_id) map[r.parceiro_id].clientes.add(r.client_id);
       if (r.status === "pago") map[r.parceiro_id].pago += Number(r.valor_repasse);
-      else map[r.parceiro_id].pendente += Number(r.valor_repasse);
+      else {
+        map[r.parceiro_id].pendente += Number(r.valor_repasse);
+        const compTs = new Date(r.competencia + "T00:00:00").getTime();
+        if ((now - compTs) / (1000 * 60 * 60 * 24) > 30) map[r.parceiro_id].oldPending += 1;
+      }
     }
     for (const c of configs) {
-      if (!map[c.parceiro_id]) map[c.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set() };
+      if (!map[c.parceiro_id]) map[c.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set(), oldPending: 0 };
       map[c.parceiro_id].clientes.add(c.client_id);
     }
     return map;
@@ -211,6 +219,24 @@ export function ParceirosTab() {
   });
 
   const [confirmingPay, setConfirmingPay] = useState<Repasse | null>(null);
+  const [estornoRepasse, setEstornoRepasse] = useState<Repasse | null>(null);
+
+  const estornarRepasse = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("repasses_parceiro").update({
+        status: "pendente",
+        data_pagamento: null,
+        observacoes_pagamento: null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento estornado.");
+      qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
+      setEstornoRepasse(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <div className="space-y-4">
@@ -229,7 +255,7 @@ export function ParceirosTab() {
           <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Nenhum parceiro cadastrado ainda.</CardContent></Card>
         )}
         {parceiros.map((p) => {
-          const t = totalsByParceiro[p.id] ?? { pendente: 0, pago: 0, clientes: new Set() };
+          const t = totalsByParceiro[p.id] ?? { pendente: 0, pago: 0, clientes: new Set<string>(), oldPending: 0 };
           const isOpen = !!expanded[p.id];
           const parceiroConfigs = configs.filter((c) => c.parceiro_id === p.id);
           const ultimoRepasse = (clientId: string) =>
@@ -240,9 +266,15 @@ export function ParceirosTab() {
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex flex-col gap-1">
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
                       {p.nome}
                       <Badge variant={p.ativo ? "default" : "secondary"}>{p.ativo ? "Ativo" : "Inativo"}</Badge>
+                      {t.oldPending > 0 && (
+                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {t.oldPending} pendente{t.oldPending > 1 ? "s" : ""} há mais de 30 dias
+                        </Badge>
+                      )}
                     </CardTitle>
                     {p.contato && <div className="text-xs text-muted-foreground">{p.contato}</div>}
                     <div className="text-xs text-muted-foreground">
@@ -391,12 +423,13 @@ export function ParceirosTab() {
                   <TableHead className="text-right">Repasse</TableHead>
                   <TableHead>Competência</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Data pagamento</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRepasses.length === 0 && (
-                  <TableRow><TableCell colSpan={10} className="text-center text-xs text-muted-foreground">Nenhum repasse.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-xs text-muted-foreground">Nenhum repasse.</TableCell></TableRow>
                 )}
                 {filteredRepasses.map((r) => (
                   <TableRow key={r.id}>
@@ -412,14 +445,27 @@ export function ParceirosTab() {
                       <Badge
                         className={r.status === "pago" ? "bg-emerald-600 text-white hover:bg-emerald-600/90" : "bg-amber-500 text-white hover:bg-amber-500/90"}
                       >
-                        {r.status === "pago" ? "Pago" : "Pendente"}
+                        {r.status === "pago" ? "✓ Pago" : "⏳ Pendente"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {r.status === "pago" ? formatBRDate(r.data_pagamento) : "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         {r.status === "pendente" && (
                           <Button size="sm" variant="outline" onClick={() => setConfirmingPay(r)}>
-                            Confirmar pagamento
+                            ✓ Marcar como pago
+                          </Button>
+                        )}
+                        {r.status === "pago" && isAdmin && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Estornar pagamento"
+                            onClick={() => setEstornoRepasse(r)}
+                          >
+                            <RotateCcw className="h-4 w-4" />
                           </Button>
                         )}
                         <Button size="icon" variant="ghost" onClick={() => {
@@ -436,8 +482,8 @@ export function ParceirosTab() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-4 text-sm">
-            <div>Pendente: <span className="font-semibold tabular-nums">{BRL.format(totFiltradoPend)}</span></div>
-            <div>Pago: <span className="font-semibold tabular-nums">{BRL.format(totFiltradoPago)}</span></div>
+            <div>⏳ Pendente: <span className="font-semibold tabular-nums text-amber-600">{BRL.format(totFiltradoPend)}</span></div>
+            <div>✓ Pago: <span className="font-semibold tabular-nums text-emerald-600">{BRL.format(totFiltradoPago)}</span></div>
             <div>Total: <span className="font-semibold tabular-nums">{BRL.format(totFiltradoPend + totFiltradoPago)}</span></div>
           </div>
         </CardContent>
@@ -457,6 +503,30 @@ export function ParceirosTab() {
         repasse={confirmingPay}
         onOpenChange={(v) => !v && setConfirmingPay(null)}
       />
+      <Dialog open={!!estornoRepasse} onOpenChange={(v) => !v && setEstornoRepasse(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Estornar pagamento</DialogTitle>
+            {estornoRepasse && (
+              <DialogDescription>
+                Estornar pagamento de <strong>{BRL.format(Number(estornoRepasse.valor_repasse))}</strong> para{" "}
+                <strong>{estornoRepasse.parceiro_nome}</strong>? O repasse voltará para status Pendente.
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEstornoRepasse(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={estornarRepasse.isPending}
+              onClick={() => estornoRepasse && estornarRepasse.mutate(estornoRepasse.id)}
+            >
+              {estornarRepasse.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Estornar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -876,19 +946,27 @@ function ConfirmarRepasseDialog({
 }: { repasse: Repasse | null; onOpenChange: (v: boolean) => void }) {
   const qc = useQueryClient();
   const [data, setData] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [obs, setObs] = useState("");
 
-  useMemo(() => { if (repasse) setData(format(new Date(), "yyyy-MM-dd")); }, [repasse]);
+  useMemo(() => {
+    if (repasse) {
+      setData(format(new Date(), "yyyy-MM-dd"));
+      setObs("");
+    }
+  }, [repasse]);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!repasse) return;
       const { error } = await supabase.from("repasses_parceiro").update({
-        status: "pago", data_pagamento: data,
+        status: "pago",
+        data_pagamento: data,
+        observacoes_pagamento: obs.trim() || null,
       }).eq("id", repasse.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Repasse confirmado.");
+      toast.success("Pagamento ao parceiro confirmado!");
       qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
       onOpenChange(false);
     },
@@ -897,23 +975,36 @@ function ConfirmarRepasseDialog({
 
   return (
     <Dialog open={!!repasse} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle>Confirmar pagamento de repasse</DialogTitle>
-          {repasse && (
-            <DialogDescription>
-              {repasse.parceiro_nome} • {repasse.cliente_nome} • {BRL.format(Number(repasse.valor_repasse))}
-            </DialogDescription>
-          )}
+          <DialogTitle>Confirmar pagamento ao parceiro</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-1.5 py-2">
-          <Label>Data de pagamento</Label>
-          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
-        </div>
+        {repasse && (
+          <div className="grid gap-3 py-2 text-sm">
+            <div className="rounded-md border bg-muted/40 p-3 space-y-1">
+              <div><span className="text-muted-foreground">Parceiro:</span> <strong>{repasse.parceiro_nome}</strong></div>
+              <div><span className="text-muted-foreground">Cliente:</span> <strong>{repasse.cliente_nome}</strong></div>
+              <div><span className="text-muted-foreground">Valor do repasse:</span> <strong className="tabular-nums">{BRL.format(Number(repasse.valor_repasse))}</strong></div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Data do pagamento *</Label>
+              <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Observações</Label>
+              <Textarea
+                rows={2}
+                placeholder='Ex.: "Pago via PIX", "Transferência bancária"'
+                value={obs}
+                onChange={(e) => setObs(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar
+            {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar pagamento
           </Button>
         </DialogFooter>
       </DialogContent>
