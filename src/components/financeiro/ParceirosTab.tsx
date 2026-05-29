@@ -144,15 +144,20 @@ export function ParceirosTab() {
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.name ?? "—";
 
   const totalsByParceiro = useMemo(() => {
-    const map: Record<string, { pendente: number; pago: number; clientes: Set<string> }> = {};
+    const map: Record<string, { pendente: number; pago: number; clientes: Set<string>; oldPending: number }> = {};
+    const now = Date.now();
     for (const r of repasses) {
-      if (!map[r.parceiro_id]) map[r.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set() };
+      if (!map[r.parceiro_id]) map[r.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set(), oldPending: 0 };
       if (r.client_id) map[r.parceiro_id].clientes.add(r.client_id);
       if (r.status === "pago") map[r.parceiro_id].pago += Number(r.valor_repasse);
-      else map[r.parceiro_id].pendente += Number(r.valor_repasse);
+      else {
+        map[r.parceiro_id].pendente += Number(r.valor_repasse);
+        const compTs = new Date(r.competencia + "T00:00:00").getTime();
+        if ((now - compTs) / (1000 * 60 * 60 * 24) > 30) map[r.parceiro_id].oldPending += 1;
+      }
     }
     for (const c of configs) {
-      if (!map[c.parceiro_id]) map[c.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set() };
+      if (!map[c.parceiro_id]) map[c.parceiro_id] = { pendente: 0, pago: 0, clientes: new Set(), oldPending: 0 };
       map[c.parceiro_id].clientes.add(c.client_id);
     }
     return map;
