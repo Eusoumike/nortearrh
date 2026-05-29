@@ -86,6 +86,8 @@ const PRODUTO_LABEL: Record<string, string> = {
 
 export function ParceirosTab() {
   const qc = useQueryClient();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [openNovo, setOpenNovo] = useState(false);
   const [editingParceiro, setEditingParceiro] = useState<Parceiro | null>(null);
   const [vincularFor, setVincularFor] = useState<Parceiro | null>(null);
