@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPlus, AlertTriangle, Wrench } from "lucide-react";
+import { Loader2, Plus, Pencil, Power, Trash2, ChevronDown, ChevronRight, UserPlus, AlertTriangle, Wrench, RotateCcw, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatPercent } from "@/lib/formatters";
