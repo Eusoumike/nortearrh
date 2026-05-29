@@ -482,8 +482,8 @@ export function ParceirosTab() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-4 text-sm">
-            <div>Pendente: <span className="font-semibold tabular-nums">{BRL.format(totFiltradoPend)}</span></div>
-            <div>Pago: <span className="font-semibold tabular-nums">{BRL.format(totFiltradoPago)}</span></div>
+            <div>⏳ Pendente: <span className="font-semibold tabular-nums text-amber-600">{BRL.format(totFiltradoPend)}</span></div>
+            <div>✓ Pago: <span className="font-semibold tabular-nums text-emerald-600">{BRL.format(totFiltradoPago)}</span></div>
             <div>Total: <span className="font-semibold tabular-nums">{BRL.format(totFiltradoPend + totFiltradoPago)}</span></div>
           </div>
         </CardContent>
@@ -503,6 +503,30 @@ export function ParceirosTab() {
         repasse={confirmingPay}
         onOpenChange={(v) => !v && setConfirmingPay(null)}
       />
+      <Dialog open={!!estornoRepasse} onOpenChange={(v) => !v && setEstornoRepasse(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Estornar pagamento</DialogTitle>
+            {estornoRepasse && (
+              <DialogDescription>
+                Estornar pagamento de <strong>{BRL.format(Number(estornoRepasse.valor_repasse))}</strong> para{" "}
+                <strong>{estornoRepasse.parceiro_nome}</strong>? O repasse voltará para status Pendente.
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEstornoRepasse(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={estornarRepasse.isPending}
+              onClick={() => estornoRepasse && estornarRepasse.mutate(estornoRepasse.id)}
+            >
+              {estornarRepasse.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Estornar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
