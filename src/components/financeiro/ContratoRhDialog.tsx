@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMonths, format, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2 } from "lucide-react";
+import { Loader2, Handshake } from "lucide-react";
 import { toast } from "sonner";
+
 
 import {
   Dialog,
