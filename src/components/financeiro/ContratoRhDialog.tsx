@@ -163,7 +163,24 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
     );
   }, [dataInicio, fidMeses]);
 
+  const { data: configParceiro } = useQuery({
+    queryKey: ["config-parceiro-rh", client?.id],
+    enabled: !!client?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("configuracoes_parceiro")
+        .select("percentual, tipo_repasse, ativo, parceiros(nome)")
+        .eq("client_id", client!.id)
+        .eq("produto", "rh_digital")
+        .eq("ativo", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const mutation = useMutation({
+
     mutationFn: async () => {
       if (!client) throw new Error("Selecione um cliente.");
       if (!dataInicio) throw new Error("Informe a data de início.");
