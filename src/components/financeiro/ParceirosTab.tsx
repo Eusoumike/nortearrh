@@ -946,19 +946,27 @@ function ConfirmarRepasseDialog({
 }: { repasse: Repasse | null; onOpenChange: (v: boolean) => void }) {
   const qc = useQueryClient();
   const [data, setData] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [obs, setObs] = useState("");
 
-  useMemo(() => { if (repasse) setData(format(new Date(), "yyyy-MM-dd")); }, [repasse]);
+  useMemo(() => {
+    if (repasse) {
+      setData(format(new Date(), "yyyy-MM-dd"));
+      setObs("");
+    }
+  }, [repasse]);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!repasse) return;
       const { error } = await supabase.from("repasses_parceiro").update({
-        status: "pago", data_pagamento: data,
+        status: "pago",
+        data_pagamento: data,
+        observacoes_pagamento: obs.trim() || null,
       }).eq("id", repasse.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Repasse confirmado.");
+      toast.success("Pagamento ao parceiro confirmado!");
       qc.invalidateQueries({ queryKey: ["repasses_parceiro"] });
       onOpenChange(false);
     },
@@ -967,23 +975,36 @@ function ConfirmarRepasseDialog({
 
   return (
     <Dialog open={!!repasse} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle>Confirmar pagamento de repasse</DialogTitle>
-          {repasse && (
-            <DialogDescription>
-              {repasse.parceiro_nome} • {repasse.cliente_nome} • {BRL.format(Number(repasse.valor_repasse))}
-            </DialogDescription>
-          )}
+          <DialogTitle>Confirmar pagamento ao parceiro</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-1.5 py-2">
-          <Label>Data de pagamento</Label>
-          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
-        </div>
+        {repasse && (
+          <div className="grid gap-3 py-2 text-sm">
+            <div className="rounded-md border bg-muted/40 p-3 space-y-1">
+              <div><span className="text-muted-foreground">Parceiro:</span> <strong>{repasse.parceiro_nome}</strong></div>
+              <div><span className="text-muted-foreground">Cliente:</span> <strong>{repasse.cliente_nome}</strong></div>
+              <div><span className="text-muted-foreground">Valor do repasse:</span> <strong className="tabular-nums">{BRL.format(Number(repasse.valor_repasse))}</strong></div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Data do pagamento *</Label>
+              <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Observações</Label>
+              <Textarea
+                rows={2}
+                placeholder='Ex.: "Pago via PIX", "Transferência bancária"'
+                value={obs}
+                onChange={(e) => setObs(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar
+            {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar pagamento
           </Button>
         </DialogFooter>
       </DialogContent>
