@@ -429,8 +429,14 @@ export function RhDigitalTab() {
                   const customPerc = Number(p.percentual_nortear) !== PADRAO_PERC;
                   const contratoP = contratos.find((c) => c.id === p.contrato_id);
                   const isAnual = contratoP?.tipo_cobranca === "anual";
-                  const acr = Number(p.acrescimos ?? 0);
-                  const totalRec = Number(p.valor_total_recebido ?? p.valor_nortear ?? 0);
+                  const valorNortear = Number(p.valor_nortear);
+                  const valorRecebidoRaw =
+                    p.valor_recebido ?? p.valor_total_recebido ?? null;
+                  const valorRecebido =
+                    valorRecebidoRaw !== null ? Number(valorRecebidoRaw) : null;
+                  const diferenca =
+                    valorRecebido !== null ? valorRecebido - valorNortear : null;
+                  const hasDiff = diferenca !== null && Math.abs(diferenca) >= 0.005;
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
@@ -473,31 +479,41 @@ export function RhDigitalTab() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums">
-                        {BRL.format(Number(p.valor_nortear))}
+                        {BRL.format(valorNortear)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {acr > 0 ? (
-                          <Badge
-                            title="Acréscimos (juros/multa)"
-                            className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20"
-                          >
-                            + {BRL.format(acr)}
-                          </Badge>
-                        ) : (
+                        {valorRecebido === null ? (
                           <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <span
+                            className={cn(
+                              "font-semibold",
+                              hasDiff && diferenca! > 0 && "text-emerald-600",
+                              hasDiff && diferenca! < 0 && "text-destructive",
+                            )}
+                          >
+                            {BRL.format(valorRecebido)}
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell
-                        className="text-right font-semibold tabular-nums"
-                        title={
-                          acr > 0
-                            ? `Valor Nortear ${BRL.format(Number(p.valor_nortear))} + acréscimos ${BRL.format(acr)}`
-                            : undefined
-                        }
-                      >
-                        <span className={cn(acr > 0 && "text-emerald-600")}>
-                          {BRL.format(totalRec)}
-                        </span>
+                      <TableCell className="text-right tabular-nums">
+                        {!hasDiff ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : diferenca! > 0 ? (
+                          <Badge
+                            title="Pago acima do contrato"
+                            className="border-transparent bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20"
+                          >
+                            + {BRL.format(diferenca!)}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            title="Pago abaixo do contrato"
+                            className="border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20"
+                          >
+                            − {BRL.format(Math.abs(diferenca!))}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={p.status} />
