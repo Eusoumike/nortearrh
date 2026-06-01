@@ -1141,6 +1141,7 @@ export type Database = {
           contrato_id: string
           created_at: string
           data_pagamento: string | null
+          diferenca_valor: number | null
           id: string
           observacoes: string | null
           percentual_nortear: number
@@ -1148,6 +1149,7 @@ export type Database = {
           updated_at: string
           valor_mensalidade: number
           valor_nortear: number
+          valor_recebido: number | null
           valor_total_recebido: number | null
         }
         Insert: {
@@ -1158,6 +1160,7 @@ export type Database = {
           contrato_id: string
           created_at?: string
           data_pagamento?: string | null
+          diferenca_valor?: number | null
           id?: string
           observacoes?: string | null
           percentual_nortear?: number
@@ -1165,6 +1168,7 @@ export type Database = {
           updated_at?: string
           valor_mensalidade?: number
           valor_nortear?: number
+          valor_recebido?: number | null
           valor_total_recebido?: number | null
         }
         Update: {
@@ -1175,6 +1179,7 @@ export type Database = {
           contrato_id?: string
           created_at?: string
           data_pagamento?: string | null
+          diferenca_valor?: number | null
           id?: string
           observacoes?: string | null
           percentual_nortear?: number
@@ -1182,6 +1187,7 @@ export type Database = {
           updated_at?: string
           valor_mensalidade?: number
           valor_nortear?: number
+          valor_recebido?: number | null
           valor_total_recebido?: number | null
         }
         Relationships: [
