@@ -190,11 +190,11 @@ export function RhDigitalTab() {
 
   const totalMensalidade = parcelas.reduce((s, p) => s + Number(p.valor_mensalidade), 0);
   const totalNortear = parcelas.reduce((s, p) => s + Number(p.valor_nortear), 0);
-  const totalAcrescimos = parcelas.reduce((s, p) => s + Number(p.acrescimos ?? 0), 0);
   const totalRecebido = parcelas.reduce(
-    (s, p) => s + Number(p.valor_total_recebido ?? p.valor_nortear ?? 0),
+    (s, p) => s + Number(p.valor_recebido ?? p.valor_total_recebido ?? p.valor_nortear ?? 0),
     0,
   );
+  const diferencaTotal = totalRecebido - totalNortear;
   const qtdPagos = parcelas.filter((p) => p.status === "pago").length;
   const qtdPendentes = parcelas.filter((p) => p.status === "pendente").length;
 
