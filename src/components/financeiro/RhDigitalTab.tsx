@@ -588,24 +588,28 @@ export function RhDigitalTab() {
                   <TableCell className="text-right font-semibold tabular-nums">
                     {BRL.format(totalNortear)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {totalAcrescimos > 0 ? (
-                      <span className="text-amber-600">+ {BRL.format(totalAcrescimos)}</span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
-                    <span className={cn(totalAcrescimos > 0 && "text-emerald-600")}>
-                      {BRL.format(totalRecebido)}
-                    </span>
+                    {BRL.format(totalRecebido)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {Math.abs(diferencaTotal) < 0.005 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : diferencaTotal > 0 ? (
+                      <span className="font-semibold text-emerald-600">
+                        + {BRL.format(diferencaTotal)}
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-destructive">
+                        − {BRL.format(Math.abs(diferencaTotal))}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell colSpan={3} className="text-sm text-muted-foreground">
                     {qtdPagos} pago{qtdPagos === 1 ? "" : "s"} · {qtdPendentes} pendente
                     {qtdPendentes === 1 ? "" : "s"}
-                    {totalAcrescimos > 0 && (
+                    {Math.abs(diferencaTotal) >= 0.005 && (
                       <>
-                        {" "}· {BRL.format(totalNortear)} mensalidades + {BRL.format(totalAcrescimos)} acréscimos
+                        {" "}· Contratado {BRL.format(totalNortear)} · Recebido {BRL.format(totalRecebido)}
                       </>
                     )}
                   </TableCell>
