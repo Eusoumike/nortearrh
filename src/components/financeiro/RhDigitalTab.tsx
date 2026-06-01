@@ -116,7 +116,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
         .select(
-          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, acrescimos, valor_total_recebido",
+          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, valor_recebido, diferenca_valor, valor_total_recebido",
         )
         .eq("competencia", competencia)
         .order("valor_nortear", { ascending: false });
