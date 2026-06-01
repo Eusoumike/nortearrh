@@ -417,8 +417,8 @@ export function RhDigitalTab() {
                   <TableHead className="text-right">Mensalidade</TableHead>
                   <TableHead className="text-right">% Nortear</TableHead>
                   <TableHead className="text-right">Valor Nortear</TableHead>
-                  <TableHead className="text-right">Acréscimos</TableHead>
-                  <TableHead className="text-right">Total recebido</TableHead>
+                  <TableHead className="text-right">Valor recebido</TableHead>
+                  <TableHead className="text-right">Diferença</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead className="w-[160px] text-right">Ações</TableHead>
