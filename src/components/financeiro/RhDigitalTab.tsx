@@ -65,7 +65,8 @@ type Parcela = {
   valor_nortear: number;
   status: "pendente" | "pago" | "inadimplente";
   data_pagamento: string | null;
-  acrescimos: number | null;
+  valor_recebido: number | null;
+  diferenca_valor: number | null;
   valor_total_recebido: number | null;
 };
 
