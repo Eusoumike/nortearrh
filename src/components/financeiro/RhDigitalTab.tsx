@@ -66,8 +66,8 @@ type Parcela = {
   status: "pendente" | "pago" | "inadimplente";
   data_pagamento: string | null;
   valor_recebido: number | null;
+  valor_nortear_recebido: number | null;
   diferenca_valor: number | null;
-  valor_total_recebido: number | null;
 };
 
 type Contrato = {
