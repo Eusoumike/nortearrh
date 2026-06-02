@@ -190,11 +190,24 @@ export function RhDigitalTab() {
 
   const totalMensalidade = parcelas.reduce((s, p) => s + Number(p.valor_mensalidade), 0);
   const totalNortear = parcelas.reduce((s, p) => s + Number(p.valor_nortear), 0);
-  const totalRecebido = parcelas.reduce(
-    (s, p) => s + Number(p.valor_recebido ?? p.valor_total_recebido ?? p.valor_nortear ?? 0),
+  // Recebido total = valor_recebido das pagas + valor_mensalidade das pendentes (esperado)
+  const totalRecebidoMensalidade = parcelas.reduce((s, p) => {
+    if (p.status === "pago") return s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0);
+    return s + Number(p.valor_mensalidade ?? 0);
+  }, 0);
+  // Nortear efetivamente recebido (para o que está pago)
+  const totalNortearRecebido = parcelas.reduce((s, p) => {
+    if (p.status === "pago") return s + Number(p.valor_nortear_recebido ?? p.valor_nortear ?? 0);
+    return s + Number(p.valor_nortear ?? 0);
+  }, 0);
+  // Diferença total apenas sobre parcelas pagas (recebido vs contratado)
+  const pagasArr = parcelas.filter((p) => p.status === "pago");
+  const pagasContratado = pagasArr.reduce((s, p) => s + Number(p.valor_mensalidade ?? 0), 0);
+  const pagasRecebido = pagasArr.reduce(
+    (s, p) => s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0),
     0,
   );
-  const diferencaTotal = totalRecebido - totalNortear;
+  const diferencaTotal = pagasRecebido - pagasContratado;
   const qtdPagos = parcelas.filter((p) => p.status === "pago").length;
   const qtdPendentes = parcelas.filter((p) => p.status === "pendente").length;
 
