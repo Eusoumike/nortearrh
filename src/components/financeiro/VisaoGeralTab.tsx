@@ -102,7 +102,7 @@ export function VisaoGeralTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
-        .select("client_id, cliente_nome, competencia, valor_nortear, valor_recebido, valor_total_recebido")
+        .select("client_id, cliente_nome, competencia, valor_nortear, valor_nortear_recebido, status")
         .gte("competencia", queryStart)
         .lte("competencia", queryEnd);
       if (error) throw error;
@@ -110,7 +110,10 @@ export function VisaoGeralTab() {
         client_id: r.client_id,
         cliente_nome: r.cliente_nome,
         competencia: r.competencia,
-        valor_nortear: Number(r.valor_recebido ?? r.valor_total_recebido ?? r.valor_nortear ?? 0),
+        valor_nortear:
+          r.status === "pago"
+            ? Number(r.valor_nortear_recebido ?? r.valor_nortear ?? 0)
+            : Number(r.valor_nortear ?? 0),
         fidelidade_vencimento: null,
       })) as LancPonto[];
     },

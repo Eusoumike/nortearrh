@@ -19,12 +19,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { BRL, formatBRDate } from "./financeiroUtils";
+import { formatPercent } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ParcelaSummary = {
   id: string;
   cliente_nome: string;
   competencia: string;
+  valor_mensalidade: number;
+  percentual_nortear: number;
   valor_nortear: number;
 };
 
@@ -44,16 +47,23 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
     if (open) {
       setDataPag(format(new Date(), "yyyy-MM-dd"));
       setObs("");
-      setValorRecebidoStr(parcela ? String(Number(parcela.valor_nortear).toFixed(2)) : "");
+      setValorRecebidoStr(
+        parcela ? String(Number(parcela.valor_mensalidade).toFixed(2)) : "",
+      );
     }
   }, [open, parcela]);
 
-  const valorContrato = parcela ? Number(parcela.valor_nortear) : 0;
+  const valorMensalidade = parcela ? Number(parcela.valor_mensalidade) : 0;
+  const valorNortear = parcela ? Number(parcela.valor_nortear) : 0;
+  const percNortear =
+    valorMensalidade > 0 ? valorNortear / valorMensalidade : 0;
+
   const valorRecebido = (() => {
     const n = Number(String(valorRecebidoStr).replace(",", "."));
     return Number.isFinite(n) && n >= 0 ? n : 0;
   })();
-  const diferenca = valorRecebido - valorContrato;
+  const valorNortearRecebido = Number((valorRecebido * percNortear).toFixed(2));
+  const diferenca = Number((valorRecebido - valorMensalidade).toFixed(2));
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -64,10 +74,8 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
           status: "pago",
           data_pagamento: dataPag,
           valor_recebido: valorRecebido,
-          diferenca_valor: Number(diferenca.toFixed(2)),
-          // mantém legado coerente para visualizações antigas
-          acrescimos: diferenca > 0 ? Number(diferenca.toFixed(2)) : 0,
-          valor_total_recebido: valorRecebido,
+          valor_nortear_recebido: valorNortearRecebido,
+          diferenca_valor: diferenca,
           observacoes: obs.trim() || null,
         })
         .eq("id", parcela.id);
@@ -82,31 +90,47 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
     onError: (e: any) => toast.error(e.message ?? "Erro ao confirmar pagamento"),
   });
 
-  const diffBadge = (() => {
+  const diffBlock = (() => {
     if (!parcela) return null;
     if (Math.abs(diferenca) < 0.005) {
       return (
-        <div className="rounded-md border bg-muted/40 px-4 py-2.5 text-center text-sm text-muted-foreground">
-          Valor exato do contrato
+        <div className="rounded-md border bg-muted/40 px-4 py-3 text-center">
+          <div className="text-sm text-muted-foreground">Valor exato do contrato</div>
+          <div className="mt-1 text-sm">
+            Valor Nortear:{" "}
+            <span className="font-semibold tabular-nums">{BRL.format(valorNortear)}</span>
+          </div>
         </div>
       );
     }
     if (diferenca > 0) {
       return (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-center">
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center">
           <div className="font-semibold text-emerald-600 tabular-nums">
             + {BRL.format(diferenca)} acima do contrato
           </div>
           <div className="text-xs text-muted-foreground">Cliente pagou com juros/multa</div>
+          <div className="mt-2 text-sm">
+            Valor Nortear ajustado:{" "}
+            <span className="font-semibold tabular-nums text-emerald-600">
+              {BRL.format(valorNortearRecebido)}
+            </span>
+          </div>
         </div>
       );
     }
     return (
-      <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-center">
+      <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-center">
         <div className="font-semibold text-destructive tabular-nums">
           − {BRL.format(Math.abs(diferenca))} abaixo do contrato
         </div>
         <div className="text-xs text-muted-foreground">Pagamento parcial ou com desconto</div>
+        <div className="mt-2 text-sm">
+          Valor Nortear ajustado:{" "}
+          <span className="font-semibold tabular-nums text-destructive">
+            {BRL.format(valorNortearRecebido)}
+          </span>
+        </div>
       </div>
     );
   })();
@@ -124,10 +148,23 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          <div className="rounded-md border bg-muted/40 px-4 py-3 text-center">
-            <div className="text-xs text-muted-foreground">Valor do contrato</div>
-            <div className="text-xl font-semibold tabular-nums">
-              {parcela ? BRL.format(valorContrato) : "—"}
+          <div className="rounded-md border bg-muted/40 px-4 py-3">
+            <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Referência do contrato
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Valor total:</span>
+              <span className="font-semibold tabular-nums">
+                {parcela ? BRL.format(valorMensalidade) : "—"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Valor Nortear ({parcela ? formatPercent(parcela.percentual_nortear) : "—"}):
+              </span>
+              <span className="font-semibold tabular-nums">
+                {parcela ? BRL.format(valorNortear) : "—"}
+              </span>
             </div>
           </div>
 
@@ -139,13 +176,16 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
               min="0"
               step="0.01"
               inputMode="decimal"
-              placeholder={parcela ? Number(valorContrato).toFixed(2) : "0,00"}
+              placeholder={parcela ? valorMensalidade.toFixed(2) : "0,00"}
               value={valorRecebidoStr}
               onChange={(e) => setValorRecebidoStr(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Valor total pago pelo cliente (não apenas a parte da Nortear).
+            </p>
           </div>
 
-          {diffBadge}
+          {diffBlock}
 
           <div className="grid gap-1.5">
             <Label htmlFor="data-pag">Data de pagamento *</Label>

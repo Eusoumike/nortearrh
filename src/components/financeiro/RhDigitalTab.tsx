@@ -66,8 +66,8 @@ type Parcela = {
   status: "pendente" | "pago" | "inadimplente";
   data_pagamento: string | null;
   valor_recebido: number | null;
+  valor_nortear_recebido: number | null;
   diferenca_valor: number | null;
-  valor_total_recebido: number | null;
 };
 
 type Contrato = {
@@ -116,7 +116,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
         .select(
-          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, valor_recebido, diferenca_valor, valor_total_recebido",
+          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, valor_recebido, valor_nortear_recebido, diferenca_valor",
         )
         .eq("competencia", competencia)
         .order("valor_nortear", { ascending: false });
@@ -190,11 +190,24 @@ export function RhDigitalTab() {
 
   const totalMensalidade = parcelas.reduce((s, p) => s + Number(p.valor_mensalidade), 0);
   const totalNortear = parcelas.reduce((s, p) => s + Number(p.valor_nortear), 0);
-  const totalRecebido = parcelas.reduce(
-    (s, p) => s + Number(p.valor_recebido ?? p.valor_total_recebido ?? p.valor_nortear ?? 0),
+  // Recebido total = valor_recebido das pagas + valor_mensalidade das pendentes (esperado)
+  const totalRecebidoMensalidade = parcelas.reduce((s, p) => {
+    if (p.status === "pago") return s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0);
+    return s + Number(p.valor_mensalidade ?? 0);
+  }, 0);
+  // Nortear efetivamente recebido (para o que está pago)
+  const totalNortearRecebido = parcelas.reduce((s, p) => {
+    if (p.status === "pago") return s + Number(p.valor_nortear_recebido ?? p.valor_nortear ?? 0);
+    return s + Number(p.valor_nortear ?? 0);
+  }, 0);
+  // Diferença total apenas sobre parcelas pagas (recebido vs contratado)
+  const pagasArr = parcelas.filter((p) => p.status === "pago");
+  const pagasContratado = pagasArr.reduce((s, p) => s + Number(p.valor_mensalidade ?? 0), 0);
+  const pagasRecebido = pagasArr.reduce(
+    (s, p) => s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0),
     0,
   );
-  const diferencaTotal = totalRecebido - totalNortear;
+  const diferencaTotal = pagasRecebido - pagasContratado;
   const qtdPagos = parcelas.filter((p) => p.status === "pago").length;
   const qtdPendentes = parcelas.filter((p) => p.status === "pendente").length;
 
@@ -429,14 +442,27 @@ export function RhDigitalTab() {
                   const customPerc = Number(p.percentual_nortear) !== PADRAO_PERC;
                   const contratoP = contratos.find((c) => c.id === p.contrato_id);
                   const isAnual = contratoP?.tipo_cobranca === "anual";
+                  const valorMensalidade = Number(p.valor_mensalidade);
                   const valorNortear = Number(p.valor_nortear);
-                  const valorRecebidoRaw =
-                    p.valor_recebido ?? p.valor_total_recebido ?? null;
+                  const isPago = p.status === "pago";
                   const valorRecebido =
-                    valorRecebidoRaw !== null ? Number(valorRecebidoRaw) : null;
+                    p.valor_recebido !== null && p.valor_recebido !== undefined
+                      ? Number(p.valor_recebido)
+                      : null;
+                  const valorNortearRecebido =
+                    p.valor_nortear_recebido !== null && p.valor_nortear_recebido !== undefined
+                      ? Number(p.valor_nortear_recebido)
+                      : null;
                   const diferenca =
-                    valorRecebido !== null ? valorRecebido - valorNortear : null;
+                    isPago && valorRecebido !== null
+                      ? valorRecebido - valorMensalidade
+                      : null;
                   const hasDiff = diferenca !== null && Math.abs(diferenca) >= 0.005;
+                  const nortearAjustado =
+                    isPago &&
+                    valorNortearRecebido !== null &&
+                    Math.abs(valorNortearRecebido - valorNortear) >= 0.005;
+                  const nortearShown = nortearAjustado ? valorNortearRecebido! : valorNortear;
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
@@ -464,7 +490,7 @@ export function RhDigitalTab() {
                               Anual
                             </Badge>
                           )}
-                          {BRL.format(Number(p.valor_mensalidade))}
+                          {BRL.format(valorMensalidade)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -478,41 +504,56 @@ export function RhDigitalTab() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
-                        {BRL.format(valorNortear)}
-                      </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {valorRecebido === null ? (
-                          <span className="text-muted-foreground">—</span>
-                        ) : (
-                          <span
-                            className={cn(
-                              "font-semibold",
-                              hasDiff && diferenca! > 0 && "text-emerald-600",
-                              hasDiff && diferenca! < 0 && "text-destructive",
-                            )}
-                          >
-                            {BRL.format(valorRecebido)}
-                          </span>
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            nortearAjustado && diferenca! > 0 && "text-emerald-600",
+                            nortearAjustado && diferenca! < 0 && "text-destructive",
+                          )}
+                          title={
+                            nortearAjustado
+                              ? `Ajustado — cliente pagou ${BRL.format(valorRecebido!)}`
+                              : undefined
+                          }
+                        >
+                          {BRL.format(nortearShown)}
+                        </span>
+                        {nortearAjustado && (
+                          <div className="text-[10px] text-muted-foreground">
+                            esperado {BRL.format(valorNortear)}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {!hasDiff ? (
+                        {!isPago ? (
                           <span className="text-muted-foreground">—</span>
-                        ) : diferenca! > 0 ? (
-                          <Badge
-                            title="Pago acima do contrato"
-                            className="border-transparent bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20"
-                          >
-                            + {BRL.format(diferenca!)}
-                          </Badge>
                         ) : (
-                          <Badge
-                            title="Pago abaixo do contrato"
-                            className="border-transparent bg-destructive/15 text-destructive hover:bg-destructive/20"
-                          >
-                            − {BRL.format(Math.abs(diferenca!))}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span
+                              className={cn(
+                                "font-medium",
+                                !hasDiff && "text-muted-foreground",
+                                hasDiff && diferenca! > 0 && "text-emerald-600",
+                                hasDiff && diferenca! < 0 && "text-destructive",
+                              )}
+                            >
+                              {BRL.format(valorRecebido ?? valorMensalidade)}
+                            </span>
+                            {hasDiff && (
+                              <Badge
+                                className={cn(
+                                  "border-transparent",
+                                  diferenca! > 0 &&
+                                    "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20",
+                                  diferenca! < 0 &&
+                                    "bg-destructive/15 text-destructive hover:bg-destructive/20",
+                                )}
+                              >
+                                {diferenca! > 0 ? "+" : "−"} {BRL.format(Math.abs(diferenca!))}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
@@ -534,6 +575,8 @@ export function RhDigitalTab() {
                                     id: p.id,
                                     cliente_nome: p.cliente_nome,
                                     competencia: p.competencia,
+                                    valor_mensalidade: Number(p.valor_mensalidade),
+                                    percentual_nortear: Number(p.percentual_nortear),
                                     valor_nortear: Number(p.valor_nortear),
                                   })
                                 }
@@ -586,10 +629,10 @@ export function RhDigitalTab() {
                   </TableCell>
                   <TableCell />
                   <TableCell className="text-right font-semibold tabular-nums">
-                    {BRL.format(totalNortear)}
+                    {BRL.format(totalNortearRecebido)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
-                    {BRL.format(totalRecebido)}
+                    {BRL.format(totalRecebidoMensalidade)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {Math.abs(diferencaTotal) < 0.005 ? (
@@ -609,7 +652,7 @@ export function RhDigitalTab() {
                     {qtdPendentes === 1 ? "" : "s"}
                     {Math.abs(diferencaTotal) >= 0.005 && (
                       <>
-                        {" "}· Contratado {BRL.format(totalNortear)} · Recebido {BRL.format(totalRecebido)}
+                        {" "}· Contratado {BRL.format(pagasContratado)} · Recebido {BRL.format(pagasRecebido)}
                       </>
                     )}
                   </TableCell>
