@@ -1,0 +1,20 @@
+
+ALTER TABLE public.clients
+  ADD COLUMN IF NOT EXISTS razao_social text,
+  ADD COLUMN IF NOT EXISTS nome_fantasia text,
+  ADD COLUMN IF NOT EXISTS cep text,
+  ADD COLUMN IF NOT EXISTS logradouro text,
+  ADD COLUMN IF NOT EXISTS numero text,
+  ADD COLUMN IF NOT EXISTS complemento text,
+  ADD COLUMN IF NOT EXISTS bairro text,
+  ADD COLUMN IF NOT EXISTS municipio text,
+  ADD COLUMN IF NOT EXISTS porte text,
+  ADD COLUMN IF NOT EXISTS data_abertura date,
+  ADD COLUMN IF NOT EXISTS situacao_receita text,
+  ADD COLUMN IF NOT EXISTS atividade_principal text,
+  ADD COLUMN IF NOT EXISTS contact_email text,
+  ADD COLUMN IF NOT EXISTS contact_phone text,
+  ADD COLUMN IF NOT EXISTS contact_whatsapp text,
+  ADD COLUMN IF NOT EXISTS contact_cargo text,
+  ADD COLUMN IF NOT EXISTS contact_data_nascimento date,
+  ADD COLUMN IF NOT EXISTS contact_papel text;

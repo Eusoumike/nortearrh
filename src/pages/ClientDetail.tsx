@@ -71,7 +71,7 @@ export default function ClientDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id")
+        .select("id, name, company, razao_social, nome_fantasia, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id, situacao_receita, data_abertura, porte, atividade_principal, cep, logradouro, numero, complemento, bairro, municipio, estado, contact_cargo, contact_papel, contact_email, contact_phone, contact_whatsapp, contact_data_nascimento, segmento")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -231,14 +231,71 @@ export default function ClientDetail() {
               Dados da empresa
             </h2>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-              <div>
+              <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Razão social</dt>
-                <dd className="font-medium">{client.company || "—"}</dd>
+                <dd className="font-medium">{client.razao_social || client.company || "—"}</dd>
               </div>
+              {client.nome_fantasia && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground">Nome fantasia</dt>
+                  <dd>{client.nome_fantasia}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-xs text-muted-foreground">CNPJ</dt>
                 <dd className="font-mono">{client.cnpj ? formatCnpj(client.cnpj) : "—"}</dd>
               </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Situação na Receita</dt>
+                <dd>
+                  {client.situacao_receita ? (
+                    <Badge
+                      variant="secondary"
+                      className={
+                        /ativ/i.test(client.situacao_receita)
+                          ? "border-success/40 bg-success/10 text-success"
+                          : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }
+                    >
+                      {client.situacao_receita}
+                    </Badge>
+                  ) : "—"}
+                </dd>
+              </div>
+              {client.porte && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Porte</dt>
+                  <dd>{client.porte}</dd>
+                </div>
+              )}
+              {client.data_abertura && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Data de abertura</dt>
+                  <dd>{formatBrazilDate(client.data_abertura)}</dd>
+                </div>
+              )}
+              {client.atividade_principal && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground">Atividade principal (CNAE)</dt>
+                  <dd>{client.atividade_principal}</dd>
+                </div>
+              )}
+              {(client.logradouro || client.municipio || client.cep) && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground">Endereço</dt>
+                  <dd>
+                    {[
+                      [client.logradouro, client.numero].filter(Boolean).join(", "),
+                      client.complemento,
+                      client.bairro,
+                      [client.municipio, client.estado].filter(Boolean).join(" / "),
+                      client.cep && `CEP ${client.cep.replace(/^(\d{5})(\d{3})$/, "$1-$2")}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" — ")}
+                  </dd>
+                </div>
+              )}
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Produto(s) contratado(s)</dt>
                 <dd className="mt-1 flex flex-wrap gap-1.5">
@@ -275,55 +332,79 @@ export default function ClientDetail() {
           {/* Contato */}
           <Card className="p-5">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Contato
+              Contato principal
             </h2>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <div>
-                <dt className="text-xs text-muted-foreground">Nome do contato</dt>
+                <dt className="text-xs text-muted-foreground">Nome</dt>
                 <dd className="font-medium">{client.contact_name || "—"}</dd>
               </div>
+              {client.contact_cargo && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Cargo</dt>
+                  <dd>{client.contact_cargo}</dd>
+                </div>
+              )}
+              {client.contact_papel && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Papel</dt>
+                  <dd><Badge variant="secondary">{client.contact_papel.replace(/_/g, " ")}</Badge></dd>
+                </div>
+              )}
               <div>
                 <dt className="text-xs text-muted-foreground">E-mail</dt>
                 <dd>
-                  {client.email ? (
-                    <a href={`mailto:${client.email}`} className="hover:underline">{client.email}</a>
+                  {(client.contact_email || client.email) ? (
+                    <a href={`mailto:${client.contact_email || client.email}`} className="hover:underline">
+                      {client.contact_email || client.email}
+                    </a>
                   ) : "—"}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Telefone</dt>
-                <dd>{client.phone || "—"}</dd>
+                <dd>{client.contact_phone || client.phone || "—"}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">WhatsApp</dt>
-                <dd>{client.whatsapp || "—"}</dd>
+                <dd>
+                  {(client.contact_whatsapp || client.whatsapp) ? (
+                    <a
+                      href={`https://wa.me/55${(client.contact_whatsapp || client.whatsapp).replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {client.contact_whatsapp || client.whatsapp}
+                    </a>
+                  ) : "—"}
+                </dd>
               </div>
+              {client.contact_data_nascimento && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Data de nascimento</dt>
+                  <dd>{formatBrazilDate(client.contact_data_nascimento)}</dd>
+                </div>
+              )}
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
               {phoneDigits && (
-                <Button
-                  asChild
-                  size="sm"
-                  className="bg-success text-success-foreground hover:opacity-90"
-                >
-                  <a
-                    href={`https://wa.me/55${phoneDigits}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                <Button asChild size="sm" className="bg-success text-success-foreground hover:opacity-90">
+                  <a href={`https://wa.me/55${phoneDigits}`} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> WhatsApp
                   </a>
                 </Button>
               )}
-              {client.email && (
+              {(client.contact_email || client.email) && (
                 <Button asChild size="sm" variant="outline">
-                  <a href={`mailto:${client.email}`}>
+                  <a href={`mailto:${client.contact_email || client.email}`}>
                     <Mail className="mr-1.5 h-3.5 w-3.5" /> E-mail
                   </a>
                 </Button>
               )}
             </div>
           </Card>
+
 
           {/* Onboarding */}
           <Card className="p-5">

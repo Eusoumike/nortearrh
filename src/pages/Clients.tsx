@@ -6,12 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ToneBadge } from "@/components/ui/tone-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +21,12 @@ import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
-import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 import { formatCnpj } from "@/lib/formatters";
+
 
 export default function Clients() {
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
   const { user } = useAuth();
@@ -42,44 +37,25 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, created_at")
+        .select("id, name, company, razao_social, nome_fantasia, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, municipio, estado, created_at")
         .order("name");
       if (error) throw error;
       return data;
     },
   });
 
-  const filtered = (clients ?? []).filter((c) =>
-    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
+  const filtered = (clients ?? []).filter((c: any) =>
+    !q ||
+    c.name?.toLowerCase().includes(q.toLowerCase()) ||
+    c.company?.toLowerCase().includes(q.toLowerCase()) ||
+    c.razao_social?.toLowerCase().includes(q.toLowerCase()) ||
+    c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) ||
+    c.email?.toLowerCase().includes(q.toLowerCase()) ||
+    c.cnpj?.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
   );
 
-  const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
-  const create = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error("Não autenticado");
-      const { error } = await supabase.from("clients").insert({
-        name: form.name,
-        company: form.company || null,
-        email: form.email || null,
-        phone: form.phone || null,
-        health: form.health,
-        health_reason: form.health_reason || null,
-        notes: form.notes || null,
-        created_by: user.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-clients"] });
-      qc.invalidateQueries({ queryKey: ["clients-min"] });
-      toast.success("Cliente criado.");
-      setOpen(false);
-      setForm({ name: "", company: "", email: "", phone: "", health: "saudavel", health_reason: "", notes: "" });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -137,62 +113,16 @@ export default function Clients() {
             <span className="hidden sm:inline">Sincronizar Pipedrive</span>
             <span className="sm:hidden">Sync</span>
           </Button>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-9 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90">
-                <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Novo cliente</span><span className="sm:hidden">Novo</span>
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Novo cliente</DialogTitle></DialogHeader>
-            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
-              <div className="space-y-1.5">
-                <Label>Nome *</Label>
-                <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Empresa</Label>
-                  <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Status</Label>
-                  <Select value={form.health} onValueChange={(v) => setForm({ ...form, health: v as ClientHealth })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(HEALTH_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>E-mail</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Telefone</Label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                </div>
-              </div>
-              {form.health !== "saudavel" && (
-                <div className="space-y-1.5">
-                  <Label>Motivo</Label>
-                  <Input value={form.health_reason} onChange={(e) => setForm({ ...form, health_reason: e.target.value })} placeholder="Ex.: contrato em renovação" />
-                </div>
-              )}
-              <div className="space-y-1.5">
-                <Label>Notas</Label>
-                <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={create.isPending || !form.name} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
-                  {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Salvar
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-          </Dialog>
+          <Button
+            size="sm"
+            className="h-9 bg-gradient-brand text-primary-foreground shadow-sm hover:opacity-90"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">Novo cliente</span>
+            <span className="sm:hidden">Novo</span>
+          </Button>
+
         </div>
       </div>
 
@@ -223,17 +153,25 @@ export default function Clients() {
               <div className="relative z-10 pointer-events-none">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate font-medium">{c.name}</p>
-                    </div>
-                    {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
+                    <p className="truncate font-medium">{(c as any).razao_social || c.company || c.name}</p>
+                    {(c as any).nome_fantasia && (
+                      <p className="truncate text-xs text-muted-foreground">{(c as any).nome_fantasia}</p>
+                    )}
                     {c.cnpj && <p className="truncate font-mono text-[11px] text-muted-foreground">{formatCnpj(c.cnpj)}</p>}
+                    {((c as any).municipio || (c as any).estado) && (
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {[(c as any).municipio, (c as any).estado].filter(Boolean).join(" / ")}
+                      </p>
+                    )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
+                  {c.contact_name && (
+                    <p className="truncate"><span className="text-muted-foreground/70">Contato:</span> {c.contact_name}</p>
+                  )}
                   {c.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
                   {c.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.phone}</p>}
                   {(c as any).anydesk_id ? (
@@ -250,6 +188,7 @@ export default function Clients() {
                   <p className="mt-2 line-clamp-2 border-t border-border pt-2 text-xs italic text-muted-foreground">"{c.health_reason}"</p>
                 )}
               </div>
+
               <div className="absolute right-2 top-2 z-20 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <Button
                   size="icon"
@@ -290,6 +229,13 @@ export default function Clients() {
           onOpenChange={(o) => !o && setEditClient(null)}
         />
       )}
+
+      <EditClientDialog
+        client={null}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
+
 
       <AlertDialog open={!!deleteClient} onOpenChange={(o) => !o && setDeleteClient(null)}>
         <AlertDialogContent>

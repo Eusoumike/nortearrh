@@ -141,14 +141,25 @@ export type Database = {
           address: string | null
           anydesk_id: string | null
           anydesk_senha: string | null
+          atividade_principal: string | null
+          bairro: string | null
           billing_email: string | null
           cargo: string | null
+          cep: string | null
           cnpj: string | null
           company: string | null
+          complemento: string | null
+          contact_cargo: string | null
+          contact_data_nascimento: string | null
+          contact_email: string | null
           contact_name: string | null
+          contact_papel: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
           contract_value: number | null
           created_at: string
           created_by: string | null
+          data_abertura: string | null
           desconto_percentual: number
           document: string | null
           email: string | null
@@ -160,20 +171,27 @@ export type Database = {
           health: Database["public"]["Enums"]["client_health"]
           health_reason: string | null
           id: string
+          logradouro: string | null
           modulos_ativos: string[] | null
+          municipio: string | null
           name: string
+          nome_fantasia: string | null
           notes: string | null
           nps_data: string | null
           nps_score: number | null
           nps_token: string | null
+          numero: string | null
           onboarding_iniciado_em: string | null
           parceiro_id: string | null
           phone: string | null
           pipedrive_person_id: string | null
+          porte: string | null
           potencial_cross: string[] | null
           product: string | null
           products: string[]
+          razao_social: string | null
           segmento: string | null
+          situacao_receita: string | null
           status_nortear: string | null
           tags: string[] | null
           updated_at: string
@@ -186,14 +204,25 @@ export type Database = {
           address?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
+          atividade_principal?: string | null
+          bairro?: string | null
           billing_email?: string | null
           cargo?: string | null
+          cep?: string | null
           cnpj?: string | null
           company?: string | null
+          complemento?: string | null
+          contact_cargo?: string | null
+          contact_data_nascimento?: string | null
+          contact_email?: string | null
           contact_name?: string | null
+          contact_papel?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
           contract_value?: number | null
           created_at?: string
           created_by?: string | null
+          data_abertura?: string | null
           desconto_percentual?: number
           document?: string | null
           email?: string | null
@@ -205,20 +234,27 @@ export type Database = {
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
+          logradouro?: string | null
           modulos_ativos?: string[] | null
+          municipio?: string | null
           name: string
+          nome_fantasia?: string | null
           notes?: string | null
           nps_data?: string | null
           nps_score?: number | null
           nps_token?: string | null
+          numero?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          porte?: string | null
           potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
+          razao_social?: string | null
           segmento?: string | null
+          situacao_receita?: string | null
           status_nortear?: string | null
           tags?: string[] | null
           updated_at?: string
@@ -231,14 +267,25 @@ export type Database = {
           address?: string | null
           anydesk_id?: string | null
           anydesk_senha?: string | null
+          atividade_principal?: string | null
+          bairro?: string | null
           billing_email?: string | null
           cargo?: string | null
+          cep?: string | null
           cnpj?: string | null
           company?: string | null
+          complemento?: string | null
+          contact_cargo?: string | null
+          contact_data_nascimento?: string | null
+          contact_email?: string | null
           contact_name?: string | null
+          contact_papel?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
           contract_value?: number | null
           created_at?: string
           created_by?: string | null
+          data_abertura?: string | null
           desconto_percentual?: number
           document?: string | null
           email?: string | null
@@ -250,20 +297,27 @@ export type Database = {
           health?: Database["public"]["Enums"]["client_health"]
           health_reason?: string | null
           id?: string
+          logradouro?: string | null
           modulos_ativos?: string[] | null
+          municipio?: string | null
           name?: string
+          nome_fantasia?: string | null
           notes?: string | null
           nps_data?: string | null
           nps_score?: number | null
           nps_token?: string | null
+          numero?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
           phone?: string | null
           pipedrive_person_id?: string | null
+          porte?: string | null
           potencial_cross?: string[] | null
           product?: string | null
           products?: string[]
+          razao_social?: string | null
           segmento?: string | null
+          situacao_receita?: string | null
           status_nortear?: string | null
           tags?: string[] | null
           updated_at?: string
