@@ -233,6 +233,9 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       );
       qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
       qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["contratos-rh-digital"] });
+      qc.invalidateQueries({ queryKey: ["parcelas-rh-digital"] });
+      qc.refetchQueries({ queryKey: ["financeiro-rh"] });
       qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
       qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
       onOpenChange(false);
