@@ -158,17 +158,25 @@ export default function Clients() {
               <div className="relative z-10 pointer-events-none">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate font-medium">{c.name}</p>
-                    </div>
-                    {c.company && <p className="truncate text-xs text-muted-foreground">{c.company}</p>}
+                    <p className="truncate font-medium">{(c as any).razao_social || c.company || c.name}</p>
+                    {(c as any).nome_fantasia && (
+                      <p className="truncate text-xs text-muted-foreground">{(c as any).nome_fantasia}</p>
+                    )}
                     {c.cnpj && <p className="truncate font-mono text-[11px] text-muted-foreground">{formatCnpj(c.cnpj)}</p>}
+                    {((c as any).municipio || (c as any).estado) && (
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {[(c as any).municipio, (c as any).estado].filter(Boolean).join(" / ")}
+                      </p>
+                    )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
+                  {c.contact_name && (
+                    <p className="truncate"><span className="text-muted-foreground/70">Contato:</span> {c.contact_name}</p>
+                  )}
                   {c.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
                   {c.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.phone}</p>}
                   {(c as any).anydesk_id ? (
@@ -185,6 +193,7 @@ export default function Clients() {
                   <p className="mt-2 line-clamp-2 border-t border-border pt-2 text-xs italic text-muted-foreground">"{c.health_reason}"</p>
                 )}
               </div>
+
               <div className="absolute right-2 top-2 z-20 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <Button
                   size="icon"
