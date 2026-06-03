@@ -71,7 +71,7 @@ export default function ClientDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id")
+        .select("id, name, company, razao_social, nome_fantasia, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, nps_token, pipedrive_person_id, situacao_receita, data_abertura, porte, atividade_principal, cep, logradouro, numero, complemento, bairro, municipio, estado, contact_cargo, contact_papel, contact_email, contact_phone, contact_whatsapp, contact_data_nascimento, segmento")
         .eq("id", id!)
         .single();
       if (error) throw error;
