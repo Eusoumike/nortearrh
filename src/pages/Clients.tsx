@@ -60,33 +60,7 @@ export default function Clients() {
   );
 
 
-  const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
-  const create = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error("Não autenticado");
-      const { error } = await supabase.from("clients").insert({
-        name: form.name,
-        company: form.company || null,
-        email: form.email || null,
-        phone: form.phone || null,
-        health: form.health,
-        health_reason: form.health_reason || null,
-        notes: form.notes || null,
-        created_by: user.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-clients"] });
-      qc.invalidateQueries({ queryKey: ["clients-min"] });
-      toast.success("Cliente criado.");
-      setOpen(false);
-      setForm({ name: "", company: "", email: "", phone: "", health: "saudavel", health_reason: "", notes: "" });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
