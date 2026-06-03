@@ -6,12 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ToneBadge } from "@/components/ui/tone-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +21,8 @@ import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
 import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
-import { HEALTH_LABEL, type ClientHealth } from "@/lib/constants";
 import { formatCnpj } from "@/lib/formatters";
+
 
 export default function Clients() {
   const [q, setQ] = useState("");
