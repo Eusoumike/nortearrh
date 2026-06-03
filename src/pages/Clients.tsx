@@ -31,7 +31,7 @@ import { formatCnpj } from "@/lib/formatters";
 
 export default function Clients() {
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [editClient, setEditClient] = useState<any | null>(null);
   const [deleteClient, setDeleteClient] = useState<any | null>(null);
   const { user } = useAuth();
@@ -42,16 +42,23 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, created_at")
+        .select("id, name, company, razao_social, nome_fantasia, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, municipio, estado, created_at")
         .order("name");
       if (error) throw error;
       return data;
     },
   });
 
-  const filtered = (clients ?? []).filter((c) =>
-    !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.company?.toLowerCase().includes(q.toLowerCase()) || c.email?.toLowerCase().includes(q.toLowerCase())
+  const filtered = (clients ?? []).filter((c: any) =>
+    !q ||
+    c.name?.toLowerCase().includes(q.toLowerCase()) ||
+    c.company?.toLowerCase().includes(q.toLowerCase()) ||
+    c.razao_social?.toLowerCase().includes(q.toLowerCase()) ||
+    c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) ||
+    c.email?.toLowerCase().includes(q.toLowerCase()) ||
+    c.cnpj?.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
   );
+
 
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", health: "saudavel" as ClientHealth, health_reason: "", notes: "" });
 
