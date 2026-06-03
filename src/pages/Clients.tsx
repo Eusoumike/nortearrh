@@ -235,6 +235,13 @@ export default function Clients() {
         />
       )}
 
+      <EditClientDialog
+        client={null}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
+
+
       <AlertDialog open={!!deleteClient} onOpenChange={(o) => !o && setDeleteClient(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
