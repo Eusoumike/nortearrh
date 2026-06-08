@@ -40,6 +40,7 @@ import {
   getClientLabel,
   filterAndSortClients,
 } from "@/lib/clientDisplay";
+import { ClientPreviewCard } from "@/components/ClientPreviewCard";
 
 interface NewTicketDialogProps {
   open: boolean;
