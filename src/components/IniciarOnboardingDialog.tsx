@@ -18,6 +18,7 @@ type Client = {
   id: string;
   name: string;
   company: string | null;
+  razao_social?: string | null;
   cnpj: string | null;
   products: string[] | null;
   contract_value: number | null;
