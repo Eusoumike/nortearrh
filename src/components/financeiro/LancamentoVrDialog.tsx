@@ -287,19 +287,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
             <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
-            {client && (
-              <p className="text-xs text-muted-foreground">
-                {client.cnpj ? `CNPJ: ${client.cnpj} · ` : ""}
-                <a
-                  href={`/clientes/${client.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Ver perfil
-                </a>
-              </p>
-            )}
+            {client && <ClientPreviewCard client={client} />}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
