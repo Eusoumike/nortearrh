@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 
 import { ClientCombobox, ClientOption } from "./ClientCombobox";
+import { ClientPreviewCard } from "@/components/ClientPreviewCard";
 import { BRL, ymdFirst } from "./financeiroUtils";
 import { supabase } from "@/integrations/supabase/client";
 
