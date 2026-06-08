@@ -261,9 +261,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
             <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
-            {client?.cnpj && (
-              <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>
-            )}
+            {client && <ClientPreviewCard client={client} />}
           </div>
 
           {client && configParceiro && (configParceiro as any).parceiros && (
