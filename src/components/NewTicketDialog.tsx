@@ -539,6 +539,11 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                   </Command>
                 </PopoverContent>
               </Popover>
+              {selectedClient && (
+                <div className="mt-2">
+                  <ClientPreviewCard client={selectedClient} />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
