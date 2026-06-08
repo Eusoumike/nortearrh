@@ -505,13 +505,17 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                             key={c.id}
                             value={c.id}
                             onSelect={() => {
+                              const anyC = c as any;
                               setForm((prev) => ({
                                 ...prev,
                                 client_id: c.id,
-                                organization: c.company ?? prev.organization,
-                                email: c.email ?? prev.email,
-                                phone: c.phone ? maskPhone(c.phone) : prev.phone,
-                                anydesk: (c as any).anydesk_id ?? prev.anydesk,
+                                organization:
+                                  anyC.razao_social ?? anyC.company ?? c.name ?? prev.organization,
+                                email: anyC.contact_email ?? anyC.email ?? prev.email,
+                                phone: (anyC.contact_phone ?? anyC.phone)
+                                  ? maskPhone(anyC.contact_phone ?? anyC.phone)
+                                  : prev.phone,
+                                anydesk: anyC.anydesk_id ?? prev.anydesk,
                               }));
                               setClientPickerOpen(false);
                             }}
