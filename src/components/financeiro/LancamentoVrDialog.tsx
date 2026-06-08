@@ -33,6 +33,7 @@ import {
 import { ChevronDown } from "lucide-react";
 
 import { ClientCombobox, ClientOption } from "./ClientCombobox";
+import { ClientPreviewCard } from "@/components/ClientPreviewCard";
 import { BRL, calcVencimento, ymdFirst } from "./financeiroUtils";
 import { supabase } from "@/integrations/supabase/client";
 
