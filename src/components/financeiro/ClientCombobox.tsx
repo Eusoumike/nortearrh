@@ -29,6 +29,18 @@ export type ClientOption = {
   cnpj: string | null;
   company?: string | null;
   contact_name?: string | null;
+  razao_social?: string | null;
+  nome_fantasia?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  contact_whatsapp?: string | null;
+  contact_cargo?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  municipio?: string | null;
+  estado?: string | null;
+  products?: string[] | null;
+  status_nortear?: string | null;
 };
 
 interface Props {
@@ -42,11 +54,13 @@ export function ClientCombobox({ value, onSelect, disabled }: Props) {
   const [search, setSearch] = useState("");
 
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["clients-combobox"],
+    queryKey: ["clients-combobox-rich"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, cnpj, company, contact_name")
+        .select(
+          "id, name, cnpj, company, contact_name, razao_social, nome_fantasia, contact_email, contact_phone, contact_whatsapp, contact_cargo, email, phone, municipio, estado, products, status_nortear",
+        )
         .order("name");
       if (error) throw error;
       return (data ?? []) as ClientOption[];
