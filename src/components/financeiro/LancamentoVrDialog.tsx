@@ -205,7 +205,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
 
       const payload = {
         client_id: client.id,
-        cliente_nome: client.name,
+        cliente_nome: client.razao_social || client.company || client.name,
         cnpj: client.cnpj,
         competencia,
         tipo,
@@ -236,7 +236,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
         const pctRec = Number(percentualRecorrencia || percentual);
         const recPayloads = recorrenciasGeradas.map((comp) => ({
           client_id: client.id,
-          cliente_nome: client.name,
+          cliente_nome: client.razao_social || client.company || client.name,
           cnpj: client.cnpj,
           competencia: comp,
           tipo: "recorrencia" as const,
