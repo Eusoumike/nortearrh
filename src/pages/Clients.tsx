@@ -167,6 +167,7 @@ export default function Clients() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
+                    <ClientCompletenessBadge client={c} compact />
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
