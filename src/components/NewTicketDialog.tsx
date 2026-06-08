@@ -192,11 +192,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   }, [open]);
 
   const { data: clients } = useQuery({
-    queryKey: ["clients-min"],
+    queryKey: ["clients-min-rich"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, cnpj, email, phone, anydesk_id, anydesk_senha")
+        .select(
+          "id, name, company, razao_social, nome_fantasia, contact_name, contact_email, contact_phone, contact_whatsapp, contact_cargo, cnpj, email, phone, anydesk_id, anydesk_senha, municipio, estado, products, status_nortear",
+        )
         .order("name");
       if (error) throw error;
       return data;
