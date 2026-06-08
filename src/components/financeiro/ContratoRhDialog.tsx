@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 
 import { ClientCombobox, ClientOption } from "./ClientCombobox";
+import { ClientPreviewCard } from "@/components/ClientPreviewCard";
 import { BRL, ymdFirst } from "./financeiroUtils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -199,7 +200,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
             percentual_nortear: Number(percentual),
             notificar_vencimento: notificar,
             observacoes: observacoes.trim() || null,
-            cliente_nome: client.name,
+            cliente_nome: client.razao_social || client.company || client.name,
             cnpj: client.cnpj,
             client_id: client.id,
           })
@@ -208,7 +209,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       } else {
         const { error } = await supabase.from("contratos_rh_digital").insert({
           client_id: client.id,
-          cliente_nome: client.name,
+          cliente_nome: client.razao_social || client.company || client.name,
           cnpj: client.cnpj,
           valor_mensalidade: Number(valorMensalidade),
           percentual_nortear: Number(percentual),
@@ -261,9 +262,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
             <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
-            {client?.cnpj && (
-              <p className="text-xs text-muted-foreground">CNPJ: {client.cnpj}</p>
-            )}
+            {client && <ClientPreviewCard client={client} />}
           </div>
 
           {client && configParceiro && (configParceiro as any).parceiros && (

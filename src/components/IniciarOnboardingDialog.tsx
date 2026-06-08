@@ -18,6 +18,7 @@ type Client = {
   id: string;
   name: string;
   company: string | null;
+  razao_social?: string | null;
   cnpj: string | null;
   products: string[] | null;
   contract_value: number | null;
@@ -40,7 +41,7 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
   const startOnboarding = useMutation({
     mutationFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const empresaNome = client.company || client.name;
+      const empresaNome = client.razao_social || client.company || client.name;
 
       // 1. Criar implantação
       const { data: implantacao, error: errImp } = await supabase

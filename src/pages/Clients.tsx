@@ -22,6 +22,7 @@ import { EditClientDialog } from "@/components/EditClientDialog";
 import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 import { formatCnpj } from "@/lib/formatters";
+import { ClientCompletenessBadge } from "@/components/ClientCompletenessBadge";
 
 
 export default function Clients() {
@@ -37,7 +38,7 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, razao_social, nome_fantasia, contact_name, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, municipio, estado, created_at")
+        .select("id, name, company, razao_social, nome_fantasia, contact_name, contact_email, contact_phone, email, phone, whatsapp, billing_email, cnpj, contract_value, fonte_indicacao, parceiro_id, health, health_reason, notes, anydesk_id, products, status_nortear, municipio, estado, created_at")
         .order("name");
       if (error) throw error;
       return data;
@@ -166,6 +167,7 @@ export default function Clients() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <HealthBadge health={c.health} />
+                    <ClientCompletenessBadge client={c} compact />
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">

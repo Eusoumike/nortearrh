@@ -33,6 +33,7 @@ import {
 import { ChevronDown } from "lucide-react";
 
 import { ClientCombobox, ClientOption } from "./ClientCombobox";
+import { ClientPreviewCard } from "@/components/ClientPreviewCard";
 import { BRL, calcVencimento, ymdFirst } from "./financeiroUtils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -205,7 +206,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
 
       const payload = {
         client_id: client.id,
-        cliente_nome: client.name,
+        cliente_nome: client.razao_social || client.company || client.name,
         cnpj: client.cnpj,
         competencia,
         tipo,
@@ -236,7 +237,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
         const pctRec = Number(percentualRecorrencia || percentual);
         const recPayloads = recorrenciasGeradas.map((comp) => ({
           client_id: client.id,
-          cliente_nome: client.name,
+          cliente_nome: client.razao_social || client.company || client.name,
           cnpj: client.cnpj,
           competencia: comp,
           tipo: "recorrencia" as const,
@@ -287,19 +288,7 @@ export function LancamentoVrDialog({ open, onOpenChange, defaultCompetencia, ini
           <div className="grid gap-1.5">
             <Label>Cliente *</Label>
             <ClientCombobox value={client?.id ?? null} onSelect={handleClienteSelect} />
-            {client && (
-              <p className="text-xs text-muted-foreground">
-                {client.cnpj ? `CNPJ: ${client.cnpj} · ` : ""}
-                <a
-                  href={`/clientes/${client.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Ver perfil
-                </a>
-              </p>
-            )}
+            {client && <ClientPreviewCard client={client} />}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

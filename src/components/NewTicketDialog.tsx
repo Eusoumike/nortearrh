@@ -40,6 +40,7 @@ import {
   getClientLabel,
   filterAndSortClients,
 } from "@/lib/clientDisplay";
+import { ClientPreviewCard } from "@/components/ClientPreviewCard";
 
 interface NewTicketDialogProps {
   open: boolean;
@@ -192,11 +193,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   }, [open]);
 
   const { data: clients } = useQuery({
-    queryKey: ["clients-min"],
+    queryKey: ["clients-min-rich"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, company, contact_name, cnpj, email, phone, anydesk_id, anydesk_senha")
+        .select(
+          "id, name, company, razao_social, nome_fantasia, contact_name, contact_email, contact_phone, contact_whatsapp, contact_cargo, cnpj, email, phone, anydesk_id, anydesk_senha, municipio, estado, products, status_nortear",
+        )
         .order("name");
       if (error) throw error;
       return data;
@@ -503,13 +506,17 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                             key={c.id}
                             value={c.id}
                             onSelect={() => {
+                              const anyC = c as any;
                               setForm((prev) => ({
                                 ...prev,
                                 client_id: c.id,
-                                organization: c.company ?? prev.organization,
-                                email: c.email ?? prev.email,
-                                phone: c.phone ? maskPhone(c.phone) : prev.phone,
-                                anydesk: (c as any).anydesk_id ?? prev.anydesk,
+                                organization:
+                                  anyC.razao_social ?? anyC.company ?? c.name ?? prev.organization,
+                                email: anyC.contact_email ?? anyC.email ?? prev.email,
+                                phone: (anyC.contact_phone ?? anyC.phone)
+                                  ? maskPhone(anyC.contact_phone ?? anyC.phone)
+                                  : prev.phone,
+                                anydesk: anyC.anydesk_id ?? prev.anydesk,
                               }));
                               setClientPickerOpen(false);
                             }}
@@ -533,6 +540,11 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                   </Command>
                 </PopoverContent>
               </Popover>
+              {selectedClient && (
+                <div className="mt-2">
+                  <ClientPreviewCard client={selectedClient} />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
