@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/table";
 import { ClientCombobox, type ClientOption } from "./ClientCombobox";
 import { BRL, formatBRDate } from "./financeiroUtils";
+import { StatusFilterChips, type StatusFilter } from "./StatusFilterChips";
+
 
 type Parceiro = {
   id: string;
@@ -96,7 +98,8 @@ export function ParceirosTab() {
   // filters for repasses
   const [fParceiro, setFParceiro] = useState<string>("all");
   const [fProduto, setFProduto] = useState<string>("all");
-  const [fStatus, setFStatus] = useState<string>("all");
+  const [fStatus, setFStatus] = useState<StatusFilter>("todos");
+
 
   const { data: parceiros = [] } = useQuery({
     queryKey: ["parceiros"],
@@ -169,16 +172,33 @@ export function ParceirosTab() {
   );
   const ativos = parceiros.filter((p) => p.ativo).length;
 
-  const filteredRepasses = useMemo(
+  const repassesByPartnerProduct = useMemo(
     () =>
       repasses.filter(
         (r) =>
           (fParceiro === "all" || r.parceiro_id === fParceiro) &&
-          (fProduto === "all" || r.produto === fProduto) &&
-          (fStatus === "all" || r.status === fStatus),
+          (fProduto === "all" || r.produto === fProduto),
       ),
-    [repasses, fParceiro, fProduto, fStatus],
+    [repasses, fParceiro, fProduto],
   );
+  const statusCountsRep = useMemo(
+    () => ({
+      todos: repassesByPartnerProduct.length,
+      pendentes: repassesByPartnerProduct.filter((r) => r.status === "pendente").length,
+      pagos: repassesByPartnerProduct.filter((r) => r.status === "pago").length,
+    }),
+    [repassesByPartnerProduct],
+  );
+  const filteredRepasses = useMemo(
+    () =>
+      repassesByPartnerProduct.filter((r) => {
+        if (fStatus === "pendentes") return r.status === "pendente";
+        if (fStatus === "pagos") return r.status === "pago";
+        return true;
+      }),
+    [repassesByPartnerProduct, fStatus],
+  );
+
   const totFiltradoPend = filteredRepasses.filter((r) => r.status === "pendente").reduce((a, b) => a + Number(b.valor_repasse), 0);
   const totFiltradoPago = filteredRepasses.filter((r) => r.status === "pago").reduce((a, b) => a + Number(b.valor_repasse), 0);
 
@@ -400,14 +420,13 @@ export function ParceirosTab() {
                 <SelectItem value="vr_beneficios">VR Benefícios</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={fStatus} onValueChange={setFStatus}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-              </SelectContent>
-            </Select>
+            <StatusFilterChips
+              value={fStatus}
+              onChange={setFStatus}
+              counts={statusCountsRep}
+              labels={{ pendentes: "A pagar", pagos: "Pagos ao parceiro" }}
+            />
+
           </div>
 
           <div className="rounded-md border">

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { VisaoGeralTab } from "@/components/financeiro/VisaoGeralTab";
 import { VrTab } from "@/components/financeiro/VrTab";
 import { RhDigitalTab } from "@/components/financeiro/RhDigitalTab";
@@ -10,11 +12,42 @@ import { LancamentosTab } from "@/components/financeiro/LancamentosTab";
 import { DocumentosTab } from "@/components/financeiro/DocumentosTab";
 import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
 import { CalculadoraMigracao } from "@/components/financeiro/CalculadoraMigracao";
+import { ymdFirst } from "@/components/financeiro/financeiroUtils";
 
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
   const [tab, setTab] = useState("visao-geral");
   const [openUpload, setOpenUpload] = useState(false);
+
+  const competencia = ymdFirst(new Date());
+
+  const pendingQuery = useQuery({
+    queryKey: ["financeiro-tab-pendentes", competencia],
+    enabled: role === "admin",
+    queryFn: async () => {
+      const [vrRes, rhRes, repRes] = await Promise.all([
+        supabase
+          .from("lancamentos_vr")
+          .select("id", { count: "exact", head: true })
+          .eq("competencia", competencia)
+          .is("valor_base", null),
+        supabase
+          .from("parcelas_rh_digital")
+          .select("id", { count: "exact", head: true })
+          .eq("competencia", competencia)
+          .eq("status", "pendente"),
+        supabase
+          .from("repasses_parceiro")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pendente"),
+      ]);
+      return {
+        vr: vrRes.count ?? 0,
+        rh: rhRes.count ?? 0,
+        parceiros: repRes.count ?? 0,
+      };
+    },
+  });
 
   if (loading || (user && role === null)) {
     return (
@@ -28,6 +61,8 @@ export default function Financeiro() {
     return <Navigate to="/" replace />;
   }
 
+  const pend = pendingQuery.data ?? { vr: 0, rh: 0, parceiros: 0 };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       <header>
@@ -40,11 +75,20 @@ export default function Financeiro() {
       <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col">
         <TabsList className="w-full justify-start overflow-x-auto md:w-auto">
           <TabsTrigger value="visao-geral">Visão geral</TabsTrigger>
-          <TabsTrigger value="vr">VR Benefícios</TabsTrigger>
+          <TabsTrigger value="vr" className="gap-1.5">
+            VR Benefícios
+            {pend.vr > 0 && <PendBadge count={pend.vr} />}
+          </TabsTrigger>
           <TabsTrigger value="calculadora">Calculadora de Migração</TabsTrigger>
-          <TabsTrigger value="ponto">RH Digital</TabsTrigger>
+          <TabsTrigger value="ponto" className="gap-1.5">
+            RH Digital
+            {pend.rh > 0 && <PendBadge count={pend.rh} />}
+          </TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
-          <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
+          <TabsTrigger value="parceiros" className="gap-1.5">
+            Parceiros
+            {pend.parceiros > 0 && <PendBadge count={pend.parceiros} />}
+          </TabsTrigger>
           <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
         </TabsList>
 
@@ -85,5 +129,16 @@ export default function Financeiro() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function PendBadge({ count }: { count: number }) {
+  return (
+    <span
+      className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold leading-none text-destructive-foreground"
+      title={`${count} pendente${count === 1 ? "" : "s"}`}
+    >
+      {count}
+    </span>
   );
 }

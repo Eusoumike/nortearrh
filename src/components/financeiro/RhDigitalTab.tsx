@@ -50,7 +50,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { StatusFilterChips, type StatusFilter } from "./StatusFilterChips";
 import { formatCnpj, formatPercent } from "@/lib/formatters";
+
 
 const PADRAO_PERC = 40;
 
@@ -101,8 +103,10 @@ export function RhDigitalTab() {
   const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
   const [showEncerrados, setShowEncerrados] = useState(false);
   const [search, setSearch] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<StatusFilter>("todos");
   const { role } = useAuth();
   const isAdmin = role === "admin";
+
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
@@ -154,15 +158,30 @@ export function RhDigitalTab() {
     };
   }, [search]);
 
-  const parcelas = useMemo(() => {
+  const parcelasSearch = useMemo(() => {
     if (!search.trim()) return allParcelas;
-    // Para parcelas, precisamos buscar via contrato (cnpj não está em parcela)
     return allParcelas.filter((p) => {
       const c = contratos.find((x) => x.id === p.contrato_id);
       return matchesSearch({ cliente_nome: p.cliente_nome, cnpj: c?.cnpj ?? null });
     });
   }, [allParcelas, contratos, matchesSearch, search]);
+
+  const statusCounts = useMemo(
+    () => ({
+      todos: parcelasSearch.length,
+      pendentes: parcelasSearch.filter((p) => p.status === "pendente").length,
+      pagos: parcelasSearch.filter((p) => p.status === "pago").length,
+    }),
+    [parcelasSearch],
+  );
+
+  const parcelas = useMemo(() => {
+    if (filtroStatus === "pendentes") return parcelasSearch.filter((p) => p.status === "pendente");
+    if (filtroStatus === "pagos") return parcelasSearch.filter((p) => p.status === "pago");
+    return parcelasSearch;
+  }, [parcelasSearch, filtroStatus]);
   const contratosAtivos = contratos.filter((c) => c.ativo);
+
 
   // Stats agregadas para parcelas pagas/contratadas
   const statsParcelasContrato = useMemo(() => {
@@ -371,15 +390,25 @@ export function RhDigitalTab() {
         </div>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por cliente ou CNPJ…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-md flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por cliente ou CNPJ…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {view === "parcelas" && (
+          <StatusFilterChips
+            value={filtroStatus}
+            onChange={setFiltroStatus}
+            counts={statusCounts}
+          />
+        )}
       </div>
+
       {/* Banners */}
       {(vencidos.length > 0 || proximos.length > 0) && (
         <div className="grid gap-2">
@@ -623,7 +652,14 @@ export function RhDigitalTab() {
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={2} className="text-right font-medium">Total</TableCell>
+                  <TableCell colSpan={2} className="text-right font-medium">
+                    {filtroStatus === "pendentes"
+                      ? `Total pendente (${statusCounts.pendentes})`
+                      : filtroStatus === "pagos"
+                        ? `Total pago (${statusCounts.pagos})`
+                        : `Total (${statusCounts.todos})`}
+                  </TableCell>
+
                   <TableCell className="text-right tabular-nums">
                     {BRL.format(totalMensalidade)}
                   </TableCell>

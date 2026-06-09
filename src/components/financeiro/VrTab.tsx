@@ -48,7 +48,9 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { LancamentoVrDialog, LancamentoVR } from "./LancamentoVrDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { StatusFilterChips, type StatusFilter } from "./StatusFilterChips";
 import { formatCnpj, formatPercent } from "@/lib/formatters";
+
 
 type Row = LancamentoVR & { valor_comissao: number | null };
 
@@ -63,6 +65,8 @@ export function VrTab() {
   const [toFill, setToFill] = useState<Row | null>(null);
   const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string; primeira_carga_id?: string } | null>(null);
   const [search, setSearch] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<StatusFilter>("todos");
+
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
@@ -85,7 +89,7 @@ export function VrTab() {
     },
   });
 
-  const filteredData = useMemo(() => {
+  const searchFiltered = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return data;
     const digits = term.replace(/\D/g, "");
@@ -96,6 +100,20 @@ export function VrTab() {
     });
   }, [data, search]);
 
+  // VR não possui "pago/pendente" formal: tratamos "Aguardando valor" (valor_base null)
+  // como pendente e "valor preenchido" como pago.
+  const counts = useMemo(() => {
+    const pendentes = searchFiltered.filter((r) => r.valor_base == null).length;
+    const pagos = searchFiltered.filter((r) => r.valor_base != null).length;
+    return { todos: searchFiltered.length, pendentes, pagos };
+  }, [searchFiltered]);
+
+  const filteredData = useMemo(() => {
+    if (filtroStatus === "pendentes") return searchFiltered.filter((r) => r.valor_base == null);
+    if (filtroStatus === "pagos") return searchFiltered.filter((r) => r.valor_base != null);
+    return searchFiltered;
+  }, [searchFiltered, filtroStatus]);
+
   const totalBase = useMemo(
     () => filteredData.reduce((s, r) => s + Number(r.valor_base ?? 0), 0),
     [filteredData],
@@ -104,9 +122,18 @@ export function VrTab() {
     () => filteredData.reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
     [filteredData],
   );
+  const totalComissaoPagos = useMemo(
+
+    () =>
+      searchFiltered
+        .filter((r) => r.valor_base != null)
+        .reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
+    [searchFiltered],
+  );
 
   const vencidos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "danger");
   const proximos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "warning");
+
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
@@ -188,15 +215,24 @@ export function VrTab() {
         </Button>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por cliente ou CNPJ…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-md flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por cliente ou CNPJ…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <StatusFilterChips
+          value={filtroStatus}
+          onChange={setFiltroStatus}
+          counts={counts}
+          labels={{ pendentes: "Aguardando valor", pagos: "Com valor" }}
         />
       </div>
+
 
       {(vencidos.length > 0 || proximos.length > 0) && (
         <div className="grid gap-2">
@@ -379,7 +415,11 @@ export function VrTab() {
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={3} className="text-right font-medium">
-                  Total
+                  {filtroStatus === "pendentes"
+                    ? `Aguardando valor (${counts.pendentes})`
+                    : filtroStatus === "pagos"
+                      ? `Com valor (${counts.pagos})`
+                      : `Total (${counts.todos})`}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {BRL.format(totalBase)}
@@ -388,9 +428,17 @@ export function VrTab() {
                 <TableCell className="text-right font-semibold tabular-nums">
                   {BRL.format(totalComissao)}
                 </TableCell>
-                <TableCell colSpan={3} />
+                <TableCell colSpan={3} className="text-xs text-muted-foreground">
+                  {filtroStatus === "todos" && counts.pendentes > 0 && (
+                    <span>
+                      {counts.pendentes} aguardando valor · {counts.pagos} com valor (
+                      {BRL.format(totalComissaoPagos)})
+                    </span>
+                  )}
+                </TableCell>
               </TableRow>
             </TableFooter>
+
           </Table>
         )}
       </Card>
