@@ -20,6 +20,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic } from "lucide-react";
+import { TicketStatusPopup } from "@/components/tickets/TicketStatusPopup";
 import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { cn } from "@/lib/utils";
 import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
@@ -142,6 +143,12 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [statusPopup, setStatusPopup] = useState<{ open: boolean; id: string | null; number: string | null; title: string | null }>({
+    open: false,
+    id: null,
+    number: null,
+    title: null,
+  });
 
   // Reset on open + busca próximo número sequencial
   useEffect(() => {
@@ -307,7 +314,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       qc.invalidateQueries({ queryKey: ["dashboard-tickets"] });
       toast.success(`Chamado #${data.ticket_number} criado.`);
       onOpenChange(false);
-      navigate(`/tickets/${data.id}`);
+      setStatusPopup({ open: true, id: data.id, number: data.ticket_number, title: data.title });
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
@@ -325,6 +332,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
         <DialogHeader className="border-b border-border px-5 py-3">
@@ -761,5 +769,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
+    <TicketStatusPopup
+      open={statusPopup.open}
+      onOpenChange={(o) => setStatusPopup((s) => ({ ...s, open: o }))}
+      ticketId={statusPopup.id}
+      ticketNumber={statusPopup.number}
+      ticketTitle={statusPopup.title}
+    />
+    </>
   );
 }
