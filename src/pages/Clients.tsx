@@ -147,7 +147,22 @@ export default function Clients() {
       <Card className="p-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, empresa ou e-mail…" className="h-9 pl-8" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar por empresa, CNPJ, contato ou município…"
+            className="h-9 pl-8 pr-8"
+          />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Limpar busca"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </Card>
 
@@ -160,8 +175,19 @@ export default function Clients() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Building2 className="h-5 w-5 text-muted-foreground" />
           </div>
-          <p className="mt-3 text-sm font-medium">Nenhum cliente cadastrado</p>
-          <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
+          {q ? (
+            <>
+              <p className="mt-3 text-sm font-medium">Nenhum cliente encontrado para "{q}"</p>
+              <Button variant="link" size="sm" onClick={() => setQ("")} className="mt-1">
+                Limpar busca
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-sm font-medium">Nenhum cliente cadastrado</p>
+              <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
+            </>
+          )}
         </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
