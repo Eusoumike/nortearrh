@@ -652,7 +652,14 @@ export function RhDigitalTab() {
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={2} className="text-right font-medium">Total</TableCell>
+                  <TableCell colSpan={2} className="text-right font-medium">
+                    {filtroStatus === "pendentes"
+                      ? `Total pendente (${statusCounts.pendentes})`
+                      : filtroStatus === "pagos"
+                        ? `Total pago (${statusCounts.pagos})`
+                        : `Total (${statusCounts.todos})`}
+                  </TableCell>
+
                   <TableCell className="text-right tabular-nums">
                     {BRL.format(totalMensalidade)}
                   </TableCell>
