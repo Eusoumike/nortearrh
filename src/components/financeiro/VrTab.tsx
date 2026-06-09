@@ -87,7 +87,7 @@ export function VrTab() {
     },
   });
 
-  const filteredData = useMemo(() => {
+  const searchFiltered = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return data;
     const digits = term.replace(/\D/g, "");
@@ -98,6 +98,20 @@ export function VrTab() {
     });
   }, [data, search]);
 
+  // VR não possui "pago/pendente" formal: tratamos "Aguardando valor" (valor_base null)
+  // como pendente e "valor preenchido" como pago.
+  const counts = useMemo(() => {
+    const pendentes = searchFiltered.filter((r) => r.valor_base == null).length;
+    const pagos = searchFiltered.filter((r) => r.valor_base != null).length;
+    return { todos: searchFiltered.length, pendentes, pagos };
+  }, [searchFiltered]);
+
+  const filteredData = useMemo(() => {
+    if (filtroStatus === "pendentes") return searchFiltered.filter((r) => r.valor_base == null);
+    if (filtroStatus === "pagos") return searchFiltered.filter((r) => r.valor_base != null);
+    return searchFiltered;
+  }, [searchFiltered, filtroStatus]);
+
   const totalBase = useMemo(
     () => filteredData.reduce((s, r) => s + Number(r.valor_base ?? 0), 0),
     [filteredData],
@@ -106,9 +120,21 @@ export function VrTab() {
     () => filteredData.reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
     [filteredData],
   );
+  const totalBasePendente = useMemo(
+    () => searchFiltered.filter((r) => r.valor_base == null).length, // contador apenas
+    [searchFiltered],
+  );
+  const totalComissaoPagos = useMemo(
+    () =>
+      searchFiltered
+        .filter((r) => r.valor_base != null)
+        .reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
+    [searchFiltered],
+  );
 
   const vencidos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "danger");
   const proximos = filteredData.filter((r) => vencimentoTone(r.fidelidade_vencimento) === "warning");
+
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
