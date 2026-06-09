@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMonths, format, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, Handshake } from "lucide-react";
+import { Infinity as InfinityIcon, Loader2, Handshake } from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -33,6 +33,10 @@ import { BRL, ymdFirst } from "./financeiroUtils";
 import { supabase } from "@/integrations/supabase/client";
 
 export type TipoCobrancaRh = "mensal" | "anual";
+export type TipoPeriodoRh = "fidelidade" | "enquanto_ativo";
+
+// Modo combinado usado apenas pela UI do select
+type ModoContrato = "mensal_fidelidade" | "anual" | "enquanto_ativo";
 
 export type ContratoRh = {
   id: string;
@@ -42,10 +46,11 @@ export type ContratoRh = {
   valor_mensalidade: number;
   percentual_nortear: number;
   data_inicio: string;
-  fidelidade_meses: number;
+  fidelidade_meses: number | null;
   notificar_vencimento: boolean;
   observacoes: string | null;
   tipo_cobranca?: TipoCobrancaRh;
+  tipo_periodo?: TipoPeriodoRh;
 };
 
 interface Props {
@@ -63,10 +68,13 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
   const [percentual, setPercentual] = useState<string>("40");
   const [dataInicio, setDataInicio] = useState<string>(ymdFirst(new Date()));
   const [fidMeses, setFidMeses] = useState<string>("12");
-  const [tipoCobranca, setTipoCobranca] = useState<TipoCobrancaRh>("mensal");
+  const [modo, setModo] = useState<ModoContrato>("mensal_fidelidade");
   const [notificar, setNotificar] = useState(true);
   const [observacoes, setObservacoes] = useState<string>("");
   const percentualRequestRef = useRef(0);
+
+  const tipoCobranca: TipoCobrancaRh = modo === "anual" ? "anual" : "mensal";
+  const tipoPeriodo: TipoPeriodoRh = modo === "enquanto_ativo" ? "enquanto_ativo" : "fidelidade";
 
   const [padraoPonto, setPadraoPonto] = useState<number>(40);
 
@@ -112,8 +120,14 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setValorMensalidade(String(initial.valor_mensalidade));
       setPercentual(String(initial.percentual_nortear));
       setDataInicio(initial.data_inicio);
-      setFidMeses(String(initial.fidelidade_meses));
-      setTipoCobranca(initial.tipo_cobranca ?? "mensal");
+      setFidMeses(String(initial.fidelidade_meses ?? 12));
+      const initModo: ModoContrato =
+        initial.tipo_periodo === "enquanto_ativo"
+          ? "enquanto_ativo"
+          : initial.tipo_cobranca === "anual"
+          ? "anual"
+          : "mensal_fidelidade";
+      setModo(initModo);
       setNotificar(initial.notificar_vencimento);
       setObservacoes(initial.observacoes ?? "");
     } else {
@@ -122,7 +136,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setPercentual("40");
       setDataInicio(ymdFirst(new Date()));
       setFidMeses("12");
-      setTipoCobranca("mensal");
+      setModo("mensal_fidelidade");
       setNotificar(true);
       setObservacoes("");
       void aplicarPercentualPonto();
@@ -131,8 +145,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
 
   // Quando muda para anual, força fidelidade 12
   useEffect(() => {
-    if (tipoCobranca === "anual") setFidMeses("12");
-  }, [tipoCobranca]);
+    if (modo === "anual") setFidMeses("12");
+  }, [modo]);
 
   const valorMensalNum = Number(valorMensalidade || 0);
   const percentualNum = Number(percentual || 0);
@@ -187,7 +201,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       if (!dataInicio) throw new Error("Informe a data de início.");
       if (Number(valorMensalidade) <= 0)
         throw new Error("Valor da mensalidade deve ser maior que zero.");
-      if (!fidMeses) throw new Error("Selecione o período de fidelidade.");
+      if (modo === "mensal_fidelidade" && !fidMeses)
+        throw new Error("Selecione o período de fidelidade.");
 
       const userRes = await supabase.auth.getUser();
       const userId = userRes.data.user?.id ?? null;
@@ -207,6 +222,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           .eq("id", initial.id);
         if (error) throw error;
       } else {
+        const fidelidade_meses =
+          modo === "enquanto_ativo" ? null : modo === "anual" ? 12 : Number(fidMeses);
         const { error } = await supabase.from("contratos_rh_digital").insert({
           client_id: client.id,
           cliente_nome: client.razao_social || client.company || client.name,
@@ -214,13 +231,14 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           valor_mensalidade: Number(valorMensalidade),
           percentual_nortear: Number(percentual),
           data_inicio: dataInicio,
-          fidelidade_meses: tipoCobranca === "anual" ? 12 : Number(fidMeses),
+          fidelidade_meses,
           tipo_cobranca: tipoCobranca,
-          notificar_vencimento: notificar,
+          tipo_periodo: tipoPeriodo,
+          notificar_vencimento: modo === "enquanto_ativo" ? false : notificar,
           observacoes: observacoes.trim() || null,
           ativo: true,
           created_by: userId,
-        });
+        } as any);
         if (error) throw error;
       }
     },
@@ -228,8 +246,10 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       toast.success(
         isEdit
           ? "Contrato atualizado. Parcelas futuras pendentes foram sincronizadas."
-          : tipoCobranca === "anual"
+          : modo === "anual"
           ? "Contrato anual criado e parcela única gerada."
+          : modo === "enquanto_ativo"
+          ? "Contrato criado. 12 parcelas iniciais geradas — novas parcelas são adicionadas todo mês."
           : `Contrato criado e ${meses.length} parcelas geradas.`,
       );
       qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
@@ -252,8 +272,10 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           <DialogDescription>
             {isEdit
               ? "Apenas valor e percentual podem ser alterados. Parcelas pagas não serão afetadas."
-              : tipoCobranca === "anual"
+              : modo === "anual"
               ? "Contrato anual — uma única parcela referente ao ano inteiro."
+              : modo === "enquanto_ativo"
+              ? "Contrato sem prazo — gera parcelas mensais enquanto estiver ativo."
               : "Contrato recorrente — as parcelas mensais são geradas automaticamente."}
           </DialogDescription>
         </DialogHeader>
@@ -294,7 +316,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="valor-mensalidade-rh">
-                {tipoCobranca === "anual" ? "Valor anual (R$) *" : "Mensalidade (R$) *"}
+                {modo === "anual" ? "Valor anual (R$) *" : "Mensalidade (R$) *"}
               </Label>
               <Input
                 id="valor-mensalidade-rh"
@@ -305,7 +327,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 value={valorMensalidade}
                 onChange={(e) => setValorMensalidade(e.target.value)}
               />
-              {tipoCobranca === "anual" && (
+              {modo === "anual" && (
                 <p className="text-[11px] text-muted-foreground">
                   Valor total pago pelo cliente no ano.
                 </p>
@@ -334,28 +356,52 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           <div className="grid gap-1.5">
             <Label>Tipo de cobrança *</Label>
             <Select
-              value={tipoCobranca}
-              onValueChange={(v) => setTipoCobranca(v as TipoCobrancaRh)}
+              value={modo}
+              onValueChange={(v) => setModo(v as ModoContrato)}
               disabled={isEdit}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="mensal">Mensal — gera parcelas todo mês</SelectItem>
+                <SelectItem value="mensal_fidelidade">
+                  Mensal com fidelidade — gera parcelas durante o período
+                </SelectItem>
+                <SelectItem value="enquanto_ativo">
+                  Mensal (enquanto ativo) — sem prazo, renova todo mês
+                </SelectItem>
                 <SelectItem value="anual">Anual — pagamento único anual</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {tipoCobranca === "mensal" ? (
+          {modo === "mensal_fidelidade" && (
             <div className="rounded-md border bg-primary/5 px-4 py-3 text-center">
               <div className="text-xs text-muted-foreground">Valor mensal Nortear</div>
               <div className="text-xl font-semibold tabular-nums">
                 = {BRL.format(valorNorteaMensal)} / mês
               </div>
             </div>
-          ) : (
+          )}
+
+          {modo === "enquanto_ativo" && (
+            <div className="rounded-md border border-sky-500/30 bg-sky-500/5 px-4 py-3">
+              <div className="flex items-center justify-center gap-2 text-sm font-medium text-sky-600">
+                <InfinityIcon className="h-4 w-4" />
+                Contrato sem prazo definido
+              </div>
+              <div className="mt-2 text-center text-sm">
+                <strong className="tabular-nums">{BRL.format(valorNorteaMensal)}</strong>{" "}
+                <span className="text-muted-foreground">/ mês para a Nortear</span>
+              </div>
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                Válido até cancelamento manual. As 12 primeiras parcelas são geradas agora e novas
+                parcelas são adicionadas automaticamente todo mês.
+              </p>
+            </div>
+          )}
+
+          {modo === "anual" && (
             <div className="rounded-md border bg-purple-500/5 px-4 py-3 text-center">
               <div className="text-xs font-medium text-purple-600">Contrato anual — pagamento único</div>
               <div className="mt-2 text-base">
@@ -386,7 +432,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 disabled={isEdit}
               />
             </div>
-            {tipoCobranca === "mensal" ? (
+            {modo === "mensal_fidelidade" ? (
               <div className="grid gap-1.5">
                 <Label>Período de fidelidade *</Label>
                 <Select value={fidMeses} onValueChange={setFidMeses} disabled={isEdit}>
@@ -399,24 +445,31 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-            ) : (
+            ) : modo === "anual" ? (
               <div className="grid gap-1.5">
                 <Label>Fidelidade</Label>
                 <div className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
                   12 meses (anual)
                 </div>
               </div>
+            ) : (
+              <div className="grid gap-1.5">
+                <Label>Fidelidade</Label>
+                <div className="flex h-10 items-center gap-1.5 rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
+                  <InfinityIcon className="h-3.5 w-3.5" /> Sem vencimento
+                </div>
+              </div>
             )}
           </div>
 
-          {vencimentoCalc && (
+          {modo === "mensal_fidelidade" && vencimentoCalc && (
             <div className="text-sm">
               Vencimento da fidelidade:{" "}
               <span className="font-medium">{vencimentoCalc}</span>
             </div>
           )}
 
-          {!isEdit && tipoCobranca === "mensal" && meses.length > 0 && (
+          {!isEdit && modo === "mensal_fidelidade" && meses.length > 0 && (
             <div className="rounded-md border p-3 text-sm">
               <div className="mb-1 font-medium">
                 Serão geradas {meses.length} parcelas:
@@ -427,13 +480,15 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
             </div>
           )}
 
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={notificar}
-              onCheckedChange={(v) => setNotificar(v === true)}
-            />
-            Notificar 30 dias antes do vencimento da fidelidade
-          </label>
+          {modo !== "enquanto_ativo" && (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={notificar}
+                onCheckedChange={(v) => setNotificar(v === true)}
+              />
+              Notificar 30 dias antes do vencimento da fidelidade
+            </label>
+          )}
 
           <div className="grid gap-1.5">
             <Label htmlFor="obs-rh">Observações</Label>
@@ -455,8 +510,10 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit
               ? "Salvar alterações"
-              : tipoCobranca === "anual"
+              : modo === "anual"
               ? "Criar contrato anual"
+              : modo === "enquanto_ativo"
+              ? "Criar contrato sem prazo"
               : "Criar contrato e gerar parcelas"}
           </Button>
         </DialogFooter>
