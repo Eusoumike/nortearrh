@@ -63,6 +63,8 @@ export function VrTab() {
   const [toFill, setToFill] = useState<Row | null>(null);
   const [toCancel, setToCancel] = useState<{ client_id: string; cliente_nome: string; primeira_carga_id?: string } | null>(null);
   const [search, setSearch] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<import("./StatusFilterChips").StatusFilter>("todos");
+
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
