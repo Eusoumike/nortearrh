@@ -103,8 +103,10 @@ export function RhDigitalTab() {
   const [excluirContrato, setExcluirContrato] = useState<Contrato | null>(null);
   const [showEncerrados, setShowEncerrados] = useState(false);
   const [search, setSearch] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<StatusFilter>("todos");
   const { role } = useAuth();
   const isAdmin = role === "admin";
+
 
   const competencia = ymdFirst(month);
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
