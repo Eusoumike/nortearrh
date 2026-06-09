@@ -420,14 +420,13 @@ export function ParceirosTab() {
                 <SelectItem value="vr_beneficios">VR Benefícios</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={fStatus} onValueChange={setFStatus}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-              </SelectContent>
-            </Select>
+            <StatusFilterChips
+              value={fStatus}
+              onChange={setFStatus}
+              counts={statusCountsRep}
+              labels={{ pendentes: "A pagar", pagos: "Pagos ao parceiro" }}
+            />
+
           </div>
 
           <div className="rounded-md border">
