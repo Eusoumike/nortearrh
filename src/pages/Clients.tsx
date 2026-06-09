@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
-import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
+import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatCnpj } from "@/lib/formatters";
 import { ClientCompletenessBadge } from "@/components/ClientCompletenessBadge";
@@ -45,15 +45,29 @@ export default function Clients() {
     },
   });
 
-  const filtered = (clients ?? []).filter((c: any) =>
-    !q ||
-    c.name?.toLowerCase().includes(q.toLowerCase()) ||
-    c.company?.toLowerCase().includes(q.toLowerCase()) ||
-    c.razao_social?.toLowerCase().includes(q.toLowerCase()) ||
-    c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) ||
-    c.email?.toLowerCase().includes(q.toLowerCase()) ||
-    c.cnpj?.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-  );
+  const filtered = useMemo(() => {
+    const list = clients ?? [];
+    const termo = q.toLowerCase().trim();
+    if (!termo) return list;
+    const termoDigits = q.replace(/\D/g, "");
+    return list.filter((c: any) => {
+      const nome = (c.razao_social || c.nome_fantasia || c.company || c.name || "").toLowerCase();
+      const contato = (c.contact_name || "").toLowerCase();
+      const email = (c.contact_email || c.email || "").toLowerCase();
+      const municipio = (c.municipio || "").toLowerCase();
+      const estado = (c.estado || "").toLowerCase();
+      const cnpjLimpo = (c.cnpj || "").replace(/\D/g, "");
+      const cnpjMatch = termoDigits.length >= 2 && cnpjLimpo.includes(termoDigits);
+      return (
+        nome.includes(termo) ||
+        contato.includes(termo) ||
+        email.includes(termo) ||
+        municipio.includes(termo) ||
+        estado.includes(termo) ||
+        cnpjMatch
+      );
+    });
+  }, [clients, q]);
 
 
 
@@ -95,7 +109,10 @@ export default function Clients() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Clientes</h1>
-          <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} clientes</p>
+          <p className="text-xs text-muted-foreground md:text-sm">
+            {filtered.length} cliente{filtered.length !== 1 ? "s" : ""}
+            {q ? ` encontrado${filtered.length !== 1 ? "s" : ""}` : ""}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -130,7 +147,22 @@ export default function Clients() {
       <Card className="p-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, empresa ou e-mail…" className="h-9 pl-8" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar por empresa, CNPJ, contato ou município…"
+            className="h-9 pl-8 pr-8"
+          />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Limpar busca"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </Card>
 
@@ -143,8 +175,19 @@ export default function Clients() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Building2 className="h-5 w-5 text-muted-foreground" />
           </div>
-          <p className="mt-3 text-sm font-medium">Nenhum cliente cadastrado</p>
-          <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
+          {q ? (
+            <>
+              <p className="mt-3 text-sm font-medium">Nenhum cliente encontrado para "{q}"</p>
+              <Button variant="link" size="sm" onClick={() => setQ("")} className="mt-1">
+                Limpar busca
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-sm font-medium">Nenhum cliente cadastrado</p>
+              <p className="text-xs text-muted-foreground">Comece cadastrando seu primeiro cliente.</p>
+            </>
+          )}
         </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
