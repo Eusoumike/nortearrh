@@ -122,11 +122,8 @@ export function VrTab() {
     () => filteredData.reduce((s, r) => s + Number(r.valor_comissao ?? 0), 0),
     [filteredData],
   );
-  const totalBasePendente = useMemo(
-    () => searchFiltered.filter((r) => r.valor_base == null).length, // contador apenas
-    [searchFiltered],
-  );
   const totalComissaoPagos = useMemo(
+
     () =>
       searchFiltered
         .filter((r) => r.valor_base != null)
