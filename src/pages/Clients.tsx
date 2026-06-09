@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { HealthBadge } from "@/components/badges";
 import { EditClientDialog } from "@/components/EditClientDialog";
-import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff } from "lucide-react";
+import { Plus, Search, Building2, Mail, Phone, Loader2, RefreshCw, Pencil, Trash2, Monitor, MonitorOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatCnpj } from "@/lib/formatters";
 import { ClientCompletenessBadge } from "@/components/ClientCompletenessBadge";
