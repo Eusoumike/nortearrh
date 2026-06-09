@@ -437,19 +437,21 @@ export type Database = {
       contratos_rh_digital: {
         Row: {
           ativo: boolean
+          cancelado_em: string | null
           client_id: string | null
           cliente_nome: string
           cnpj: string | null
           created_at: string
           created_by: string | null
           data_inicio: string
-          fidelidade_meses: number
+          fidelidade_meses: number | null
           fidelidade_vencimento: string | null
           id: string
           notificar_vencimento: boolean
           observacoes: string | null
           percentual_nortear: number
           tipo_cobranca: Database["public"]["Enums"]["tipo_cobranca_rh"]
+          tipo_periodo: string
           updated_at: string
           valor_anual: number
           valor_mensalidade: number
@@ -457,19 +459,21 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cancelado_em?: string | null
           client_id?: string | null
           cliente_nome: string
           cnpj?: string | null
           created_at?: string
           created_by?: string | null
           data_inicio: string
-          fidelidade_meses: number
+          fidelidade_meses?: number | null
           fidelidade_vencimento?: string | null
           id?: string
           notificar_vencimento?: boolean
           observacoes?: string | null
           percentual_nortear?: number
           tipo_cobranca?: Database["public"]["Enums"]["tipo_cobranca_rh"]
+          tipo_periodo?: string
           updated_at?: string
           valor_anual?: number
           valor_mensalidade?: number
@@ -477,19 +481,21 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cancelado_em?: string | null
           client_id?: string | null
           cliente_nome?: string
           cnpj?: string | null
           created_at?: string
           created_by?: string | null
           data_inicio?: string
-          fidelidade_meses?: number
+          fidelidade_meses?: number | null
           fidelidade_vencimento?: string | null
           id?: string
           notificar_vencimento?: boolean
           observacoes?: string | null
           percentual_nortear?: number
           tipo_cobranca?: Database["public"]["Enums"]["tipo_cobranca_rh"]
+          tipo_periodo?: string
           updated_at?: string
           valor_anual?: number
           valor_mensalidade?: number
@@ -1981,6 +1987,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      gerar_parcela_enquanto_ativo: { Args: never; Returns: undefined }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
