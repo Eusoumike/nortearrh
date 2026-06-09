@@ -10,6 +10,8 @@ import { formatCnpj } from "./formatters";
 export type ClientLike = {
   name?: string | null;
   company?: string | null;
+  razao_social?: string | null;
+  nome_fantasia?: string | null;
   contact_name?: string | null;
   cnpj?: string | null;
 };
@@ -19,15 +21,24 @@ export function normalizeCnpj(value: string | null | undefined): string {
   return (value ?? "").replace(/\D/g, "");
 }
 
+/** Linha 1: nome da empresa em destaque. Sempre presente. */
 export function getClientPrimary(c: ClientLike): string {
-  return (c.company || c.name || "—").toString();
+  return (c.razao_social || c.company || c.nome_fantasia || c.name || "—").toString().trim();
 }
 
+/**
+ * Linha 2: contato · CNPJ formatado.
+ * Padronizada — sempre composta da mesma forma para todos os clientes.
+ */
 export function getClientSecondary(c: ClientLike): string {
+  const primary = getClientPrimary(c).toLowerCase();
+  const contact = (c.contact_name || "").trim();
   const parts: string[] = [];
-  if (c.contact_name) parts.push(c.contact_name);
-  else if (c.company && c.name) parts.push(c.name);
-  if (c.cnpj) parts.push(formatCnpj(c.cnpj));
+  if (contact && contact.toLowerCase() !== primary) parts.push(contact);
+  if (c.cnpj) {
+    const digits = normalizeCnpj(c.cnpj);
+    if (digits) parts.push(formatCnpj(c.cnpj));
+  }
   return parts.join(" · ");
 }
 
