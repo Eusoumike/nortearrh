@@ -172,16 +172,33 @@ export function ParceirosTab() {
   );
   const ativos = parceiros.filter((p) => p.ativo).length;
 
-  const filteredRepasses = useMemo(
+  const repassesByPartnerProduct = useMemo(
     () =>
       repasses.filter(
         (r) =>
           (fParceiro === "all" || r.parceiro_id === fParceiro) &&
-          (fProduto === "all" || r.produto === fProduto) &&
-          (fStatus === "all" || r.status === fStatus),
+          (fProduto === "all" || r.produto === fProduto),
       ),
-    [repasses, fParceiro, fProduto, fStatus],
+    [repasses, fParceiro, fProduto],
   );
+  const statusCountsRep = useMemo(
+    () => ({
+      todos: repassesByPartnerProduct.length,
+      pendentes: repassesByPartnerProduct.filter((r) => r.status === "pendente").length,
+      pagos: repassesByPartnerProduct.filter((r) => r.status === "pago").length,
+    }),
+    [repassesByPartnerProduct],
+  );
+  const filteredRepasses = useMemo(
+    () =>
+      repassesByPartnerProduct.filter((r) => {
+        if (fStatus === "pendentes") return r.status === "pendente";
+        if (fStatus === "pagos") return r.status === "pago";
+        return true;
+      }),
+    [repassesByPartnerProduct, fStatus],
+  );
+
   const totFiltradoPend = filteredRepasses.filter((r) => r.status === "pendente").reduce((a, b) => a + Number(b.valor_repasse), 0);
   const totFiltradoPago = filteredRepasses.filter((r) => r.status === "pago").reduce((a, b) => a + Number(b.valor_repasse), 0);
 
