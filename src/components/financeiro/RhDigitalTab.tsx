@@ -758,7 +758,8 @@ export function RhDigitalTab() {
               </TableHeader>
               <TableBody>
                 {contratosFiltrados.map((c) => {
-                  const tone = vencimentoTone(c.fidelidade_vencimento);
+                  const isEnquanto = c.tipo_periodo === "enquanto_ativo";
+                  const tone = isEnquanto ? "ok" : vencimentoTone(c.fidelidade_vencimento);
                   const pagas = pagasQuery.data?.get(c.id) ?? 0;
                   return (
                     <TableRow key={c.id} className={cn(!c.ativo && "opacity-60")}>
@@ -776,6 +777,10 @@ export function RhDigitalTab() {
                         {c.tipo_cobranca === "anual" ? (
                           <Badge className="ml-2 border-transparent bg-purple-500/15 text-purple-600 hover:bg-purple-500/20">
                             Anual
+                          </Badge>
+                        ) : isEnquanto ? (
+                          <Badge className="ml-2 gap-1 border-transparent bg-sky-500/15 text-sky-600 hover:bg-sky-500/20">
+                            <InfinityIcon className="h-3 w-3" /> Enquanto ativo
                           </Badge>
                         ) : (
                           <Badge className="ml-2 border-transparent bg-teal-500/15 text-teal-600 hover:bg-teal-500/20">
@@ -802,24 +807,36 @@ export function RhDigitalTab() {
                       </TableCell>
                       <TableCell className="text-sm">{formatBRDate(c.data_inicio)}</TableCell>
                       <TableCell>
-                        {c.tipo_cobranca === "anual" ? "Anual (12 meses)" : `${c.fidelidade_meses} meses`}
+                        {isEnquanto
+                          ? <span className="text-sm text-muted-foreground">Sem prazo</span>
+                          : c.tipo_cobranca === "anual"
+                          ? "Anual (12 meses)"
+                          : `${c.fidelidade_meses ?? 0} meses`}
                       </TableCell>
                       <TableCell>
-                        <span
-                          className={cn(
-                            "text-sm",
-                            tone === "danger" && "text-destructive font-medium",
-                            tone === "warning" && "text-amber-500 font-medium",
-                            tone === "ok" && "text-emerald-600",
-                          )}
-                        >
-                          {formatBRDate(c.fidelidade_vencimento)}
-                        </span>
+                        {isEnquanto ? (
+                          <span className="inline-flex items-center gap-1 text-sm text-sky-600">
+                            <InfinityIcon className="h-3.5 w-3.5" /> Sem vencimento
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              "text-sm",
+                              tone === "danger" && "text-destructive font-medium",
+                              tone === "warning" && "text-amber-500 font-medium",
+                              tone === "ok" && "text-emerald-600",
+                            )}
+                          >
+                            {formatBRDate(c.fidelidade_vencimento)}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm tabular-nums">
-                        {c.tipo_cobranca === "anual"
+                        {isEnquanto
+                          ? `${pagas} paga${pagas === 1 ? "" : "s"}`
+                          : c.tipo_cobranca === "anual"
                           ? (pagas > 0 ? "Pago" : "Pendente")
-                          : `${pagas}/${c.fidelidade_meses}`}
+                          : `${pagas}/${c.fidelidade_meses ?? 0}`}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
