@@ -418,7 +418,11 @@ export function VrTab() {
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={3} className="text-right font-medium">
-                  Total
+                  {filtroStatus === "pendentes"
+                    ? `Aguardando valor (${counts.pendentes})`
+                    : filtroStatus === "pagos"
+                      ? `Com valor (${counts.pagos})`
+                      : `Total (${counts.todos})`}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {BRL.format(totalBase)}
@@ -427,9 +431,17 @@ export function VrTab() {
                 <TableCell className="text-right font-semibold tabular-nums">
                   {BRL.format(totalComissao)}
                 </TableCell>
-                <TableCell colSpan={3} />
+                <TableCell colSpan={3} className="text-xs text-muted-foreground">
+                  {filtroStatus === "todos" && counts.pendentes > 0 && (
+                    <span>
+                      {counts.pendentes} aguardando valor · {counts.pagos} com valor (
+                      {BRL.format(totalComissaoPagos)})
+                    </span>
+                  )}
+                </TableCell>
               </TableRow>
             </TableFooter>
+
           </Table>
         )}
       </Card>
