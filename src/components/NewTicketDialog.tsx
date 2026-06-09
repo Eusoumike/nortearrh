@@ -768,5 +768,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
+    <TicketStatusPopup
+      open={statusPopup.open}
+      onOpenChange={(o) => setStatusPopup((s) => ({ ...s, open: o }))}
+      ticketId={statusPopup.id}
+      ticketNumber={statusPopup.number}
+      ticketTitle={statusPopup.title}
+    />
+    </>
   );
 }
