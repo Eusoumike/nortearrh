@@ -314,7 +314,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
       qc.invalidateQueries({ queryKey: ["dashboard-tickets"] });
       toast.success(`Chamado #${data.ticket_number} criado.`);
       onOpenChange(false);
-      navigate(`/tickets/${data.id}`);
+      setStatusPopup({ open: true, id: data.id, number: data.ticket_number, title: data.title });
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
