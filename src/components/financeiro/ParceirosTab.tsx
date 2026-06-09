@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/table";
 import { ClientCombobox, type ClientOption } from "./ClientCombobox";
 import { BRL, formatBRDate } from "./financeiroUtils";
+import { StatusFilterChips, type StatusFilter } from "./StatusFilterChips";
+
 
 type Parceiro = {
   id: string;
