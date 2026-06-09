@@ -143,6 +143,12 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [statusPopup, setStatusPopup] = useState<{ open: boolean; id: string | null; number: string | null; title: string | null }>({
+    open: false,
+    id: null,
+    number: null,
+    title: null,
+  });
 
   // Reset on open + busca próximo número sequencial
   useEffect(() => {
