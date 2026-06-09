@@ -50,7 +50,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
+import { StatusFilterChips, type StatusFilter } from "./StatusFilterChips";
 import { formatCnpj, formatPercent } from "@/lib/formatters";
+
 
 const PADRAO_PERC = 40;
 
