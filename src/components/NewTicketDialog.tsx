@@ -332,6 +332,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
         <DialogHeader className="border-b border-border px-5 py-3">
