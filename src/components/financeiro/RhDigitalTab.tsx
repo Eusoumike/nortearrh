@@ -158,15 +158,30 @@ export function RhDigitalTab() {
     };
   }, [search]);
 
-  const parcelas = useMemo(() => {
+  const parcelasSearch = useMemo(() => {
     if (!search.trim()) return allParcelas;
-    // Para parcelas, precisamos buscar via contrato (cnpj não está em parcela)
     return allParcelas.filter((p) => {
       const c = contratos.find((x) => x.id === p.contrato_id);
       return matchesSearch({ cliente_nome: p.cliente_nome, cnpj: c?.cnpj ?? null });
     });
   }, [allParcelas, contratos, matchesSearch, search]);
+
+  const statusCounts = useMemo(
+    () => ({
+      todos: parcelasSearch.length,
+      pendentes: parcelasSearch.filter((p) => p.status === "pendente").length,
+      pagos: parcelasSearch.filter((p) => p.status === "pago").length,
+    }),
+    [parcelasSearch],
+  );
+
+  const parcelas = useMemo(() => {
+    if (filtroStatus === "pendentes") return parcelasSearch.filter((p) => p.status === "pendente");
+    if (filtroStatus === "pagos") return parcelasSearch.filter((p) => p.status === "pago");
+    return parcelasSearch;
+  }, [parcelasSearch, filtroStatus]);
   const contratosAtivos = contratos.filter((c) => c.ativo);
+
 
   // Stats agregadas para parcelas pagas/contratadas
   const statsParcelasContrato = useMemo(() => {
