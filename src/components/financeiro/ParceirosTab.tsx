@@ -98,7 +98,8 @@ export function ParceirosTab() {
   // filters for repasses
   const [fParceiro, setFParceiro] = useState<string>("all");
   const [fProduto, setFProduto] = useState<string>("all");
-  const [fStatus, setFStatus] = useState<string>("all");
+  const [fStatus, setFStatus] = useState<StatusFilter>("todos");
+
 
   const { data: parceiros = [] } = useQuery({
     queryKey: ["parceiros"],
