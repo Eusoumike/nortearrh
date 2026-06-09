@@ -45,15 +45,29 @@ export default function Clients() {
     },
   });
 
-  const filtered = (clients ?? []).filter((c: any) =>
-    !q ||
-    c.name?.toLowerCase().includes(q.toLowerCase()) ||
-    c.company?.toLowerCase().includes(q.toLowerCase()) ||
-    c.razao_social?.toLowerCase().includes(q.toLowerCase()) ||
-    c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) ||
-    c.email?.toLowerCase().includes(q.toLowerCase()) ||
-    c.cnpj?.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-  );
+  const filtered = useMemo(() => {
+    const list = clients ?? [];
+    const termo = q.toLowerCase().trim();
+    if (!termo) return list;
+    const termoDigits = q.replace(/\D/g, "");
+    return list.filter((c: any) => {
+      const nome = (c.razao_social || c.nome_fantasia || c.company || c.name || "").toLowerCase();
+      const contato = (c.contact_name || "").toLowerCase();
+      const email = (c.contact_email || c.email || "").toLowerCase();
+      const municipio = (c.municipio || "").toLowerCase();
+      const estado = (c.estado || "").toLowerCase();
+      const cnpjLimpo = (c.cnpj || "").replace(/\D/g, "");
+      const cnpjMatch = termoDigits.length >= 2 && cnpjLimpo.includes(termoDigits);
+      return (
+        nome.includes(termo) ||
+        contato.includes(termo) ||
+        email.includes(termo) ||
+        municipio.includes(termo) ||
+        estado.includes(termo) ||
+        cnpjMatch
+      );
+    });
+  }, [clients, q]);
 
 
 
