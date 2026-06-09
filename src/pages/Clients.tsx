@@ -109,7 +109,10 @@ export default function Clients() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Clientes</h1>
-          <p className="text-xs text-muted-foreground md:text-sm">{filtered.length} clientes</p>
+          <p className="text-xs text-muted-foreground md:text-sm">
+            {filtered.length} cliente{filtered.length !== 1 ? "s" : ""}
+            {q ? ` encontrado${filtered.length !== 1 ? "s" : ""}` : ""}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
