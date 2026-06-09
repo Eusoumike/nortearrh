@@ -9,6 +9,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Infinity as InfinityIcon,
   Loader2,
   Pencil,
   Plus,
@@ -81,12 +82,13 @@ type Contrato = {
   percentual_nortear: number;
   valor_nortear: number;
   data_inicio: string;
-  fidelidade_meses: number;
+  fidelidade_meses: number | null;
   fidelidade_vencimento: string | null;
   notificar_vencimento: boolean;
   ativo: boolean;
   observacoes: string | null;
   tipo_cobranca: "mensal" | "anual";
+  tipo_periodo: "fidelidade" | "enquanto_ativo";
   valor_anual: number;
 };
 
@@ -135,7 +137,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("contratos_rh_digital")
         .select(
-          "id, client_id, cliente_nome, cnpj, valor_mensalidade, percentual_nortear, valor_nortear, data_inicio, fidelidade_meses, fidelidade_vencimento, notificar_vencimento, ativo, observacoes, tipo_cobranca, valor_anual",
+          "id, client_id, cliente_nome, cnpj, valor_mensalidade, percentual_nortear, valor_nortear, data_inicio, fidelidade_meses, fidelidade_vencimento, notificar_vencimento, ativo, observacoes, tipo_cobranca, tipo_periodo, valor_anual",
         )
         .order("ativo", { ascending: false })
         .order("cliente_nome");
@@ -186,7 +188,7 @@ export function RhDigitalTab() {
   // Stats agregadas para parcelas pagas/contratadas
   const statsParcelasContrato = useMemo(() => {
     const map = new Map<string, { pagas: number; total: number }>();
-    contratos.forEach((c) => map.set(c.id, { pagas: 0, total: c.fidelidade_meses }));
+    contratos.forEach((c) => map.set(c.id, { pagas: 0, total: c.fidelidade_meses ?? 0 }));
     return map;
   }, [contratos]);
 
@@ -230,11 +232,14 @@ export function RhDigitalTab() {
   const qtdPagos = parcelas.filter((p) => p.status === "pago").length;
   const qtdPendentes = parcelas.filter((p) => p.status === "pendente").length;
 
-  // Banners de fidelidade (entre contratos ativos)
-  const vencidos = contratosAtivos.filter(
+  // Banners de fidelidade (entre contratos ativos) — ignora contratos "enquanto ativo"
+  const contratosComFidelidade = contratosAtivos.filter(
+    (c) => c.tipo_periodo !== "enquanto_ativo",
+  );
+  const vencidos = contratosComFidelidade.filter(
     (c) => vencimentoTone(c.fidelidade_vencimento) === "danger",
   );
-  const proximos = contratosAtivos.filter(
+  const proximos = contratosComFidelidade.filter(
     (c) => vencimentoTone(c.fidelidade_vencimento) === "warning",
   );
 
@@ -336,6 +341,7 @@ export function RhDigitalTab() {
       notificar_vencimento: c.notificar_vencimento,
       observacoes: c.observacoes,
       tipo_cobranca: c.tipo_cobranca,
+      tipo_periodo: c.tipo_periodo,
     });
     setContratoDialog(true);
   };
