@@ -63,11 +63,38 @@ export function RhDashboard({ month, onVerInadimplencia, onVerContratos, onVerRe
       const { data, error } = await supabase
         .from("contratos_rh_digital")
         .select(
-          "id, cliente_nome, valor_mensalidade, valor_nortear, percentual_nortear, fidelidade_vencimento, tipo_periodo, clients:client_id ( contact_name, contact_phone )",
+          "id, client_id, cliente_nome, valor_mensalidade, valor_nortear, percentual_nortear, fidelidade_vencimento, tipo_periodo",
         )
         .eq("ativo", true);
       if (error) throw error;
-      return (data ?? []) as unknown as ContratoAtivo[];
+      return (data ?? []) as unknown as (ContratoAtivo & { client_id: string | null })[];
+    },
+  });
+
+  // Mapa de telefones por client_id (usado para enriquecer atrasos)
+  const clientIds = useMemo(
+    () =>
+      Array.from(
+        new Set(((contratosQ.data ?? []) as any[]).map((c) => c.client_id).filter(Boolean)),
+      ) as string[],
+    [contratosQ.data],
+  );
+
+  const clientesQ = useQuery({
+    queryKey: ["rh-dash-clientes-phone", clientIds.join(",")],
+    enabled: clientIds.length > 0,
+    refetchInterval: REFETCH_MS,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, contact_name, contact_phone")
+        .in("id", clientIds);
+      if (error) throw error;
+      const map = new Map<string, { contact_name: string | null; contact_phone: string | null }>();
+      (data ?? []).forEach((c: any) =>
+        map.set(c.id, { contact_name: c.contact_name, contact_phone: c.contact_phone }),
+      );
+      return map;
     },
   });
 
@@ -95,7 +122,7 @@ export function RhDashboard({ month, onVerInadimplencia, onVerContratos, onVerRe
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
         .select(
-          "id, contrato_id, cliente_nome, competencia, valor_mensalidade, valor_nortear, status, contratos_rh_digital:contrato_id ( clients:client_id ( contact_name, contact_phone ) )",
+          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, valor_nortear, status",
         )
         .in("status", ["pendente", "inadimplente"])
         .lt("competencia", inicioMesAtual)
@@ -104,6 +131,7 @@ export function RhDashboard({ month, onVerInadimplencia, onVerContratos, onVerRe
       return data ?? [];
     },
   });
+
 
   // Repasses pendentes RH
   const repassesQ = useQuery({
