@@ -347,7 +347,10 @@ export function RhDigitalTab() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      {/* Dashboard */}
+      <RhDashboard onVerTodos={() => setView("contratos")} />
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
