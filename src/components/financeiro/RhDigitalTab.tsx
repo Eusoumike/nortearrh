@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ContratoRhDialog, ContratoRh } from "./ContratoRhDialog";
+import { RhDashboard } from "./RhDashboard";
 import { ConfirmarPagamentoDialog, ParcelaSummary } from "./ConfirmarPagamentoDialog";
 import { BRL, formatBRDate, vencimentoTone, ymdFirst } from "./financeiroUtils";
 import { StatusFilterChips, type StatusFilter } from "./StatusFilterChips";
