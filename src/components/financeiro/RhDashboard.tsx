@@ -306,7 +306,8 @@ export function RhDashboard({ month, onVerInadimplencia, onVerContratos, onVerRe
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                   {atrasos.slice(0, 5).map((p: any) => {
                     const phone =
-                      p.contratos_rh_digital?.clients?.contact_phone ?? null;
+                      (p.client_id && clientesQ.data?.get(p.client_id)?.contact_phone) ?? null;
+
                     return (
                       <li key={p.id} className="flex flex-wrap items-center gap-x-2">
                         <span className="font-medium text-foreground">{p.cliente_nome}</span>
