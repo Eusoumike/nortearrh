@@ -350,7 +350,14 @@ export function RhDigitalTab() {
   return (
     <div className="flex flex-col gap-6">
       {/* Dashboard */}
-      <RhDashboard onVerTodos={() => setView("contratos")} />
+      <RhDashboard
+        month={month}
+        onVerContratos={() => setView("contratos")}
+        onVerInadimplencia={() => {
+          setView("parcelas");
+          setFiltroStatus("pendentes");
+        }}
+      />
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
