@@ -705,15 +705,36 @@ function ImplantacaoKanban({
 function KanbanCard({
   item, count, lastActivity, onClick, onDelete,
 }: { item: any; count: { done: number; total: number }; lastActivity: string | null; onClick: () => void; onDelete: () => void }) {
-  const days = daysSince(item.data_inicio);
-  const overdue = days !== null && days > 15;
   const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
-  const respName = item.responsavel?.full_name ?? "—";
+  const respName = item.responsavel?.full_name ?? null;
+  const contato = item.contato_cliente?.trim() || null;
 
-  // última atividade: usa eventos; se não houver nenhum, cai pra updated_at
-  const lastIso = lastActivity ?? item.updated_at ?? item.created_at;
-  const lastDays = daysSinceISO(lastIso);
-  const stale = lastDays !== null && lastDays > 7;
+  // Dias na etapa atual (preferir data_ultima_transicao; cair para updated_at)
+  const stageIso = item.data_ultima_transicao ?? item.updated_at ?? item.created_at;
+  const daysInStage = daysSinceISO(stageIso) ?? 0;
+
+  // Health tem 3 níveis: no_prazo / em_risco / atrasado
+  const health: "no_prazo" | "em_risco" | "atrasado" =
+    item.health_status === "atrasado" || daysInStage > 14
+      ? "atrasado"
+      : item.health_status === "em_risco" || daysInStage > 7
+        ? "em_risco"
+        : "no_prazo";
+
+  // Produtos derivados de item.produto (string ou combo)
+  const produtos: string[] = (() => {
+    const p = (item.produto ?? "").toString();
+    const out: string[] = [];
+    if (p.includes("rh_digital") || p.startsWith("rh_")) out.push("RH Digital");
+    if (p.includes("vr") || p.includes("multi") || p.includes("mobilidade")) out.push("VR Benefícios");
+    return out;
+  })();
+
+  const borderClass =
+    health === "atrasado" ? "border-l-danger" :
+    health === "em_risco" ? "border-l-warning" :
+    "border-l-success";
+  const bgClass = health === "atrasado" ? "bg-danger/[0.03]" : "bg-card";
 
   return (
     <div
@@ -723,7 +744,11 @@ function KanbanCard({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="group relative cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
+      className={cn(
+        "group relative cursor-pointer rounded-lg border border-border border-l-[3px] p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40",
+        borderClass,
+        bgClass,
+      )}
     >
       <Button
         size="icon"
@@ -735,48 +760,70 @@ function KanbanCard({
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
 
-      <div className="flex items-start gap-2">
-        <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/60" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="line-clamp-2 pr-6 text-xs font-semibold leading-snug">{item.client_name}</p>
-
-          <div className="flex items-center gap-2">
-            <Avatar className="h-5 w-5">
-              <AvatarFallback className="bg-gradient-brand text-[9px] text-primary-foreground">
-                {initials(respName)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate text-[11px] text-muted-foreground">{respName}</span>
-          </div>
-
-          <div className="space-y-1">
-            <Progress value={pct} className="h-1.5" />
-            <p className="text-[10px] text-muted-foreground">
-              {count.done}/{count.total} — {pct}%
-            </p>
-          </div>
-
-          {/* Última atividade */}
-          {lastDays !== null && (
-            stale ? (
-              <p className="flex items-center gap-1 text-[10px] font-medium text-warning">
-                <AlertCircle className="h-3 w-3" />
-                Sem atividade há {lastDays} {lastDays === 1 ? "dia" : "dias"}
-              </p>
-            ) : (
-              <p className="text-[10px] text-muted-foreground">
-                Última atividade: {lastDays === 0 ? "hoje" : `há ${lastDays} ${lastDays === 1 ? "dia" : "dias"}`}
-              </p>
-            )
-          )}
-
-          {days !== null && (
-            <p className={cn("text-[10px]", overdue ? "font-medium text-warning" : "text-muted-foreground")}>
-              {days} {days === 1 ? "dia" : "dias"} em andamento
-            </p>
+      {/* Linha 1: nome em destaque + avatar do responsável */}
+      <div className="flex items-start gap-2 pr-6">
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[11px] font-bold uppercase tracking-wide text-foreground leading-tight">
+            {item.client_name}
+          </p>
+          {contato && (
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{contato}</p>
           )}
         </div>
+        {respName && (
+          <Avatar className="h-6 w-6 shrink-0" title={respName}>
+            <AvatarFallback className="bg-gradient-brand text-[9px] text-primary-foreground">
+              {initials(respName)}
+            </AvatarFallback>
+          </Avatar>
+        )}
       </div>
+
+      {/* Linha 2: badges OU alerta de "parado há X dias" */}
+      <div className="mt-2.5">
+        {health === "atrasado" ? (
+          <div className="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2 py-1 text-[10px] font-semibold text-danger">
+            <AlertCircle className="h-3 w-3" />
+            {daysInStage} dias parado
+          </div>
+        ) : produtos.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {produtos.map((p) => (
+              <span
+                key={p}
+                className={cn(
+                  "rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                  p === "RH Digital"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-accent/15 text-accent-foreground",
+                )}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Linha 3: progresso */}
+      <div className="mt-2.5 space-y-1">
+        <div className="flex items-center gap-2">
+          <Progress value={pct} className="h-1.5 flex-1" />
+          <span className="font-mono text-[10px] font-semibold text-muted-foreground">
+            {count.done}/{count.total}
+          </span>
+        </div>
+      </div>
+
+      {/* Linha 4: tempo na etapa */}
+      <p
+        className={cn(
+          "mt-2 text-[10px] font-medium",
+          health === "atrasado" ? "text-danger" : health === "em_risco" ? "text-warning" : "text-muted-foreground",
+        )}
+      >
+        {daysInStage === 0 ? "Entrou hoje" : `${daysInStage} ${daysInStage === 1 ? "dia" : "dias"} nesta etapa`}
+      </p>
     </div>
   );
 }
