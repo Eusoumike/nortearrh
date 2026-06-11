@@ -477,10 +477,11 @@ export function useImplFilter(items: any[], filter: ImplFilter, finalKey: string
   return useMemo(() => {
     if (filter === "todas") return items;
     return items.filter((i) => {
-      if (i.etapa === finalKey) return filter === "todas";
+      if (i.etapa === finalKey) return false;
       const stale = daysBetween(i.updated_at) ?? 0;
       const total = daysBetween(i.created_at) ?? 0;
-      const status = total > 21 || stale > 21 ? "atrasadas" : stale > 14 ? "em_risco" : "no_prazo";
+      const status: Exclude<ImplFilter, "todas"> =
+        total > 21 || stale > 21 ? "atrasadas" : stale > 14 ? "em_risco" : "no_prazo";
       return status === filter;
     });
   }, [items, filter, finalKey]);
