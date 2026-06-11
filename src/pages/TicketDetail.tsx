@@ -974,11 +974,6 @@ export default function TicketDetail() {
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
             <Select value={effectiveStatusTyped} onValueChange={(v) => {
-              if (v === "resolvido" && ticket.status !== "resolvido" && ticket.status !== "fechado") {
-                setResolveSolution((ticket as any).solucao_aplicada ?? "");
-                setResolveOpen(true);
-                return;
-              }
               updateStatus.mutate(v as TicketStatus);
             }}>
               <SelectTrigger className="h-10 text-sm font-medium"><SelectValue /></SelectTrigger>
