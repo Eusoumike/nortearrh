@@ -33,6 +33,14 @@ import {
 } from "lucide-react";
 import { initials, formatBrazilDateTime, formatBrazilDate, formatCnpj } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import {
+  ImplantacaoKpiHeader,
+  ImplantacaoSideStack,
+  ImplantacaoFilterChips,
+  useImplStatusCounts,
+  useImplFilter,
+  type ImplFilter,
+} from "@/components/implantacao/ImplantacaoDashboard";
 
 // ============================================================
 // TIPOS, CONSTANTES E TEMPLATES
