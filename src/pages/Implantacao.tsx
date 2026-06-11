@@ -2293,3 +2293,61 @@ function CustomizeStagesDialog({
     </Dialog>
   );
 }
+
+// ============================================================
+// STEPPER VISUAL — Etapas no topo do modal
+// ============================================================
+function ImplantacaoStepper({
+  stages,
+  currentKey,
+}: {
+  stages: { key: string; label: string }[];
+  currentKey: string;
+}) {
+  const currentIdx = Math.max(0, stages.findIndex((s) => s.key === currentKey));
+  return (
+    <div className="rounded-md border border-border bg-surface-muted/30 p-3">
+      <div className="flex items-center justify-between gap-1">
+        {stages.map((s, idx) => {
+          const done = idx < currentIdx;
+          const active = idx === currentIdx;
+          const isLast = idx === stages.length - 1;
+          return (
+            <div key={s.key} className="flex min-w-0 flex-1 flex-col items-center">
+              <div className="flex w-full items-center">
+                <div className={cn("h-[2px] flex-1", idx === 0 ? "opacity-0" : done || active ? "bg-primary" : "bg-border")} />
+                <div
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold transition-colors",
+                    done && "border-primary bg-primary text-primary-foreground",
+                    active && "border-primary bg-primary text-primary-foreground shadow-glow",
+                    !done && !active && "border-border bg-background text-muted-foreground",
+                  )}
+                  title={s.label}
+                >
+                  {done ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : isLast ? (
+                    "🚀"
+                  ) : (
+                    String(idx + 1).padStart(2, "0")
+                  )}
+                </div>
+                <div className={cn("h-[2px] flex-1", isLast ? "opacity-0" : done ? "bg-primary" : "bg-border")} />
+              </div>
+              <p
+                className={cn(
+                  "mt-1.5 line-clamp-2 text-center text-[9px] leading-tight",
+                  active ? "font-semibold text-foreground" : "text-muted-foreground",
+                )}
+                title={s.label}
+              >
+                {s.label}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
