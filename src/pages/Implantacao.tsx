@@ -1138,12 +1138,17 @@ function EditImplantacaoDialog({
         {item && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl">{item.client_name}</DialogTitle>
+              <DialogTitle className="text-xl font-semibold uppercase tracking-wide">{item.client_name}</DialogTitle>
               <DialogDescription>
                 Etapa atual: <span className="font-medium text-foreground">{stageLabel}</span>
                 {item.produto && <> · {PRODUTO_LABEL[item.produto] ?? item.produto}</>}
+                {item.cnpj && <> · {formatCnpj(item.cnpj)}</>}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Stepper visual horizontal */}
+            <ImplantacaoStepper stages={stages} currentKey={item.etapa} />
+
 
             <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
