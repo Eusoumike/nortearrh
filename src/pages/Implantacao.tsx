@@ -546,15 +546,18 @@ function ImplantacaoKanban({
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
+  const finalKey = stages[stages.length - 1]?.key ?? "finalizado";
+  const filteredItems = useImplFilter(items ?? [], filter, finalKey);
+
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {};
     stages.forEach((s) => (map[s.key] = []));
-    (items ?? []).forEach((i: any) => {
+    filteredItems.forEach((i: any) => {
       if (map[i.etapa]) map[i.etapa].push(i);
       else if (stages[0]) map[stages[0].key].push(i);
     });
     return map;
-  }, [items, stages]);
+  }, [filteredItems, stages]);
 
   // mapa de cor da barra superior por tom da etapa (estilo Pipedrive)
   const stripeByTone: Record<string, string> = {
