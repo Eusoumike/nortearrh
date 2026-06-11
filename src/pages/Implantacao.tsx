@@ -33,6 +33,14 @@ import {
 } from "lucide-react";
 import { initials, formatBrazilDateTime, formatBrazilDate, formatCnpj } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import {
+  ImplantacaoKpiHeader,
+  ImplantacaoSideStack,
+  ImplantacaoFilterChips,
+  useImplStatusCounts,
+  useImplFilter,
+  type ImplFilter,
+} from "@/components/implantacao/ImplantacaoDashboard";
 
 // ============================================================
 // TIPOS, CONSTANTES E TEMPLATES
@@ -342,18 +350,20 @@ export default function Implantacao() {
   const [openNew, setOpenNew] = useState(false);
   const [openCustomize, setOpenCustomize] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<ImplFilter>("todas");
 
   const stages = useStages(user?.id ?? null);
   const visibleStages = stages.filter((s) => !s.hidden);
+  const counts = useImplStatusCounts(visibleStages);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:p-6">
-      {/* Header (fixo) */}
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+    <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Implantação</h1>
-          <p className="text-xs text-muted-foreground md:text-sm">
-            Onboarding de novos clientes com checklist e mensagens prontas para WhatsApp.
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Onboarding</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gerenciamento de implantação de clientes — VR Benefícios e RH Digital
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -362,22 +372,44 @@ export default function Implantacao() {
             <span className="hidden sm:inline">Personalizar etapas</span>
             <span className="sm:hidden">Etapas</span>
           </Button>
-          <Button size="sm" onClick={() => setOpenNew(true)} className="h-9 bg-gradient-brand text-primary-foreground hover:opacity-90">
+          <Button
+            size="sm"
+            onClick={() => setOpenNew(true)}
+            className="h-9 bg-gradient-brand text-primary-foreground hover:opacity-90"
+          >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Novo Cliente</span>
-            <span className="sm:hidden">Novo</span>
+            <span className="hidden sm:inline">Nova implantação</span>
+            <span className="sm:hidden">Nova</span>
           </Button>
         </div>
       </div>
 
-      {/* Kanban (preenche restante) */}
-      <div className="min-h-0 flex-1">
-        <ImplantacaoKanban
-          stages={visibleStages}
-          onOpenCard={(id) => setEditingId(id)}
-          userId={user?.id ?? null}
-          userName={user?.user_metadata?.full_name ?? user?.email ?? null}
-        />
+      {/* KPI + alerta */}
+      <ImplantacaoKpiHeader stages={visibleStages} onJumpRisk={() => setFilter("em_risco")} />
+
+      {/* Conteúdo principal: kanban + sidebar */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Kanban */}
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-foreground/80">Pipeline de implantação</h2>
+            <ImplantacaoFilterChips value={filter} onChange={setFilter} counts={counts} />
+          </div>
+          <div className="min-h-0 flex-1 rounded-xl border border-border bg-surface-muted/30">
+            <ImplantacaoKanban
+              stages={visibleStages}
+              onOpenCard={(id) => setEditingId(id)}
+              userId={user?.id ?? null}
+              userName={user?.user_metadata?.full_name ?? user?.email ?? null}
+              filter={filter}
+            />
+          </div>
+        </div>
+
+        {/* Sidebar direita */}
+        <aside className="min-h-0 overflow-y-auto lg:pr-1">
+          <ImplantacaoSideStack stages={visibleStages} />
+        </aside>
       </div>
 
       <NewImplantacaoDialog
@@ -413,11 +445,13 @@ function ImplantacaoKanban({
   onOpenCard,
   userId,
   userName,
+  filter = "todas",
 }: {
   stages: { key: string; label: string; tone: any }[];
   onOpenCard: (id: string) => void;
   userId: string | null;
   userName: string | null;
+  filter?: ImplFilter;
 }) {
   const qc = useQueryClient();
   const [pendingMove, setPendingMove] = useState<{ id: string; etapa: string; fromEtapa: string; clientName: string } | null>(null);
@@ -512,15 +546,18 @@ function ImplantacaoKanban({
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar. Tente novamente."),
   });
 
+  const finalKey = stages[stages.length - 1]?.key ?? "finalizado";
+  const filteredItems = useImplFilter(items ?? [], filter, finalKey);
+
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {};
     stages.forEach((s) => (map[s.key] = []));
-    (items ?? []).forEach((i: any) => {
+    filteredItems.forEach((i: any) => {
       if (map[i.etapa]) map[i.etapa].push(i);
       else if (stages[0]) map[stages[0].key].push(i);
     });
     return map;
-  }, [items, stages]);
+  }, [filteredItems, stages]);
 
   // mapa de cor da barra superior por tom da etapa (estilo Pipedrive)
   const stripeByTone: Record<string, string> = {
