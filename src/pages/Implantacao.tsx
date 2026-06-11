@@ -432,6 +432,17 @@ export default function Implantacao() {
         userId={user?.id ?? null}
         stages={stages}
       />
+
+      {/* Floating Action Button */}
+      <button
+        type="button"
+        onClick={() => setOpenNew(true)}
+        aria-label="Nova implantação"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0"
+      >
+        <Plus className="h-4 w-4" />
+        Nova implantação
+      </button>
     </div>
   );
 }
@@ -461,7 +472,7 @@ function ImplantacaoKanban({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("implantacoes")
-        .select("id, client_id, client_name, cnpj, etapa, produto, ordem, data_inicio, data_go_live, responsavel_id, metodo_registro, observacoes, created_at, updated_at, responsavel:profiles!responsavel_id(full_name, avatar_url)")
+        .select("id, client_id, client_name, cnpj, etapa, produto, ordem, data_inicio, data_go_live, responsavel_id, metodo_registro, observacoes, contato_cliente, data_ultima_transicao, health_status, created_at, updated_at, responsavel:profiles!responsavel_id(full_name, avatar_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -705,15 +716,36 @@ function ImplantacaoKanban({
 function KanbanCard({
   item, count, lastActivity, onClick, onDelete,
 }: { item: any; count: { done: number; total: number }; lastActivity: string | null; onClick: () => void; onDelete: () => void }) {
-  const days = daysSince(item.data_inicio);
-  const overdue = days !== null && days > 15;
   const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
-  const respName = item.responsavel?.full_name ?? "—";
+  const respName = item.responsavel?.full_name ?? null;
+  const contato = item.contato_cliente?.trim() || null;
 
-  // última atividade: usa eventos; se não houver nenhum, cai pra updated_at
-  const lastIso = lastActivity ?? item.updated_at ?? item.created_at;
-  const lastDays = daysSinceISO(lastIso);
-  const stale = lastDays !== null && lastDays > 7;
+  // Dias na etapa atual (preferir data_ultima_transicao; cair para updated_at)
+  const stageIso = item.data_ultima_transicao ?? item.updated_at ?? item.created_at;
+  const daysInStage = daysSinceISO(stageIso) ?? 0;
+
+  // Health tem 3 níveis: no_prazo / em_risco / atrasado
+  const health: "no_prazo" | "em_risco" | "atrasado" =
+    item.health_status === "atrasado" || daysInStage > 14
+      ? "atrasado"
+      : item.health_status === "em_risco" || daysInStage > 7
+        ? "em_risco"
+        : "no_prazo";
+
+  // Produtos derivados de item.produto (string ou combo)
+  const produtos: string[] = (() => {
+    const p = (item.produto ?? "").toString();
+    const out: string[] = [];
+    if (p.includes("rh_digital") || p.startsWith("rh_")) out.push("RH Digital");
+    if (p.includes("vr") || p.includes("multi") || p.includes("mobilidade")) out.push("VR Benefícios");
+    return out;
+  })();
+
+  const borderClass =
+    health === "atrasado" ? "border-l-danger" :
+    health === "em_risco" ? "border-l-warning" :
+    "border-l-success";
+  const bgClass = health === "atrasado" ? "bg-danger/[0.03]" : "bg-card";
 
   return (
     <div
@@ -723,7 +755,11 @@ function KanbanCard({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
-      className="group relative cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
+      className={cn(
+        "group relative cursor-pointer rounded-lg border border-border border-l-[3px] p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/40",
+        borderClass,
+        bgClass,
+      )}
     >
       <Button
         size="icon"
@@ -735,48 +771,70 @@ function KanbanCard({
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
 
-      <div className="flex items-start gap-2">
-        <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/60" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="line-clamp-2 pr-6 text-xs font-semibold leading-snug">{item.client_name}</p>
-
-          <div className="flex items-center gap-2">
-            <Avatar className="h-5 w-5">
-              <AvatarFallback className="bg-gradient-brand text-[9px] text-primary-foreground">
-                {initials(respName)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate text-[11px] text-muted-foreground">{respName}</span>
-          </div>
-
-          <div className="space-y-1">
-            <Progress value={pct} className="h-1.5" />
-            <p className="text-[10px] text-muted-foreground">
-              {count.done}/{count.total} — {pct}%
-            </p>
-          </div>
-
-          {/* Última atividade */}
-          {lastDays !== null && (
-            stale ? (
-              <p className="flex items-center gap-1 text-[10px] font-medium text-warning">
-                <AlertCircle className="h-3 w-3" />
-                Sem atividade há {lastDays} {lastDays === 1 ? "dia" : "dias"}
-              </p>
-            ) : (
-              <p className="text-[10px] text-muted-foreground">
-                Última atividade: {lastDays === 0 ? "hoje" : `há ${lastDays} ${lastDays === 1 ? "dia" : "dias"}`}
-              </p>
-            )
-          )}
-
-          {days !== null && (
-            <p className={cn("text-[10px]", overdue ? "font-medium text-warning" : "text-muted-foreground")}>
-              {days} {days === 1 ? "dia" : "dias"} em andamento
-            </p>
+      {/* Linha 1: nome em destaque + avatar do responsável */}
+      <div className="flex items-start gap-2 pr-6">
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[11px] font-bold uppercase tracking-wide text-foreground leading-tight">
+            {item.client_name}
+          </p>
+          {contato && (
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{contato}</p>
           )}
         </div>
+        {respName && (
+          <Avatar className="h-6 w-6 shrink-0" title={respName}>
+            <AvatarFallback className="bg-gradient-brand text-[9px] text-primary-foreground">
+              {initials(respName)}
+            </AvatarFallback>
+          </Avatar>
+        )}
       </div>
+
+      {/* Linha 2: badges OU alerta de "parado há X dias" */}
+      <div className="mt-2.5">
+        {health === "atrasado" ? (
+          <div className="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2 py-1 text-[10px] font-semibold text-danger">
+            <AlertCircle className="h-3 w-3" />
+            {daysInStage} dias parado
+          </div>
+        ) : produtos.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {produtos.map((p) => (
+              <span
+                key={p}
+                className={cn(
+                  "rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                  p === "RH Digital"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-accent/15 text-accent-foreground",
+                )}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Linha 3: progresso */}
+      <div className="mt-2.5 space-y-1">
+        <div className="flex items-center gap-2">
+          <Progress value={pct} className="h-1.5 flex-1" />
+          <span className="font-mono text-[10px] font-semibold text-muted-foreground">
+            {count.done}/{count.total}
+          </span>
+        </div>
+      </div>
+
+      {/* Linha 4: tempo na etapa */}
+      <p
+        className={cn(
+          "mt-2 text-[10px] font-medium",
+          health === "atrasado" ? "text-danger" : health === "em_risco" ? "text-warning" : "text-muted-foreground",
+        )}
+      >
+        {daysInStage === 0 ? "Entrou hoje" : `${daysInStage} ${daysInStage === 1 ? "dia" : "dias"} nesta etapa`}
+      </p>
     </div>
   );
 }
@@ -1091,12 +1149,17 @@ function EditImplantacaoDialog({
         {item && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl">{item.client_name}</DialogTitle>
+              <DialogTitle className="text-xl font-semibold uppercase tracking-wide">{item.client_name}</DialogTitle>
               <DialogDescription>
                 Etapa atual: <span className="font-medium text-foreground">{stageLabel}</span>
                 {item.produto && <> · {PRODUTO_LABEL[item.produto] ?? item.produto}</>}
+                {item.cnpj && <> · {formatCnpj(item.cnpj)}</>}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Stepper visual horizontal */}
+            <ImplantacaoStepper stages={stages} currentKey={item.etapa} />
+
 
             <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
@@ -2239,5 +2302,63 @@ function CustomizeStagesDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============================================================
+// STEPPER VISUAL — Etapas no topo do modal
+// ============================================================
+function ImplantacaoStepper({
+  stages,
+  currentKey,
+}: {
+  stages: { key: string; label: string }[];
+  currentKey: string;
+}) {
+  const currentIdx = Math.max(0, stages.findIndex((s) => s.key === currentKey));
+  return (
+    <div className="rounded-md border border-border bg-surface-muted/30 p-3">
+      <div className="flex items-center justify-between gap-1">
+        {stages.map((s, idx) => {
+          const done = idx < currentIdx;
+          const active = idx === currentIdx;
+          const isLast = idx === stages.length - 1;
+          return (
+            <div key={s.key} className="flex min-w-0 flex-1 flex-col items-center">
+              <div className="flex w-full items-center">
+                <div className={cn("h-[2px] flex-1", idx === 0 ? "opacity-0" : done || active ? "bg-primary" : "bg-border")} />
+                <div
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold transition-colors",
+                    done && "border-primary bg-primary text-primary-foreground",
+                    active && "border-primary bg-primary text-primary-foreground shadow-glow",
+                    !done && !active && "border-border bg-background text-muted-foreground",
+                  )}
+                  title={s.label}
+                >
+                  {done ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : isLast ? (
+                    "🚀"
+                  ) : (
+                    String(idx + 1).padStart(2, "0")
+                  )}
+                </div>
+                <div className={cn("h-[2px] flex-1", isLast ? "opacity-0" : done ? "bg-primary" : "bg-border")} />
+              </div>
+              <p
+                className={cn(
+                  "mt-1.5 line-clamp-2 text-center text-[9px] leading-tight",
+                  active ? "font-semibold text-foreground" : "text-muted-foreground",
+                )}
+                title={s.label}
+              >
+                {s.label}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
