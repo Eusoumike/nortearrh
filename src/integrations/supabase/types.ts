@@ -786,6 +786,7 @@ export type Database = {
       }
       implantacoes: {
         Row: {
+          arquivos: Json
           client_id: string | null
           client_name: string
           cnpj: string | null
@@ -794,15 +795,18 @@ export type Database = {
           created_by: string | null
           data_go_live: string | null
           data_inicio: string | null
+          data_ultima_transicao: string | null
           email_cliente: string | null
           etapa: Database["public"]["Enums"]["implantacao_etapa"]
           gravacao_t1: string | null
           gravacao_t2: string | null
           gravacao_t3: string | null
+          health_status: string
           id: string
           metodo_registro: string | null
           metodo_registro_obs: string | null
           observacoes: string | null
+          observacoes_conta: string | null
           ordem: number
           produto: string | null
           responsavel_email: string | null
@@ -814,6 +818,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          arquivos?: Json
           client_id?: string | null
           client_name: string
           cnpj?: string | null
@@ -822,15 +827,18 @@ export type Database = {
           created_by?: string | null
           data_go_live?: string | null
           data_inicio?: string | null
+          data_ultima_transicao?: string | null
           email_cliente?: string | null
           etapa?: Database["public"]["Enums"]["implantacao_etapa"]
           gravacao_t1?: string | null
           gravacao_t2?: string | null
           gravacao_t3?: string | null
+          health_status?: string
           id?: string
           metodo_registro?: string | null
           metodo_registro_obs?: string | null
           observacoes?: string | null
+          observacoes_conta?: string | null
           ordem?: number
           produto?: string | null
           responsavel_email?: string | null
@@ -842,6 +850,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          arquivos?: Json
           client_id?: string | null
           client_name?: string
           cnpj?: string | null
@@ -850,15 +859,18 @@ export type Database = {
           created_by?: string | null
           data_go_live?: string | null
           data_inicio?: string | null
+          data_ultima_transicao?: string | null
           email_cliente?: string | null
           etapa?: Database["public"]["Enums"]["implantacao_etapa"]
           gravacao_t1?: string | null
           gravacao_t2?: string | null
           gravacao_t3?: string | null
+          health_status?: string
           id?: string
           metodo_registro?: string | null
           metodo_registro_obs?: string | null
           observacoes?: string | null
+          observacoes_conta?: string | null
           ordem?: number
           produto?: string | null
           responsavel_email?: string | null
@@ -1987,6 +1999,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      atualizar_health_implantacoes: { Args: never; Returns: undefined }
       gerar_parcela_enquanto_ativo: { Args: never; Returns: undefined }
       get_user_role: {
         Args: { _user_id: string }
