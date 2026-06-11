@@ -445,11 +445,13 @@ function ImplantacaoKanban({
   onOpenCard,
   userId,
   userName,
+  filter = "todas",
 }: {
   stages: { key: string; label: string; tone: any }[];
   onOpenCard: (id: string) => void;
   userId: string | null;
   userName: string | null;
+  filter?: ImplFilter;
 }) {
   const qc = useQueryClient();
   const [pendingMove, setPendingMove] = useState<{ id: string; etapa: string; fromEtapa: string; clientName: string } | null>(null);
