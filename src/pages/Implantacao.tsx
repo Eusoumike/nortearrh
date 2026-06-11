@@ -41,6 +41,7 @@ import {
   useImplFilter,
   type ImplFilter,
 } from "@/components/implantacao/ImplantacaoDashboard";
+import { ImplantacaoModalBody } from "@/components/implantacao/ImplantacaoModalBody";
 
 // ============================================================
 // TIPOS, CONSTANTES E TEMPLATES
@@ -1145,7 +1146,7 @@ function EditImplantacaoDialog({
 
   return (
     <Dialog open={!!implantacaoId} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
         {item && (
           <>
             <DialogHeader>
@@ -1160,7 +1161,6 @@ function EditImplantacaoDialog({
             {/* Stepper visual horizontal */}
             <ImplantacaoStepper stages={stages} currentKey={item.etapa} />
 
-
             <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-medium">Progresso do checklist</span>
@@ -1174,36 +1174,47 @@ function EditImplantacaoDialog({
               </div>
             </div>
 
-            <Tabs value={tab} onValueChange={setTab}>
-              <TabsList className="w-full">
-                <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
-                <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
-                <TabsTrigger value="mensagens" className="flex-1">Mensagens</TabsTrigger>
-                <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>
-              </TabsList>
+            {/* Corpo principal em 3 colunas: Tarefas/Observações · Arquivos/Histórico · Nortear Assist */}
+            <ImplantacaoModalBody item={item} stages={stages} />
 
-              <TabsContent value="dados" className="mt-3">
-                {tab === "dados" && (
-                  <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} userId={user?.id ?? null} userName={userName} />
-                )}
-              </TabsContent>
+            {/* Ações detalhadas (Dados, Checklist completo, Mensagens, Histórico) */}
+            <Accordion type="single" collapsible className="mt-2">
+              <AccordionItem value="acoes" className="border border-border rounded-md px-3">
+                <AccordionTrigger className="text-sm py-3">Mais ações: editar dados, checklist completo, mensagens, histórico</AccordionTrigger>
+                <AccordionContent>
+                  <Tabs value={tab} onValueChange={setTab}>
+                    <TabsList className="w-full">
+                      <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+                      <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+                      <TabsTrigger value="mensagens" className="flex-1">Mensagens</TabsTrigger>
+                      <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>
+                    </TabsList>
 
-              <TabsContent value="checklist" className="mt-3">
-                {tab === "checklist" && (
-                  <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} userId={user?.id ?? null} userName={userName} />
-                )}
-              </TabsContent>
+                    <TabsContent value="dados" className="mt-3">
+                      {tab === "dados" && (
+                        <DadosTab item={item} qc={qc} stages={stages} onClose={onClose} userId={user?.id ?? null} userName={userName} />
+                      )}
+                    </TabsContent>
 
-              <TabsContent value="mensagens" className="mt-3">
-                {tab === "mensagens" && (
-                  <MensagensTab item={item} qc={qc} userId={user?.id ?? null} userName={userName} />
-                )}
-              </TabsContent>
+                    <TabsContent value="checklist" className="mt-3">
+                      {tab === "checklist" && (
+                        <ChecklistTab item={item} stages={stages} items={checklist ?? []} qc={qc} userId={user?.id ?? null} userName={userName} />
+                      )}
+                    </TabsContent>
 
-              <TabsContent value="historico" className="mt-3">
-                {tab === "historico" && <HistoricoTab implantacaoId={item.id} />}
-              </TabsContent>
-            </Tabs>
+                    <TabsContent value="mensagens" className="mt-3">
+                      {tab === "mensagens" && (
+                        <MensagensTab item={item} qc={qc} userId={user?.id ?? null} userName={userName} />
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="historico" className="mt-3">
+                      {tab === "historico" && <HistoricoTab implantacaoId={item.id} />}
+                    </TabsContent>
+                  </Tabs>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </>
         )}
       </DialogContent>
