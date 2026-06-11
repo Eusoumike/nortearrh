@@ -227,8 +227,6 @@ export default function TicketDetail() {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Chamado resolvido.");
-      setResolveOpen(false);
-      setResolveSolution("");
     },
     onError: (e: any) => toast.error(e.message),
   });
