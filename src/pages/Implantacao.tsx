@@ -432,6 +432,17 @@ export default function Implantacao() {
         userId={user?.id ?? null}
         stages={stages}
       />
+
+      {/* Floating Action Button */}
+      <button
+        type="button"
+        onClick={() => setOpenNew(true)}
+        aria-label="Nova implantação"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0"
+      >
+        <Plus className="h-4 w-4" />
+        Nova implantação
+      </button>
     </div>
   );
 }
