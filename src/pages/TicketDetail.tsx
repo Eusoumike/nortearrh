@@ -85,8 +85,6 @@ export default function TicketDetail() {
   const [now, setNow] = useState(() => Date.now());
   const [editOpen, setEditOpen] = useState(false);
   const canDelete = role === "admin" || role === "manager";
-  const [resolveOpen, setResolveOpen] = useState(false);
-  const [resolveSolution, setResolveSolution] = useState("");
 
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
