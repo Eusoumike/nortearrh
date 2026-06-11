@@ -41,6 +41,7 @@ import {
   useImplFilter,
   type ImplFilter,
 } from "@/components/implantacao/ImplantacaoDashboard";
+import { ImplantacaoModalBody } from "@/components/implantacao/ImplantacaoModalBody";
 
 // ============================================================
 // TIPOS, CONSTANTES E TEMPLATES
