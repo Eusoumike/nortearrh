@@ -334,10 +334,10 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
-        <DialogHeader className="border-b border-border px-5 py-3">
-          <DialogTitle className="text-base">Novo Chamado</DialogTitle>
-          <DialogDescription className="text-xs">
+      <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col rounded-xl shadow-2xl">
+        <DialogHeader className="border-b border-border bg-muted/30 px-6 py-4">
+          <DialogTitle className="text-lg font-semibold tracking-tight">Novo Chamado</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
             Preencha os dados do atendimento. SLA de resposta calculado pela prioridade.
           </DialogDescription>
         </DialogHeader>
