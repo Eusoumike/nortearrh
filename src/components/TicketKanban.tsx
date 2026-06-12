@@ -70,10 +70,19 @@ function timeOnCurrentStage(t: KanbanTicket, now: number): number {
   return Math.max(0, (now - new Date(t.current_stage_started_at).getTime()) / 1000);
 }
 
+const PRIORITY_STRIPE: Record<string, string> = {
+  urgente: "border-l-danger",
+  critica: "border-l-danger",
+  alta: "border-l-warning",
+  media: "border-l-info",
+  baixa: "border-l-muted-foreground/40",
+};
+
 const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssist = false }: { t: KanbanTicket; now: number; isOverlay?: boolean; hasAssist?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: t.id });
   const navigate = useNavigate();
   const elapsed = timeOnCurrentStage(t, now);
+  const stripeClass = PRIORITY_STRIPE[t.priority as string] ?? "border-l-muted-foreground/40";
 
   return (
     <div
@@ -91,13 +100,14 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssi
       }}
       style={{ contain: "layout paint", willChange: isDragging || isOverlay ? "transform" : undefined }}
       className={cn(
-        "group cursor-pointer rounded-md border border-border bg-card p-2.5 shadow-sm transition-colors duration-150 hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        "group cursor-pointer rounded-xl border border-border bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        "border-l-[3px]", stripeClass,
         isDragging && !isOverlay && "opacity-30",
         isOverlay && "kanban-dragging shadow-lg",
       )}
     >
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary">
+        <span className="font-mono text-[11px] text-muted-foreground group-hover:text-primary">
           #{t.ticket_number}
         </span>
         <div className="flex items-center gap-1.5">
@@ -112,10 +122,17 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssi
           <PriorityBadge priority={t.priority} />
         </div>
       </div>
-      <p className="line-clamp-2 text-xs font-semibold leading-snug">{t.title}</p>
-      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-        <span className="truncate">{t.client?.name ?? "Sem cliente"}</span>
-        <span className="font-mono shrink-0">{formatDuration(elapsed)}</span>
+      <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground">{t.title}</p>
+      {t.client?.name && (
+        <p className="mt-1.5 truncate text-[11px] uppercase tracking-wider text-muted-foreground">
+          <span className="font-semibold text-foreground/80 normal-case tracking-normal">{t.client.name}</span>
+        </p>
+      )}
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2 text-[10px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1 font-mono">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+          {formatDuration(elapsed)}
+        </span>
       </div>
       <AutoCloseWarning
         status={t.status}
