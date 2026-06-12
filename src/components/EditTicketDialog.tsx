@@ -253,13 +253,16 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar chamado</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl p-0 shadow-2xl">
+        <DialogHeader className="sticky top-0 z-10 border-b border-border bg-muted/30 px-6 py-4">
+          <DialogTitle className="text-lg font-semibold tracking-tight">
+            Editar Chamado {ticket?.ticket_number ? `#${ticket.ticket_number}` : ""}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
             Atualize qualquer campo do chamado. O número aceita letras e dígitos (ex: VR-2024-001).
           </DialogDescription>
         </DialogHeader>
+        <div className="px-6 py-5">
 
         <div className="grid gap-4 py-2">
           <div className="grid grid-cols-[140px_1fr] gap-3">
