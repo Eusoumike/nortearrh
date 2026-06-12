@@ -452,6 +452,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
             Salvar alterações
           </Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
