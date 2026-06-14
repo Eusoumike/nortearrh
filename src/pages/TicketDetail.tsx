@@ -162,7 +162,7 @@ export default function TicketDetail() {
       const { data, error } = await supabase
         .from("tickets")
         .select(
-          "*, client:clients!fk_tickets_client(id, name, email, company, phone, health, anydesk_id, anydesk_senha, organization, razao_social, cnpj, contact_name, contact_email, contact_phone, contact_whatsapp, products, status_nortear), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)"
+          "*, client:clients!fk_tickets_client(id, name, email, company, phone, health, anydesk_id, anydesk_senha, razao_social, cnpj, contact_name, contact_email, contact_phone, contact_whatsapp, products, status_nortear), assignee:profiles!assigned_to(id, full_name, avatar_url, email), creator:profiles!created_by(full_name, avatar_url)"
         )
         .eq("id", id!)
         .single();
