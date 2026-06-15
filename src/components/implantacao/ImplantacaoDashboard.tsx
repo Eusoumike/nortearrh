@@ -85,7 +85,7 @@ export function ImplantacaoKpiHeader({
   }, [items, checklistMap, finalKey]);
 
   const worstAtRisk = kpis.atRisk
-    .map((i) => ({ ...i, stale: daysBetween(i.updated_at) ?? 0 }))
+    .map((i) => ({ ...i, stale: calcDiasNaEtapa(i.data_ultima_transicao ?? i.created_at) }))
     .sort((a, b) => b.stale - a.stale)[0];
 
   return (
