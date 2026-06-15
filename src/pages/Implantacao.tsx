@@ -352,10 +352,42 @@ export default function Implantacao() {
   const [openCustomize, setOpenCustomize] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<ImplFilter>("todas");
+  const [showCompleted, setShowCompleted] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("impl-show-completed") === "1";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("impl-show-completed", showCompleted ? "1" : "0");
+  }, [showCompleted]);
 
   const stages = useStages(user?.id ?? null);
   const visibleStages = stages.filter((s) => !s.hidden);
   const counts = useImplStatusCounts(visibleStages);
+  const finalKey = visibleStages[visibleStages.length - 1]?.key ?? "finalizado";
+
+  // Contador de concluídas no mês atual (sempre olha todas as implantações)
+  const { data: allImpl = [] } = useQuery({
+    queryKey: ["implantacoes-concluidas-mes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("implantacoes")
+        .select("id, etapa, data_go_live, updated_at");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const concluidasMes = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    return (allImpl as any[]).filter((i) => {
+      if (i.etapa !== finalKey) return false;
+      const ref = new Date(i.data_go_live ?? i.updated_at ?? 0).getTime();
+      return ref >= start;
+    }).length;
+  }, [allImpl, finalKey]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:p-6">
@@ -394,7 +426,32 @@ export default function Implantacao() {
         <div className="flex min-h-0 flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground/80">Pipeline de implantação</h2>
-            <ImplantacaoFilterChips value={filter} onChange={setFilter} counts={counts} />
+            <div className="flex flex-wrap items-center gap-2">
+              <ImplantacaoFilterChips value={filter} onChange={setFilter} counts={counts} />
+              <button
+                type="button"
+                onClick={() => setShowCompleted((v) => !v)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  showCompleted
+                    ? "border-success/40 bg-success/10 text-success hover:bg-success/15"
+                    : "border-border text-muted-foreground hover:bg-muted",
+                )}
+                title={showCompleted ? "Ocultar implantações concluídas" : "Mostrar implantações concluídas"}
+              >
+                {showCompleted ? (
+                  <>
+                    <Eye className="h-3.5 w-3.5" />
+                    Mostrando concluídas
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {concluidasMes} {concluidasMes === 1 ? "concluída" : "concluídas"} este mês
+                  </>
+                )}
+              </button>
+            </div>
           </div>
           <div className="min-h-0 flex-1 rounded-xl border border-border bg-surface-muted/30">
             <ImplantacaoKanban
@@ -403,6 +460,7 @@ export default function Implantacao() {
               userId={user?.id ?? null}
               userName={user?.user_metadata?.full_name ?? user?.email ?? null}
               filter={filter}
+              showCompleted={showCompleted}
             />
           </div>
         </div>
@@ -412,6 +470,7 @@ export default function Implantacao() {
           <ImplantacaoSideStack stages={visibleStages} />
         </aside>
       </div>
+
 
       <NewImplantacaoDialog
         open={openNew}
