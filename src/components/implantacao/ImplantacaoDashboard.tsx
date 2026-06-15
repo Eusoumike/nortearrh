@@ -234,11 +234,10 @@ export function ImplantacaoSideStack({ stages }: { stages: Stage[] }) {
     const active = items.filter((i) => i.etapa !== finalKey);
     let on = 0, risk = 0, late = 0;
     active.forEach((i) => {
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      if (total > 21 || stale > 21) late++;
-      else if (stale > 14) risk++;
-      else on++;
+      const s = calcImplantacaoStatus(i, finalKey);
+      if (s === "atrasado") late++;
+      else if (s === "em_risco") risk++;
+      else if (s === "no_prazo") on++;
     });
     return { on, risk, late, total: active.length };
   }, [items, finalKey]);
