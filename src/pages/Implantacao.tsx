@@ -418,7 +418,7 @@ export default function Implantacao() {
       </div>
 
       {/* KPI + alerta */}
-      <ImplantacaoKpiHeader stages={visibleStages} onJumpRisk={() => setFilter("em_risco")} />
+      <ImplantacaoKpiHeader stages={visibleStages} onJumpRisk={(f) => setFilter(f)} />
 
       {/* Conteúdo principal: kanban + sidebar */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
