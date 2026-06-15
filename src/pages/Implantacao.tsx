@@ -729,18 +729,22 @@ function ImplantacaoKanban({
                 <p className="px-2 py-6 text-center text-[11px] text-muted-foreground/70">vazio</p>
               )}
               {(grouped[stage.key] ?? []).map((it: any) => (
-                <KanbanCard
+                <div
                   key={it.id}
-                  item={it}
-                  count={counts.get(it.id) ?? { done: 0, total: 0 }}
-                  lastActivity={lastActMap.get(it.id) ?? null}
-                  onClick={() => onOpenCard(it.id)}
-                  onDelete={() => {
-                    if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
-                      removeImpl.mutate(it.id);
-                    }
-                  }}
-                />
+                  className={cn(stage.key === finalKey && "opacity-70 transition-opacity hover:opacity-100")}
+                >
+                  <KanbanCard
+                    item={it}
+                    count={counts.get(it.id) ?? { done: 0, total: 0 }}
+                    lastActivity={lastActMap.get(it.id) ?? null}
+                    onClick={() => onOpenCard(it.id)}
+                    onDelete={() => {
+                      if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
+                        removeImpl.mutate(it.id);
+                      }
+                    }}
+                  />
+                </div>
               ))}
             </div>
           </div>
