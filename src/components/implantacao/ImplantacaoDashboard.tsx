@@ -12,6 +12,11 @@ import {
   Users2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  calcDiasNaEtapa,
+  calcImplantacaoStatus,
+  type ImplantacaoStatus,
+} from "@/lib/implantacao-status";
 
 type Stage = { key: string; label: string; tone: any };
 
