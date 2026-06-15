@@ -12,6 +12,11 @@ import {
   Users2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  calcDiasNaEtapa,
+  calcImplantacaoStatus,
+  type ImplantacaoStatus,
+} from "@/lib/implantacao-status";
 
 type Stage = { key: string; label: string; tone: any };
 
@@ -66,12 +71,9 @@ export function ImplantacaoKpiHeader({
       return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
     })();
 
-    // Em risco: ativas com >14 dias sem atualização OU > 21 dias desde início
-    const atRisk = active.filter((i) => {
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      return stale > 14 || total > 21;
-    });
+    // Em risco unificado: usa o mesmo critério dos filtros do kanban
+    const atRiskStatuses = new Set<ImplantacaoStatus>(["em_risco", "atrasado"]);
+    const atRisk = active.filter((i) => atRiskStatuses.has(calcImplantacaoStatus(i, finalKey)));
 
     const newThisMonth = items.filter((i) => {
       const d = new Date(i.created_at);
@@ -83,7 +85,7 @@ export function ImplantacaoKpiHeader({
   }, [items, checklistMap, finalKey]);
 
   const worstAtRisk = kpis.atRisk
-    .map((i) => ({ ...i, stale: daysBetween(i.updated_at) ?? 0 }))
+    .map((i) => ({ ...i, stale: calcDiasNaEtapa(i.data_ultima_transicao ?? i.created_at) }))
     .sort((a, b) => b.stale - a.stale)[0];
 
   return (
@@ -113,7 +115,7 @@ export function ImplantacaoKpiHeader({
         <KpiCard
           label="Em risco"
           value={kpis.atRisk.length.toString()}
-          delta="atraso > 14 dias"
+          delta="parado há mais de 7 dias"
           deltaTone="danger"
           icon={<AlertTriangle className="h-4 w-4" />}
           accent={kpis.atRisk.length > 0}
@@ -232,11 +234,10 @@ export function ImplantacaoSideStack({ stages }: { stages: Stage[] }) {
     const active = items.filter((i) => i.etapa !== finalKey);
     let on = 0, risk = 0, late = 0;
     active.forEach((i) => {
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      if (total > 21 || stale > 21) late++;
-      else if (stale > 14) risk++;
-      else on++;
+      const s = calcImplantacaoStatus(i, finalKey);
+      if (s === "atrasado") late++;
+      else if (s === "em_risco") risk++;
+      else if (s === "no_prazo") on++;
     });
     return { on, risk, late, total: active.length };
   }, [items, finalKey]);
@@ -477,12 +478,12 @@ export function useImplFilter(items: any[], filter: ImplFilter, finalKey: string
   return useMemo(() => {
     if (filter === "todas") return items;
     return items.filter((i) => {
-      if (i.etapa === finalKey) return false;
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      const status: Exclude<ImplFilter, "todas"> =
-        total > 21 || stale > 21 ? "atrasadas" : stale > 14 ? "em_risco" : "no_prazo";
-      return status === filter;
+      const s = calcImplantacaoStatus(i, finalKey);
+      if (s === "concluida" || s === "cancelada") return false;
+      if (filter === "no_prazo") return s === "no_prazo";
+      if (filter === "em_risco") return s === "em_risco";
+      if (filter === "atrasadas") return s === "atrasado";
+      return false;
     });
   }, [items, filter, finalKey]);
 }
@@ -494,12 +495,12 @@ export function useImplStatusCounts(stages: Stage[]) {
     const active = items.filter((i) => i.etapa !== finalKey);
     let no_prazo = 0, em_risco = 0, atrasadas = 0;
     active.forEach((i) => {
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      if (total > 21 || stale > 21) atrasadas++;
-      else if (stale > 14) em_risco++;
-      else no_prazo++;
+      const s = calcImplantacaoStatus(i, finalKey);
+      if (s === "atrasado") atrasadas++;
+      else if (s === "em_risco") em_risco++;
+      else if (s === "no_prazo") no_prazo++;
     });
-    return { todas: items.length, no_prazo, em_risco, atrasadas };
+    return { todas: active.length, no_prazo, em_risco, atrasadas };
   }, [items, finalKey]);
 }
+
