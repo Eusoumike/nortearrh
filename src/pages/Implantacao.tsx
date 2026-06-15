@@ -622,15 +622,22 @@ function ImplantacaoKanban({
   const finalKey = stages[stages.length - 1]?.key ?? "finalizado";
   const filteredItems = useImplFilter(items ?? [], filter, finalKey);
 
+  // Aplica toggle "mostrar concluídas": esconde coluna final e seus cards quando desativado
+  const renderStages = useMemo(
+    () => (showCompleted ? stages : stages.filter((s) => s.key !== finalKey)),
+    [stages, showCompleted, finalKey],
+  );
+
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {};
-    stages.forEach((s) => (map[s.key] = []));
+    renderStages.forEach((s) => (map[s.key] = []));
     filteredItems.forEach((i: any) => {
+      if (!showCompleted && i.etapa === finalKey) return;
       if (map[i.etapa]) map[i.etapa].push(i);
-      else if (stages[0]) map[stages[0].key].push(i);
+      else if (renderStages[0]) map[renderStages[0].key].push(i);
     });
     return map;
-  }, [filteredItems, stages]);
+  }, [filteredItems, renderStages, showCompleted, finalKey]);
 
   // mapa de cor da barra superior por tom da etapa (estilo Pipedrive)
   const stripeByTone: Record<string, string> = {
