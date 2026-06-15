@@ -71,12 +71,9 @@ export function ImplantacaoKpiHeader({
       return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
     })();
 
-    // Em risco: ativas com >14 dias sem atualização OU > 21 dias desde início
-    const atRisk = active.filter((i) => {
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      return stale > 14 || total > 21;
-    });
+    // Em risco unificado: usa o mesmo critério dos filtros do kanban
+    const atRiskStatuses = new Set<ImplantacaoStatus>(["em_risco", "atrasado"]);
+    const atRisk = active.filter((i) => atRiskStatuses.has(calcImplantacaoStatus(i, finalKey)));
 
     const newThisMonth = items.filter((i) => {
       const d = new Date(i.created_at);
