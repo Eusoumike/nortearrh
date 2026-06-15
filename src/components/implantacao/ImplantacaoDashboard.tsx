@@ -40,7 +40,7 @@ export function ImplantacaoKpiHeader({
   onJumpRisk,
 }: {
   stages: Stage[];
-  onJumpRisk?: () => void;
+  onJumpRisk?: (filter: ImplFilter) => void;
 }) {
   const { items, checklistMap, finalKey } = useDashboardData(stages);
 
