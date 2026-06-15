@@ -478,12 +478,12 @@ export function useImplFilter(items: any[], filter: ImplFilter, finalKey: string
   return useMemo(() => {
     if (filter === "todas") return items;
     return items.filter((i) => {
-      if (i.etapa === finalKey) return false;
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      const status: Exclude<ImplFilter, "todas"> =
-        total > 21 || stale > 21 ? "atrasadas" : stale > 14 ? "em_risco" : "no_prazo";
-      return status === filter;
+      const s = calcImplantacaoStatus(i, finalKey);
+      if (s === "concluida" || s === "cancelada") return false;
+      if (filter === "no_prazo") return s === "no_prazo";
+      if (filter === "em_risco") return s === "em_risco";
+      if (filter === "atrasadas") return s === "atrasado";
+      return false;
     });
   }, [items, filter, finalKey]);
 }
@@ -495,12 +495,12 @@ export function useImplStatusCounts(stages: Stage[]) {
     const active = items.filter((i) => i.etapa !== finalKey);
     let no_prazo = 0, em_risco = 0, atrasadas = 0;
     active.forEach((i) => {
-      const stale = daysBetween(i.updated_at) ?? 0;
-      const total = daysBetween(i.created_at) ?? 0;
-      if (total > 21 || stale > 21) atrasadas++;
-      else if (stale > 14) em_risco++;
-      else no_prazo++;
+      const s = calcImplantacaoStatus(i, finalKey);
+      if (s === "atrasado") atrasadas++;
+      else if (s === "em_risco") em_risco++;
+      else if (s === "no_prazo") no_prazo++;
     });
-    return { todas: items.length, no_prazo, em_risco, atrasadas };
+    return { todas: active.length, no_prazo, em_risco, atrasadas };
   }, [items, finalKey]);
 }
+
