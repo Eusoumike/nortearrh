@@ -115,7 +115,7 @@ export function ImplantacaoKpiHeader({
         <KpiCard
           label="Em risco"
           value={kpis.atRisk.length.toString()}
-          delta="atraso > 14 dias"
+          delta="parado há mais de 7 dias"
           deltaTone="danger"
           icon={<AlertTriangle className="h-4 w-4" />}
           accent={kpis.atRisk.length > 0}
