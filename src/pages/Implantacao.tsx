@@ -673,7 +673,7 @@ function ImplantacaoKanban({
           padding: "0 16px 16px",
         }}
       >
-        {stages.map((stage) => (
+        {renderStages.map((stage) => (
           <div
             key={stage.key}
             className="rounded-lg bg-surface-muted/60"
