@@ -71,9 +71,10 @@ export function ImplantacaoKpiHeader({
       return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
     })();
 
-    // Em risco unificado: usa o mesmo critério dos filtros do kanban
-    const atRiskStatuses = new Set<ImplantacaoStatus>(["em_risco", "atrasado"]);
-    const atRisk = active.filter((i) => atRiskStatuses.has(calcImplantacaoStatus(i, finalKey)));
+    // Em risco e atrasadas — separados, alinhados com os chips do kanban
+    const emRisco = active.filter((i) => calcImplantacaoStatus(i, finalKey) === "em_risco");
+    const atrasadas = active.filter((i) => calcImplantacaoStatus(i, finalKey) === "atrasado");
+    const atRisk = [...emRisco, ...atrasadas];
 
     const newThisMonth = items.filter((i) => {
       const d = new Date(i.created_at);
@@ -81,12 +82,26 @@ export function ImplantacaoKpiHeader({
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
 
-    return { total, ttvDays, completion, atRisk, newThisMonth };
+    return { total, ttvDays, completion, atRisk, emRisco, atrasadas, newThisMonth };
   }, [items, checklistMap, finalKey]);
 
   const worstAtRisk = kpis.atRisk
     .map((i) => ({ ...i, stale: calcDiasNaEtapa(i.data_ultima_transicao ?? i.created_at) }))
     .sort((a, b) => b.stale - a.stale)[0];
+
+  // Para qual chip pular ao clicar no banner: prioriza "atrasadas" se houver
+  const jumpTarget: ImplFilter = kpis.atrasadas.length > 0 ? "atrasadas" : "em_risco";
+
+  const bannerLabel = (() => {
+    const parts: string[] = [];
+    if (kpis.atrasadas.length > 0) {
+      parts.push(`${kpis.atrasadas.length} ${kpis.atrasadas.length === 1 ? "atrasada" : "atrasadas"}`);
+    }
+    if (kpis.emRisco.length > 0) {
+      parts.push(`${kpis.emRisco.length} em risco`);
+    }
+    return parts.join(" · ");
+  })();
 
   return (
     <div className="space-y-3">
@@ -125,7 +140,7 @@ export function ImplantacaoKpiHeader({
       {kpis.atRisk.length > 0 && worstAtRisk && (
         <button
           type="button"
-          onClick={onJumpRisk}
+          onClick={() => onJumpRisk?.(jumpTarget)}
           className="group flex w-full items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-left transition-colors hover:bg-warning/15"
         >
           <div className="flex min-w-0 items-start gap-3">
@@ -134,7 +149,7 @@ export function ImplantacaoKpiHeader({
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
-                {kpis.atRisk.length} {kpis.atRisk.length === 1 ? "implantação" : "implantações"} com risco de atraso
+                {bannerLabel} — atenção necessária
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 <strong>{worstAtRisk.client_name}</strong> está parada há {worstAtRisk.stale} dias
