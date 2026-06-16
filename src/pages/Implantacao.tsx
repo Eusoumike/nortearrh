@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -348,6 +349,7 @@ function useStages(userId: string | null) {
 export default function Implantacao() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [openNew, setOpenNew] = useState(false);
   const [openCustomize, setOpenCustomize] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -456,7 +458,7 @@ export default function Implantacao() {
           <div className="min-h-0 flex-1 rounded-xl border border-border bg-surface-muted/30">
             <ImplantacaoKanban
               stages={visibleStages}
-              onOpenCard={(id) => setEditingId(id)}
+              onOpenCard={(id) => navigate(`/implantacao/${id}`)}
               userId={user?.id ?? null}
               userName={user?.user_metadata?.full_name ?? user?.email ?? null}
               filter={filter}
