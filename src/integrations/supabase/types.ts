@@ -655,6 +655,50 @@ export type Database = {
         }
         Relationships: []
       }
+      implantacao_categorias: {
+        Row: {
+          cor: string | null
+          created_at: string
+          icone: string | null
+          id: string
+          implantacao_id: string
+          nome: string
+          ordem: number
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          implantacao_id: string
+          nome: string
+          ordem?: number
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          implantacao_id?: string
+          nome?: string
+          ordem?: number
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacao_categorias_implantacao_id_fkey"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       implantacao_eventos: {
         Row: {
           autor_id: string | null
@@ -783,6 +827,69 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      implantacao_tarefas: {
+        Row: {
+          categoria_id: string
+          concluido_em: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          implantacao_id: string
+          ordem: number
+          prazo: string | null
+          responsavel_email: string | null
+          responsavel_nome: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria_id: string
+          concluido_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          implantacao_id: string
+          ordem?: number
+          prazo?: string | null
+          responsavel_email?: string | null
+          responsavel_nome?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: string
+          concluido_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          implantacao_id?: string
+          ordem?: number
+          prazo?: string | null
+          responsavel_email?: string | null
+          responsavel_nome?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacao_tarefas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "implantacao_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "implantacao_tarefas_implantacao_id_fkey"
+            columns: ["implantacao_id"]
+            isOneToOne: false
+            referencedRelation: "implantacoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       implantacoes: {
         Row: {
