@@ -585,6 +585,9 @@ export default function Settings() {
       {/* Etapas da Implantação */}
       <ImplantacaoStagesManager />
 
+      {/* Templates de Onboarding */}
+      <ImplantacaoTemplatesManager />
+
       {/* Comissões padrão e Histórico — apenas admin */}
       {isAdmin && <ComissoesPadraoSection />}
       {isAdmin && <HistoricoComissoesSection />}
