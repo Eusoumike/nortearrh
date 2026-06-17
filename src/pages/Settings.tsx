@@ -34,6 +34,7 @@ import { TicketTitlesManager } from "@/components/settings/TicketTitlesManager";
 import { HistoricoComissoesSection } from "@/components/settings/HistoricoComissoesSection";
 import { ComissoesPadraoSection } from "@/components/settings/ComissoesPadraoSection";
 import { ImplantacaoStagesManager } from "@/components/settings/ImplantacaoStagesManager";
+import { ImplantacaoTemplatesManager } from "@/components/settings/ImplantacaoTemplatesManager";
 import { AssistSolutionsCard } from "@/components/settings/AssistSolutionsCard";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -583,6 +584,9 @@ export default function Settings() {
 
       {/* Etapas da Implantação */}
       <ImplantacaoStagesManager />
+
+      {/* Templates de Onboarding */}
+      <ImplantacaoTemplatesManager />
 
       {/* Comissões padrão e Histórico — apenas admin */}
       {isAdmin && <ComissoesPadraoSection />}
