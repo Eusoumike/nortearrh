@@ -21,10 +21,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Search, CheckCircle2, Circle, Loader2, Ban, MoreVertical,
-  Pencil, Trash2, FolderPlus, ListTodo,
+  Pencil, Trash2, FolderPlus, ListTodo, LayoutTemplate, Save,
 } from "lucide-react";
 import { formatBrazilDate, initials } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { applyTemplateToImplantacao, saveImplantacaoAsTemplate } from "@/lib/implantacao-templates";
+import { useAuth } from "@/hooks/useAuth";
 
 // ---------- types ----------
 type Categoria = {
