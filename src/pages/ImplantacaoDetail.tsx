@@ -520,7 +520,143 @@ export default function ImplantacaoDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ApplyTemplateDialog
+        open={openApplyTpl}
+        onOpenChange={setOpenApplyTpl}
+        implantacaoId={id!}
+        dataInicio={impl.data_inicio}
+        onApplied={() => {
+          qc.invalidateQueries({ queryKey: ["impl-categorias", id] });
+          qc.invalidateQueries({ queryKey: ["impl-tarefas", id] });
+        }}
+      />
+      <SaveAsTemplateDialog
+        open={openSaveTpl}
+        onOpenChange={setOpenSaveTpl}
+        implantacaoId={id!}
+        userId={user?.id ?? ""}
+        defaultName={impl.client_name ?? "Novo template"}
+      />
     </div>
+  );
+}
+
+// ============================================================
+function ApplyTemplateDialog({
+  open, onOpenChange, implantacaoId, dataInicio, onApplied,
+}: {
+  open: boolean; onOpenChange: (o: boolean) => void;
+  implantacaoId: string; dataInicio: string | null; onApplied: () => void;
+}) {
+  const [tplId, setTplId] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const { data: templates = [] } = useQuery({
+    queryKey: ["impl-templates"],
+    enabled: open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("implantacao_templates")
+        .select("id, nome")
+        .order("nome", { ascending: true });
+      return (data ?? []) as Array<{ id: string; nome: string }>;
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Aplicar template</DialogTitle>
+          <DialogDescription>
+            As categorias e tarefas do template serão adicionadas. O conteúdo atual é mantido.
+          </DialogDescription>
+        </DialogHeader>
+        <div>
+          <Label>Template</Label>
+          <Select value={tplId} onValueChange={setTplId}>
+            <SelectTrigger><SelectValue placeholder="Escolha um template" /></SelectTrigger>
+            <SelectContent>
+              {templates.length === 0 && <div className="p-2 text-xs text-muted-foreground">Nenhum template cadastrado.</div>}
+              {templates.map((t) => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            disabled={!tplId || busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await applyTemplateToImplantacao(implantacaoId, tplId, dataInicio ?? undefined);
+                toast.success("Template aplicado.");
+                onApplied();
+                onOpenChange(false);
+                setTplId("");
+              } catch (e: any) {
+                toast.error(e.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Aplicar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SaveAsTemplateDialog({
+  open, onOpenChange, implantacaoId, userId, defaultName,
+}: {
+  open: boolean; onOpenChange: (o: boolean) => void;
+  implantacaoId: string; userId: string; defaultName: string;
+}) {
+  const qc = useQueryClient();
+  const [nome, setNome] = useState("");
+  const [desc, setDesc] = useState("");
+  const [busy, setBusy] = useState(false);
+  useMemo(() => { setNome(defaultName); setDesc(""); }, [defaultName, open]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Salvar como template</DialogTitle>
+          <DialogDescription>
+            Cria um novo template a partir das categorias e tarefas desta implantação.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+          <div><Label>Descrição</Label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            disabled={!nome.trim() || busy || !userId}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await saveImplantacaoAsTemplate(implantacaoId, userId, nome.trim(), desc.trim());
+                toast.success("Template salvo.");
+                qc.invalidateQueries({ queryKey: ["impl-templates"] });
+                onOpenChange(false);
+              } catch (e: any) {
+                toast.error(e.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar template
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
