@@ -891,6 +891,116 @@ export type Database = {
           },
         ]
       }
+      implantacao_template_categorias: {
+        Row: {
+          cor: string | null
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number
+          template_id: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          template_id: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacao_template_categorias_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "implantacao_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      implantacao_template_tarefas: {
+        Row: {
+          categoria_id: string
+          created_at: string
+          descricao: string
+          id: string
+          ordem: number
+          prazo_dias_offset: number | null
+          template_id: string
+        }
+        Insert: {
+          categoria_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          ordem?: number
+          prazo_dias_offset?: number | null
+          template_id: string
+        }
+        Update: {
+          categoria_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+          prazo_dias_offset?: number | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implantacao_template_tarefas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "implantacao_template_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "implantacao_template_tarefas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "implantacao_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      implantacao_templates: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       implantacoes: {
         Row: {
           arquivos: Json
