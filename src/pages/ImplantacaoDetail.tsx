@@ -290,6 +290,14 @@ export default function ImplantacaoDetail() {
             >
               <FolderPlus className="h-4 w-4" /> Nova categoria
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setOpenApplyTpl(true)}>
+              <LayoutTemplate className="h-4 w-4" /> Aplicar template
+            </Button>
+            {categorias.length > 0 && (
+              <Button size="sm" variant="ghost" onClick={() => setOpenSaveTpl(true)}>
+                <Save className="h-4 w-4" /> Salvar como template
+              </Button>
+            )}
           </div>
         </div>
 
