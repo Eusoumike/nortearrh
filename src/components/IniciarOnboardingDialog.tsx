@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -11,8 +11,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, AlertTriangle, Rocket } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Check, AlertTriangle, Rocket, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
+import { applyTemplateToImplantacao } from "@/lib/implantacao-templates";
 
 type Client = {
   id: string;
@@ -33,10 +36,23 @@ interface Props {
 export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [templateId, setTemplateId] = useState<string>("none");
 
   const products = client.products ?? [];
   const hasRh = products.includes("rh_digital");
   const hasVr = products.includes("vr_beneficios");
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["impl-templates"],
+    enabled: open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("implantacao_templates")
+        .select("id, nome")
+        .order("nome", { ascending: true });
+      return (data ?? []) as Array<{ id: string; nome: string }>;
+    },
+  });
 
   const startOnboarding = useMutation({
     mutationFn: async () => {
@@ -58,7 +74,12 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
         .single();
       if (errImp) throw errImp;
 
-      // 2. Se incluir RH Digital, criar contrato (gera parcelas via trigger)
+      // 2. Aplicar template (se selecionado)
+      if (templateId && templateId !== "none") {
+        await applyTemplateToImplantacao(implantacao.id, templateId, today);
+      }
+
+      // 3. Se incluir RH Digital, criar contrato (gera parcelas via trigger)
       if (hasRh) {
         const { error: errContr } = await supabase
           .from("contratos_rh_digital")
@@ -76,7 +97,7 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
         if (errContr) throw errContr;
       }
 
-      // 3. Marcar onboarding iniciado no cliente
+      // 4. Marcar onboarding iniciado no cliente
       const { error: errCli } = await supabase
         .from("clients")
         .update({ onboarding_iniciado_em: new Date().toISOString() })
@@ -92,7 +113,7 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
       qc.invalidateQueries({ queryKey: ["client-contrato-rh", client.id] });
       qc.invalidateQueries({ queryKey: ["implantacoes"] });
       onOpenChange(false);
-      navigate(`/implantacao?id=${implantacaoId}`);
+      navigate(`/implantacao/${implantacaoId}`);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao iniciar onboarding"),
   });
@@ -109,32 +130,54 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 rounded-md border bg-surface-muted/30 p-3 text-sm">
-          <p className="font-medium">Será criado automaticamente:</p>
-          <ul className="space-y-1.5">
-            <li className="flex items-start gap-2">
-              <Check className="mt-0.5 h-4 w-4 text-success" />
-              <span>Implantação — etapa: <strong>E-mail de Boas-vindas</strong></span>
-            </li>
-            {hasRh && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5 text-xs">
+              <LayoutTemplate className="h-3.5 w-3.5" /> Template (opcional)
+            </Label>
+            <Select value={templateId} onValueChange={setTemplateId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Iniciar em branco" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Iniciar em branco</SelectItem>
+                {templates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Categorias e tarefas do template serão criadas automaticamente.
+            </p>
+          </div>
+
+          <div className="space-y-2 rounded-md border bg-surface-muted/30 p-3 text-sm">
+            <p className="font-medium">Será criado automaticamente:</p>
+            <ul className="space-y-1.5">
               <li className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 text-success" />
-                <span>Contrato <strong>RH Digital</strong> no Financeiro (12 meses, 40% Nortear)</span>
+                <span>Implantação — etapa: <strong>E-mail de Boas-vindas</strong></span>
               </li>
-            )}
-            {hasVr && (
-              <li className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
-                <span><strong>VR Benefícios:</strong> lançamento manual necessário após receber planilha VR</span>
-              </li>
-            )}
-            {!hasRh && !hasVr && (
-              <li className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
-                <span>Nenhum produto definido — ajuste em "Editar cliente" antes para criar contratos automaticamente.</span>
-              </li>
-            )}
-          </ul>
+              {hasRh && (
+                <li className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-4 w-4 text-success" />
+                  <span>Contrato <strong>RH Digital</strong> no Financeiro (12 meses, 40% Nortear)</span>
+                </li>
+              )}
+              {hasVr && (
+                <li className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
+                  <span><strong>VR Benefícios:</strong> lançamento manual necessário após receber planilha VR</span>
+                </li>
+              )}
+              {!hasRh && !hasVr && (
+                <li className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
+                  <span>Nenhum produto definido — ajuste em "Editar cliente" antes para criar contratos automaticamente.</span>
+                </li>
+              )}
+            </ul>
+          </div>
         </div>
 
         <DialogFooter>
