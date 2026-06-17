@@ -86,6 +86,7 @@ export default function ImplantacaoDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string>("todas");
@@ -97,6 +98,9 @@ export default function ImplantacaoDetail() {
   const [openTask, setOpenTask] = useState(false);
   const [editingTask, setEditingTask] = useState<Tarefa | null>(null);
   const [newTaskCatId, setNewTaskCatId] = useState<string | null>(null);
+
+  const [openApplyTpl, setOpenApplyTpl] = useState(false);
+  const [openSaveTpl, setOpenSaveTpl] = useState(false);
 
   // ---- queries ----
   const { data: impl, isLoading: loadingImpl } = useQuery({
