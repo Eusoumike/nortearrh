@@ -73,7 +73,7 @@ export function VisaoGeralTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lancamentos_vr")
-        .select("valor_comissao, valor_base, status, competencia, valor_recebido, cliente_nome, client_id")
+        .select("valor_comissao, valor_base, competencia, cliente_nome, client_id")
         .gte("competencia", mesStart)
         .lte("competencia", mesEnd);
       if (error) throw error;
