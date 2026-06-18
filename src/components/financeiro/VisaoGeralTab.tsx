@@ -101,7 +101,7 @@ export function VisaoGeralTab() {
       const [vr, rh] = await Promise.all([
         supabase
           .from("lancamentos_vr")
-          .select("valor_recebido, valor_comissao, competencia, status")
+          .select("valor_comissao, valor_base, competencia")
           .gte("competencia", fluxoStart)
           .lte("competencia", fluxoEnd),
         supabase
