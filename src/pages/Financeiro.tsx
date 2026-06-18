@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Download, Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { VisaoGeralTab } from "@/components/financeiro/VisaoGeralTab";
@@ -14,10 +15,22 @@ import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
 import { CalculadoraMigracao } from "@/components/financeiro/CalculadoraMigracao";
 import { ymdFirst } from "@/components/financeiro/financeiroUtils";
 
+const TAB_LABELS: Record<string, string> = {
+  "visao-geral": "Visão Geral",
+  vr: "VR Benefícios",
+  calculadora: "Calculadora de Migração",
+  ponto: "RH Digital",
+  documentos: "Documentos",
+  parceiros: "Parceiros",
+  lancamentos: "Lançamentos",
+};
+
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
   const [tab, setTab] = useState("visao-geral");
   const [openUpload, setOpenUpload] = useState(false);
+
+  const breadcrumb = useMemo(() => TAB_LABELS[tab] ?? "Visão Geral", [tab]);
 
   const competencia = ymdFirst(new Date());
 
@@ -64,12 +77,32 @@ export default function Financeiro() {
   const pend = pendingQuery.data ?? { vr: 0, rh: 0, parceiros: 0 };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Financeiro</h1>
-        <p className="text-sm text-muted-foreground">
-          Comissões VR Benefícios, RH Digital, documentos e configurações.
-        </p>
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 p-4 md:p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span>Financeiro</span>
+        <ChevronRight className="h-3 w-3" />
+        <span className="font-medium text-foreground">{breadcrumb}</span>
+      </nav>
+
+      {/* Header */}
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gerencie contratos, recebimentos e comissões de parceiros.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <Download className="h-4 w-4" />
+            Exportar Relatório
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setTab("lancamentos")}>
+            <Plus className="h-4 w-4" />
+            Novo Lançamento
+          </Button>
+        </div>
       </header>
 
       <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col">
