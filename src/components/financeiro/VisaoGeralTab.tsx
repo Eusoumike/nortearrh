@@ -228,8 +228,8 @@ export function VisaoGeralTab() {
       .filter((p: any) => p.status === "pago")
       .reduce((s, p: any) => s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0), 0);
     const recebidoVR = vrMes
-      .filter((v: any) => v.status === "pago")
-      .reduce((s, v: any) => s + Number(v.valor_recebido ?? v.valor_comissao ?? 0), 0);
+      .filter((v: any) => v.valor_base != null)
+      .reduce((s, v: any) => s + Number(v.valor_comissao ?? 0), 0);
     const recebido = recebidoRH + recebidoVR;
     const pctRealizado = previsto > 0 ? Math.min(100, Math.round((recebido / previsto) * 100)) : 0;
 
