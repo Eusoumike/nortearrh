@@ -249,8 +249,8 @@ export function VisaoGeralTab() {
       const d = subMonths(month, i);
       const key = format(d, "yyyy-MM");
       const recebidoVR = hist.vr
-        .filter((v: any) => v.competencia?.slice(0, 7) === key && v.status === "pago")
-        .reduce((s, v: any) => s + Number(v.valor_recebido ?? v.valor_comissao ?? 0), 0);
+        .filter((v: any) => v.competencia?.slice(0, 7) === key && v.valor_base != null)
+        .reduce((s, v: any) => s + Number(v.valor_comissao ?? 0), 0);
       const recebidoRH = hist.rh
         .filter((p: any) => p.competencia?.slice(0, 7) === key && p.status === "pago")
         .reduce((s, p: any) => s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0), 0);
