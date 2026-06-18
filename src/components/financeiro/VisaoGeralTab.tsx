@@ -299,9 +299,9 @@ export function VisaoGeralTab() {
       id: `vr-${r.id}`,
       cliente: r.cliente_nome,
       produto: "VR Benefícios",
-      valor: Number(r.valor_recebido ?? r.valor_comissao ?? 0),
+      valor: Number(r.valor_comissao ?? 0),
       vencimento: r.competencia,
-      status: r.status as string,
+      status: (r.valor_base != null ? "pago" : "pendente") as string,
     }));
     const rh = u.rh.map((r: any) => ({
       id: `rh-${r.id}`,
