@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Legend,
-  Line,
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -23,53 +23,22 @@ import {
 import { ptBR } from "date-fns/locale";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   CalendarClock,
+  CalendarDays,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Minus,
+  TrendingUp,
+  Users,
+  Wallet,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-
-const BRL = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 2,
-});
-
-const COLOR_TOTAL = "#0F7173";
-const COLOR_VR = "#1D9E75";
-const COLOR_PONTO = "#185FA5";
-
-type LancVR = {
-  client_id: string | null;
-  cliente_nome: string;
-  competencia: string;
-  valor_comissao: number;
-  fidelidade_vencimento: string | null;
-};
-
-type LancPonto = {
-  client_id: string | null;
-  cliente_nome: string;
-  competencia: string;
-  valor_nortear: number;
-  fidelidade_vencimento: string | null;
-};
+import { BRL, formatBRDate } from "./financeiroUtils";
 
 const ymdFirst = (d: Date) => format(startOfMonth(d), "yyyy-MM-dd");
 const ymdLast = (d: Date) => format(endOfMonth(d), "yyyy-MM-dd");
@@ -77,53 +46,131 @@ const ymdLast = (d: Date) => format(endOfMonth(d), "yyyy-MM-dd");
 export function VisaoGeralTab() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
 
-  const rangeStart = useMemo(() => startOfMonth(subMonths(month, 11)), [month]);
-  const rangeEnd = useMemo(() => endOfMonth(month), [month]);
+  // ============ Janela 6 meses para fluxo de caixa ============
+  const fluxoStart = useMemo(() => ymdFirst(subMonths(month, 5)), [month]);
+  const fluxoEnd = useMemo(() => ymdLast(month), [month]);
 
-  // Janela: últimos 12 meses (inclui o mês selecionado e o anterior para variação)
-  const queryStart = useMemo(() => ymdFirst(subMonths(month, 12)), [month]);
-  const queryEnd = useMemo(() => ymdLast(month), [month]);
+  // ============ Mês atual ============
+  const mesStart = useMemo(() => ymdFirst(month), [month]);
+  const mesEnd = useMemo(() => ymdLast(month), [month]);
+  const monthKey = format(month, "yyyy-MM");
 
-  const vrQuery = useQuery({
-    queryKey: ["financeiro-vr", queryStart, queryEnd],
+  // ============ KPI: Receita Recorrente (contratos ativos + VR mês atual) ============
+  const contratosAtivosQ = useQuery({
+    queryKey: ["fin-overview-contratos-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contratos_rh_digital")
+        .select("valor_mensalidade, valor_nortear, ativo, created_at")
+        .eq("ativo", true);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const vrMesQ = useQuery({
+    queryKey: ["fin-overview-vr-mes", mesStart],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lancamentos_vr")
-        .select("client_id, cliente_nome, competencia, valor_comissao, fidelidade_vencimento")
-        .gte("competencia", queryStart)
-        .lte("competencia", queryEnd);
+        .select("valor_comissao, valor_base, status, competencia, valor_recebido, cliente_nome, client_id")
+        .gte("competencia", mesStart)
+        .lte("competencia", mesEnd);
       if (error) throw error;
-      return (data ?? []) as LancVR[];
+      return data ?? [];
     },
   });
 
-  const pontoQuery = useQuery({
-    queryKey: ["financeiro-ponto", queryStart, queryEnd],
+  const rhMesQ = useQuery({
+    queryKey: ["fin-overview-rh-mes", mesStart],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
-        .select("client_id, cliente_nome, competencia, valor_nortear, valor_nortear_recebido, status")
-        .gte("competencia", queryStart)
-        .lte("competencia", queryEnd);
+        .select("valor_mensalidade, valor_nortear, valor_recebido, valor_nortear_recebido, status, competencia, cliente_nome, client_id, contrato_id")
+        .gte("competencia", mesStart)
+        .lte("competencia", mesEnd);
       if (error) throw error;
-      return (data ?? []).map((r: any) => ({
-        client_id: r.client_id,
-        cliente_nome: r.cliente_nome,
-        competencia: r.competencia,
-        valor_nortear:
-          r.status === "pago"
-            ? Number(r.valor_nortear_recebido ?? r.valor_nortear ?? 0)
-            : Number(r.valor_nortear ?? 0),
-        fidelidade_vencimento: null,
-      })) as LancPonto[];
+      return data ?? [];
     },
   });
 
-  // Alertas de fidelidade (vencidos OU vence em <= 30d)
-  const alertsQuery = useQuery({
-    queryKey: ["financeiro-fidelidade-alertas"],
+  // ============ Histórico 6 meses (fluxo de caixa) ============
+  const historicoQ = useQuery({
+    queryKey: ["fin-overview-historico", fluxoStart, fluxoEnd],
     queryFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
+      const [vr, rh] = await Promise.all([
+        supabase
+          .from("lancamentos_vr")
+          .select("valor_recebido, valor_comissao, competencia, status")
+          .gte("competencia", fluxoStart)
+          .lte("competencia", fluxoEnd),
+        supabase
+          .from("parcelas_rh_digital")
+          .select("valor_recebido, valor_mensalidade, competencia, status")
+          .gte("competencia", fluxoStart)
+          .lte("competencia", fluxoEnd),
+      ]);
+      if (vr.error) throw vr.error;
+      if (rh.error) throw rh.error;
+      return { vr: vr.data ?? [], rh: rh.data ?? [] };
+    },
+  });
+
+  // ============ Saúde dos pagamentos (60 dias) ============
+  const saudeStart = useMemo(() => format(subMonths(new Date(), 2), "yyyy-MM-dd"), []);
+  const saudeQ = useQuery({
+    queryKey: ["fin-overview-saude", saudeStart],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parcelas_rh_digital")
+        .select("status, valor_recebido, valor_mensalidade, competencia")
+        .gte("competencia", saudeStart);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // ============ Repasses pendentes (parceiros + KPI comissões) ============
+  const repassesPendQ = useQuery({
+    queryKey: ["fin-overview-repasses-pend"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("repasses_parceiro")
+        .select("id, parceiro_nome, cliente_nome, produto, valor_repasse, competencia, status")
+        .eq("status", "pendente")
+        .order("competencia", { ascending: true })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // ============ Últimos lançamentos (VR + RH unificados) ============
+  const ultimosQ = useQuery({
+    queryKey: ["fin-overview-ultimos"],
+    queryFn: async () => {
+      const [vr, rh] = await Promise.all([
+        supabase
+          .from("lancamentos_vr")
+          .select("id, cliente_nome, valor_comissao, valor_recebido, competencia, status")
+          .order("competencia", { ascending: false })
+          .limit(8),
+        supabase
+          .from("parcelas_rh_digital")
+          .select("id, cliente_nome, valor_mensalidade, valor_recebido, competencia, status")
+          .order("competencia", { ascending: false })
+          .limit(8),
+      ]);
+      if (vr.error) throw vr.error;
+      if (rh.error) throw rh.error;
+      return { vr: vr.data ?? [], rh: rh.data ?? [] };
+    },
+  });
+
+  // ============ Alertas de fidelidade ============
+  const alertsQuery = useQuery({
+    queryKey: ["fin-overview-fidelidade"],
+    queryFn: async () => {
       const limit = format(addMonths(new Date(), 1), "yyyy-MM-dd");
       const [vr, ponto] = await Promise.all([
         supabase
@@ -140,7 +187,7 @@ export function VisaoGeralTab() {
       ]);
       if (vr.error) throw vr.error;
       if (ponto.error) throw ponto.error;
-      const items = [
+      return [
         ...(vr.data ?? []).map((r: any) => ({
           id: `vr-${r.id}`,
           tipo: "VR" as const,
@@ -153,110 +200,133 @@ export function VisaoGeralTab() {
           cliente: r.cliente_nome as string,
           venc: r.fidelidade_vencimento as string,
         })),
-      ];
-      void today;
-      return items.sort((a, b) => a.venc.localeCompare(b.venc));
+      ].sort((a, b) => a.venc.localeCompare(b.venc));
     },
   });
 
-  const loading = vrQuery.isLoading || pontoQuery.isLoading;
+  // ============ Derivados ============
+  const kpis = useMemo(() => {
+    const contratos = contratosAtivosQ.data ?? [];
+    const vrMes = vrMesQ.data ?? [];
+    const rhMes = rhMesQ.data ?? [];
 
-  // Agregação por mês (chave yyyy-MM)
-  const byMonth = useMemo(() => {
-    const map = new Map<
-      string,
-      { vr: number; ponto: number; vrClients: Set<string>; pontoClients: Set<string> }
-    >();
-    const ensure = (key: string) => {
-      let entry = map.get(key);
-      if (!entry) {
-        entry = { vr: 0, ponto: 0, vrClients: new Set(), pontoClients: new Set() };
-        map.set(key, entry);
-      }
-      return entry;
-    };
-    for (const r of vrQuery.data ?? []) {
-      const key = r.competencia.slice(0, 7);
-      const e = ensure(key);
-      e.vr += Number(r.valor_comissao || 0);
-      e.vrClients.add(r.client_id ?? r.cliente_nome);
-    }
-    for (const r of pontoQuery.data ?? []) {
-      const key = r.competencia.slice(0, 7);
-      const e = ensure(key);
-      e.ponto += Number(r.valor_nortear || 0);
-      e.pontoClients.add(r.client_id ?? r.cliente_nome);
-    }
-    return map;
-  }, [vrQuery.data, pontoQuery.data]);
+    // Receita recorrente: comissão Nortear esperada de contratos ativos + soma da comissão VR do mês
+    const recorrenciaContratos = contratos.reduce(
+      (s, c: any) => s + Number(c.valor_nortear ?? 0),
+      0,
+    );
+    const recorrenciaVR = vrMes.reduce((s, v: any) => s + Number(v.valor_comissao ?? 0), 0);
+    const recorrencia = recorrenciaContratos + recorrenciaVR;
 
-  const monthKey = format(month, "yyyy-MM");
-  const prevKey = format(subMonths(month, 1), "yyyy-MM");
-  const current = byMonth.get(monthKey);
-  const previous = byMonth.get(prevKey);
+    // Previsto no mês: somatório de tudo que tem competência neste mês
+    const previstoRH = rhMes.reduce((s, p: any) => s + Number(p.valor_mensalidade ?? 0), 0);
+    const previstoVR = vrMes.reduce((s, v: any) => s + Number(v.valor_base ?? v.valor_comissao ?? 0), 0);
+    const previsto = previstoRH + previstoVR;
 
-  const mrrVR = current?.vr ?? 0;
-  const mrrPonto = current?.ponto ?? 0;
-  const mrrTotal = mrrVR + mrrPonto;
-  const prevTotal = (previous?.vr ?? 0) + (previous?.ponto ?? 0);
-  const diff = mrrTotal - prevTotal;
-  const diffPct = prevTotal > 0 ? (diff / prevTotal) * 100 : mrrTotal > 0 ? 100 : 0;
-  const hasAnyMonth = mrrTotal > 0;
+    // Recebido (realizado) no mês
+    const recebidoRH = rhMes
+      .filter((p: any) => p.status === "pago")
+      .reduce((s, p: any) => s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0), 0);
+    const recebidoVR = vrMes
+      .filter((v: any) => v.status === "pago")
+      .reduce((s, v: any) => s + Number(v.valor_recebido ?? v.valor_comissao ?? 0), 0);
+    const recebido = recebidoRH + recebidoVR;
+    const pctRealizado = previsto > 0 ? Math.min(100, Math.round((recebido / previsto) * 100)) : 0;
 
-  // Série gráfico — últimos 12 meses (inclui o mês selecionado)
-  const chartData = useMemo(() => {
-    const out: { mes: string; total: number; vr: number; ponto: number }[] = [];
-    for (let i = 11; i >= 0; i--) {
+    return { recorrencia, previsto, recebido, pctRealizado };
+  }, [contratosAtivosQ.data, vrMesQ.data, rhMesQ.data]);
+
+  const comissoesAPagar = useMemo(
+    () => (repassesPendQ.data ?? []).reduce((s, r: any) => s + Number(r.valor_repasse ?? 0), 0),
+    [repassesPendQ.data],
+  );
+
+  // Fluxo de caixa — 6 meses
+  const fluxoData = useMemo(() => {
+    const hist = historicoQ.data ?? { vr: [], rh: [] };
+    const out: { mes: string; key: string; receita: number; previsto: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
       const d = subMonths(month, i);
       const key = format(d, "yyyy-MM");
-      const e = byMonth.get(key);
-      const vr = e?.vr ?? 0;
-      const ponto = e?.ponto ?? 0;
+      const recebidoVR = hist.vr
+        .filter((v: any) => v.competencia?.slice(0, 7) === key && v.status === "pago")
+        .reduce((s, v: any) => s + Number(v.valor_recebido ?? v.valor_comissao ?? 0), 0);
+      const recebidoRH = hist.rh
+        .filter((p: any) => p.competencia?.slice(0, 7) === key && p.status === "pago")
+        .reduce((s, p: any) => s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0), 0);
+      const previstoVR = hist.vr
+        .filter((v: any) => v.competencia?.slice(0, 7) === key)
+        .reduce((s, v: any) => s + Number(v.valor_comissao ?? 0), 0);
+      const previstoRH = hist.rh
+        .filter((p: any) => p.competencia?.slice(0, 7) === key)
+        .reduce((s, p: any) => s + Number(p.valor_mensalidade ?? 0), 0);
       out.push({
-        mes: format(d, "LLL", { locale: ptBR }).replace(/^./, (c) => c.toUpperCase()),
-        total: vr + ponto,
-        vr,
-        ponto,
+        mes: format(d, "LLL/yy", { locale: ptBR }).replace(/^./, (c) => c.toUpperCase()),
+        key,
+        receita: recebidoVR + recebidoRH,
+        previsto: previstoVR + previstoRH,
       });
     }
     return out;
-  }, [byMonth, month]);
+  }, [historicoQ.data, month]);
 
-  // Top 5 do mês
-  const top5 = useMemo(() => {
-    const map = new Map<
-      string,
-      { id: string; nome: string; vr: number; ponto: number; total: number }
-    >();
-    const ensure = (id: string | null, nome: string) => {
-      const key = id ?? `nome:${nome}`;
-      let row = map.get(key);
-      if (!row) {
-        row = { id: id ?? "", nome, vr: 0, ponto: 0, total: 0 };
-        map.set(key, row);
+  // Saúde
+  const saude = useMemo(() => {
+    const arr = saudeQ.data ?? [];
+    const hoje = format(new Date(), "yyyy-MM-dd");
+    let emDia = 0;
+    let parcial = 0;
+    let atrasado = 0;
+    arr.forEach((p: any) => {
+      const valor = Number(p.valor_mensalidade ?? 0);
+      const receb = Number(p.valor_recebido ?? 0);
+      if (p.status === "pago") {
+        if (valor > 0 && receb < valor) parcial++;
+        else emDia++;
+      } else if (p.competencia < hoje) {
+        atrasado++;
       }
-      return row;
-    };
-    for (const r of vrQuery.data ?? []) {
-      if (r.competencia.slice(0, 7) !== monthKey) continue;
-      const row = ensure(r.client_id, r.cliente_nome);
-      row.vr += Number(r.valor_comissao || 0);
-      row.total = row.vr + row.ponto;
-    }
-    for (const r of pontoQuery.data ?? []) {
-      if (r.competencia.slice(0, 7) !== monthKey) continue;
-      const row = ensure(r.client_id, r.cliente_nome);
-      row.ponto += Number(r.valor_nortear || 0);
-      row.total = row.vr + row.ponto;
-    }
-    return Array.from(map.values())
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
-  }, [vrQuery.data, pontoQuery.data, monthKey]);
+    });
+    const total = emDia + parcial + atrasado;
+    const pct = total > 0 ? Math.round((emDia / total) * 100) : 0;
+    return { emDia, parcial, atrasado, total, pct };
+  }, [saudeQ.data]);
 
-  // Alertas processados
+  // Últimos lançamentos
+  const ultimos = useMemo(() => {
+    const u = ultimosQ.data ?? { vr: [], rh: [] };
+    const vr = u.vr.map((r: any) => ({
+      id: `vr-${r.id}`,
+      cliente: r.cliente_nome,
+      produto: "VR Benefícios",
+      valor: Number(r.valor_recebido ?? r.valor_comissao ?? 0),
+      vencimento: r.competencia,
+      status: r.status as string,
+    }));
+    const rh = u.rh.map((r: any) => ({
+      id: `rh-${r.id}`,
+      cliente: r.cliente_nome,
+      produto: "RH Digital",
+      valor: Number(r.valor_recebido ?? r.valor_mensalidade ?? 0),
+      vencimento: r.competencia,
+      status: r.status as string,
+    }));
+    const hoje = format(new Date(), "yyyy-MM-dd");
+    return [...vr, ...rh]
+      .map((r) => ({
+        ...r,
+        status:
+          r.status === "pago"
+            ? "pago"
+            : r.vencimento < hoje
+              ? "atrasado"
+              : "pendente",
+      }))
+      .sort((a, b) => (b.vencimento ?? "").localeCompare(a.vencimento ?? ""))
+      .slice(0, 7);
+  }, [ultimosQ.data]);
+
   const alerts = useMemo(() => {
-    const today = startOfMonth(new Date()); // base do dia para diferença em dias
     const now = new Date();
     return (alertsQuery.data ?? [])
       .map((a) => {
@@ -265,9 +335,11 @@ export function VisaoGeralTab() {
         return { ...a, days, vencido: days < 0 };
       })
       .filter((a) => a.vencido || a.days <= 30)
-      .slice(0, 8);
-    void today;
+      .slice(0, 6);
   }, [alertsQuery.data]);
+
+  const loading =
+    vrMesQ.isLoading || rhMesQ.isLoading || contratosAtivosQ.isLoading || historicoQ.isLoading;
 
   const monthLabel = format(month, "LLLL / yyyy", { locale: ptBR }).replace(
     /^./,
@@ -310,33 +382,36 @@ export function VisaoGeralTab() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="MRR Total"
-          value={BRL.format(mrrTotal)}
-          hint={hasAnyMonth ? "Receita recorrente do mês" : "Nenhum lançamento"}
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="Receita Recorrente"
+          value={BRL.format(kpis.recorrencia)}
+          hint="Contratos ativos + comissões VR do mês"
+          tone="primary"
         />
         <KpiCard
-          label="VR Benefícios"
-          value={BRL.format(mrrVR)}
-          hint={
-            current && current.vrClients.size > 0
-              ? `${current.vrClients.size} cliente${current.vrClients.size === 1 ? "" : "s"}`
-              : "Nenhum lançamento"
-          }
-          accent={COLOR_VR}
+          icon={<CalendarDays className="h-4 w-4" />}
+          label="Previsto para o Mês"
+          value={BRL.format(kpis.previsto)}
+          hint="Meta de faturamento mensal"
+          tone="default"
         />
         <KpiCard
-          label="RH Digital"
-          value={BRL.format(mrrPonto)}
-          hint={
-            current && current.pontoClients.size > 0
-              ? `${current.pontoClients.size} cliente${current.pontoClients.size === 1 ? "" : "s"}`
-              : "Nenhum lançamento"
-          }
-          accent={COLOR_PONTO}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          label="Recebido (Realizado)"
+          value={BRL.format(kpis.recebido)}
+          tone="success"
+          progress={kpis.pctRealizado}
         />
-        <VariationCard diff={diff} diffPct={diffPct} hasPrev={prevTotal > 0} />
+        <KpiCard
+          icon={<Users className="h-4 w-4" />}
+          label="Comissões a Pagar"
+          value={BRL.format(comissoesAPagar)}
+          hint="Aguardando fechamento"
+          tone="warning"
+          italic
+        />
       </div>
 
       {/* Alertas */}
@@ -371,207 +446,356 @@ export function VisaoGeralTab() {
         </div>
       )}
 
-      {/* Gráfico */}
-      <Card className="p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold">Receita recorrente</h2>
-            <p className="text-xs text-muted-foreground">
-              Últimos 12 meses — {format(rangeStart, "MMM/yy", { locale: ptBR })} até{" "}
-              {format(rangeEnd, "MMM/yy", { locale: ptBR })}
-            </p>
-          </div>
-        </div>
-        <div className="h-72 w-full">
-          {loading ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      {/* Grid principal — Fluxo de caixa + Saúde */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Fluxo de Caixa</h2>
+              <p className="text-xs text-muted-foreground">Últimos 6 meses — receita realizada</p>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={COLOR_TOTAL} stopOpacity={0.28} />
-                    <stop offset="100%" stopColor={COLOR_TOTAL} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="mes"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) =>
-                    v >= 1000 ? `R$ ${(v / 1000).toFixed(0)}k` : `R$ ${v}`
-                  }
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-sm bg-primary" /> Recebido
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30" /> Previsto
+              </span>
+            </div>
+          </div>
+          <div className="h-[280px] w-full">
+            {loading ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fluxoData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis
+                    dataKey="mes"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) =>
+                      v >= 1000 ? `R$ ${(v / 1000).toFixed(0)}k` : `R$ ${v}`
+                    }
+                  />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    formatter={(value: number, name: string) => [BRL.format(value), name]}
+                  />
+                  <Bar dataKey="previsto" name="Previsto" fill="hsl(var(--muted-foreground) / 0.25)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="receita" name="Recebido" radius={[6, 6, 0, 0]}>
+                    {fluxoData.map((entry, idx) => (
+                      <Cell
+                        key={idx}
+                        fill={entry.key === monthKey ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.55)"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+
+        <Card className="flex flex-col p-5">
+          <h2 className="text-base font-semibold">Saúde dos Pagamentos</h2>
+          <p className="text-xs text-muted-foreground">Últimos 60 dias</p>
+
+          <div className="relative my-4 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Em dia", value: saude.emDia, fill: "hsl(var(--primary))" },
+                    { name: "Parcial", value: saude.parcial, fill: "hsl(38 92% 50%)" },
+                    { name: "Atrasados", value: saude.atrasado, fill: "hsl(var(--destructive))" },
+                  ].filter((d) => d.value > 0)}
+                  dataKey="value"
+                  innerRadius={55}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={3}
                 />
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--popover))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
-                    color: "hsl(var(--popover-foreground))",
                     fontSize: 12,
                   }}
-                  formatter={(value: number, name: string) => [BRL.format(value), name]}
                 />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  name="Total"
-                  stroke="transparent"
-                  fill="url(#totalGradient)"
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  name="Total"
-                  stroke={COLOR_TOTAL}
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="vr"
-                  name="VR Benefícios"
-                  stroke={COLOR_VR}
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="ponto"
-                  name="RH Digital"
-                  stroke={COLOR_PONTO}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </ComposedChart>
+              </PieChart>
             </ResponsiveContainer>
-          )}
-        </div>
-      </Card>
-
-      {/* Top 5 */}
-      <Card className="p-4">
-        <h2 className="mb-3 text-base font-semibold">Top 5 clientes — {monthLabel}</h2>
-        {top5.length === 0 ? (
-          <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Nenhum lançamento registrado neste mês.
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-2xl font-bold tabular-nums">{saude.pct}%</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Em dia</div>
+            </div>
           </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="text-right">VR Benefícios</TableHead>
-                <TableHead className="text-right">RH Digital</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {top5.map((row) => (
-                <TableRow key={row.id || row.nome}>
-                  <TableCell className="font-medium">
-                    {row.id ? (
-                      <Link
-                        to={`/clientes/${row.id}`}
-                        className="text-primary hover:underline"
-                      >
-                        {row.nome}
-                      </Link>
-                    ) : (
-                      row.nome
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {BRL.format(row.vr)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {BRL.format(row.ponto)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold tabular-nums">
-                    {BRL.format(row.total)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
+
+          <div className="space-y-2 text-sm">
+            <LegendRow color="bg-primary" label="Em dia" value={saude.emDia} />
+            <LegendRow color="bg-amber-500" label="Parcial" value={saude.parcial} />
+            <LegendRow color="bg-destructive" label="Atrasados" value={saude.atrasado} />
+          </div>
+        </Card>
+      </div>
+
+      {/* Grid inferior — Últimos lançamentos + Parceiros */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="overflow-hidden lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-3">
+            <h2 className="text-base font-semibold">Últimos Lançamentos</h2>
+            <Link
+              to="#"
+              onClick={(e) => e.preventDefault()}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Ver todos
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-2.5 text-left font-medium">Cliente</th>
+                  <th className="px-5 py-2.5 text-left font-medium">Produto</th>
+                  <th className="px-5 py-2.5 text-right font-medium">Valor</th>
+                  <th className="px-5 py-2.5 text-left font-medium">Vencimento</th>
+                  <th className="px-5 py-2.5 text-left font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ultimosQ.isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                      <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+                    </td>
+                  </tr>
+                ) : ultimos.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                      Nenhum lançamento recente.
+                    </td>
+                  </tr>
+                ) : (
+                  ultimos.map((r) => (
+                    <tr
+                      key={r.id}
+                      className="border-b border-border/40 transition-colors hover:bg-muted/40"
+                    >
+                      <td className="px-5 py-3 font-medium">{r.cliente}</td>
+                      <td className="px-5 py-3 text-muted-foreground">{r.produto}</td>
+                      <td className="px-5 py-3 text-right font-semibold tabular-nums">
+                        {BRL.format(r.valor)}
+                      </td>
+                      <td className="px-5 py-3 text-muted-foreground">
+                        {formatBRDate(r.vencimento)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusPill status={r.status} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-3">
+            <h2 className="text-base font-semibold">Parceiros</h2>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 divide-y divide-border/40">
+            {repassesPendQ.isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : (repassesPendQ.data ?? []).length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                Nenhum repasse pendente.
+              </div>
+            ) : (
+              (repassesPendQ.data ?? []).slice(0, 4).map((r: any) => (
+                <div
+                  key={r.id}
+                  className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    {iniciais(r.parceiro_nome)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold">{r.parceiro_nome}</div>
+                    <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {r.produto?.replace("_", " ") || "Repasse"} ·{" "}
+                      {format(new Date(r.competencia + "T00:00:00"), "MMM/yy", { locale: ptBR })}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-primary tabular-nums">
+                      {BRL.format(Number(r.valor_repasse ?? 0))}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Pend. {format(new Date(r.competencia + "T00:00:00"), "dd/MM")}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="border-t border-border bg-muted/20 p-3">
+            <Button variant="outline" className="w-full" size="sm">
+              Processar Pagamentos
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      {/* FAB — Conciliação Bancária */}
+      <button
+        type="button"
+        title="Conciliação Bancária"
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all hover:scale-105 hover:opacity-90 active:scale-95"
+        onClick={() => {
+          // hook futuro: abrir modal/route de conciliação
+        }}
+      >
+        <Wallet className="h-6 w-6" />
+      </button>
     </div>
   );
 }
 
 function KpiCard({
+  icon,
   label,
   value,
   hint,
-  accent,
+  tone = "default",
+  progress,
+  italic,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string;
   hint?: string;
-  accent?: string;
+  tone?: "default" | "primary" | "success" | "warning";
+  progress?: number;
+  italic?: boolean;
 }) {
+  const toneClasses: Record<string, string> = {
+    default: "bg-muted text-foreground",
+    primary: "bg-primary/15 text-primary",
+    success: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    warning: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  };
   return (
-    <Card className="relative overflow-hidden p-4">
-      {accent && (
+    <Card className="flex h-32 flex-col justify-between p-4 transition-transform hover:-translate-y-0.5">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
         <span
-          className="absolute left-0 top-0 h-full w-1"
-          style={{ backgroundColor: accent }}
-          aria-hidden
-        />
-      )}
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-md",
+            toneClasses[tone],
+          )}
+        >
+          {icon}
+        </span>
       </div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
+      <div>
+        <div className="text-2xl font-bold tabular-nums">{value}</div>
+        {progress != null ? (
+          <div className="mt-1.5 flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-primary tabular-nums">{progress}%</span>
+          </div>
+        ) : hint ? (
+          <div
+            className={cn(
+              "mt-1 text-xs text-muted-foreground",
+              italic && "italic",
+            )}
+          >
+            {hint}
+          </div>
+        ) : null}
+      </div>
     </Card>
   );
 }
 
-function VariationCard({
-  diff,
-  diffPct,
-  hasPrev,
-}: {
-  diff: number;
-  diffPct: number;
-  hasPrev: boolean;
-}) {
-  const isZero = diff === 0;
-  const positive = diff > 0;
-  const Icon = isZero ? Minus : positive ? ArrowUp : ArrowDown;
-  const color = isZero
-    ? "text-muted-foreground"
-    : positive
-      ? "text-emerald-500"
-      : "text-destructive";
+function LegendRow({ color, label, value }: { color: string; label: string; value: number }) {
   return (
-    <Card className="p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Variação vs mês anterior
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className={cn("h-2.5 w-2.5 rounded-sm", color)} />
+        <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <div className={cn("mt-1 flex items-center gap-2 text-2xl font-semibold tabular-nums", color)}>
-        <Icon className="h-5 w-5" />
-        {BRL.format(Math.abs(diff))}
-      </div>
-      <div className="mt-1 text-xs text-muted-foreground">
-        {hasPrev ? `${positive ? "+" : ""}${diffPct.toFixed(1)}% vs mês anterior` : "Sem dados do mês anterior"}
-      </div>
-    </Card>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
+    </div>
   );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    pago: {
+      label: "Pago",
+      cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+    },
+    pendente: {
+      label: "Pendente",
+      cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+    },
+    atrasado: {
+      label: "Atrasado",
+      cls: "bg-destructive/15 text-destructive",
+    },
+    inadimplente: {
+      label: "Inadimplente",
+      cls: "bg-destructive/15 text-destructive",
+    },
+  };
+  const v = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground" };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+        v.cls,
+      )}
+    >
+      {v.label}
+    </span>
+  );
+}
+
+function iniciais(nome?: string | null) {
+  if (!nome) return "??";
+  const parts = nome.trim().split(/\s+/);
+  const a = parts[0]?.[0] ?? "";
+  const b = parts[1]?.[0] ?? "";
+  return (a + b).toUpperCase() || "??";
 }
