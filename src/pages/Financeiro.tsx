@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Download, Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { VisaoGeralTab } from "@/components/financeiro/VisaoGeralTab";
@@ -14,10 +15,22 @@ import { ParceirosTab } from "@/components/financeiro/ParceirosTab";
 import { CalculadoraMigracao } from "@/components/financeiro/CalculadoraMigracao";
 import { ymdFirst } from "@/components/financeiro/financeiroUtils";
 
+const TAB_LABELS: Record<string, string> = {
+  "visao-geral": "Visão Geral",
+  vr: "VR Benefícios",
+  calculadora: "Calculadora de Migração",
+  ponto: "RH Digital",
+  documentos: "Documentos",
+  parceiros: "Parceiros",
+  lancamentos: "Lançamentos",
+};
+
 export default function Financeiro() {
   const { user, role, loading } = useAuth();
   const [tab, setTab] = useState("visao-geral");
   const [openUpload, setOpenUpload] = useState(false);
+
+  const breadcrumb = useMemo(() => TAB_LABELS[tab] ?? "Visão Geral", [tab]);
 
   const competencia = ymdFirst(new Date());
 
