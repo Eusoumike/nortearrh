@@ -152,7 +152,7 @@ export function VisaoGeralTab() {
       const [vr, rh] = await Promise.all([
         supabase
           .from("lancamentos_vr")
-          .select("id, cliente_nome, valor_comissao, valor_recebido, competencia, status")
+          .select("id, cliente_nome, valor_comissao, valor_base, competencia")
           .order("competencia", { ascending: false })
           .limit(8),
         supabase
