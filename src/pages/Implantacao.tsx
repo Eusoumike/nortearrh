@@ -733,12 +733,25 @@ function ImplantacaoKanban({
               {(grouped[stage.key] ?? []).map((it: any) => (
                 <div
                   key={it.id}
-                  className={cn(stage.key === finalKey && "opacity-70 transition-opacity hover:opacity-100")}
+                  className={cn(
+                    "animate-in fade-in duration-300",
+                    stage.key === finalKey && "opacity-70 transition-opacity hover:opacity-100",
+                  )}
                 >
                   <KanbanCard
                     item={it}
                     count={counts.get(it.id) ?? { done: 0, total: 0 }}
                     lastActivity={lastActMap.get(it.id) ?? null}
+                    stages={stages}
+                    onChangeStage={(newKey) => {
+                      if (newKey === it.etapa) return;
+                      setPendingMove({
+                        id: it.id,
+                        etapa: newKey,
+                        fromEtapa: it.etapa,
+                        clientName: it.client_name,
+                      });
+                    }}
                     onClick={() => onOpenCard(it.id)}
                     onDelete={() => {
                       if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
@@ -789,8 +802,8 @@ function ImplantacaoKanban({
 }
 
 function KanbanCard({
-  item, count, lastActivity, onClick, onDelete,
-}: { item: any; count: { done: number; total: number }; lastActivity: string | null; onClick: () => void; onDelete: () => void }) {
+  item, count, lastActivity, stages, onChangeStage, onClick, onDelete,
+}: { item: any; count: { done: number; total: number }; lastActivity: string | null; stages: { key: string; label: string; tone: any }[]; onChangeStage: (key: string) => void; onClick: () => void; onDelete: () => void }) {
   const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
   const respName = item.responsavel?.full_name ?? null;
   const contato = item.contato_cliente?.trim() || null;
@@ -901,15 +914,40 @@ function KanbanCard({
         </div>
       </div>
 
-      {/* Linha 4: tempo na etapa */}
-      <p
-        className={cn(
-          "mt-2 text-[10px] font-medium",
-          health === "atrasado" ? "text-danger" : health === "em_risco" ? "text-warning" : "text-muted-foreground",
-        )}
-      >
-        {daysInStage === 0 ? "Entrou hoje" : `${daysInStage} ${daysInStage === 1 ? "dia" : "dias"} nesta etapa`}
-      </p>
+      {/* Linha 4: tempo na etapa + seletor de etapa */}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p
+          className={cn(
+            "text-[10px] font-medium",
+            health === "atrasado" ? "text-danger" : health === "em_risco" ? "text-warning" : "text-muted-foreground",
+          )}
+        >
+          {daysInStage === 0 ? "Entrou hoje" : `${daysInStage} ${daysInStage === 1 ? "dia" : "dias"} nesta etapa`}
+        </p>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          draggable
+          onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          <Select value={item.etapa} onValueChange={onChangeStage}>
+            <SelectTrigger
+              className="h-6 w-auto gap-1 border-none bg-transparent px-1.5 py-0 text-[10px] font-medium text-muted-foreground hover:bg-muted/60 focus:ring-0 focus:ring-offset-0"
+              aria-label="Mudar etapa"
+            >
+              <SelectValue placeholder="Etapa" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {stages.map((s) => (
+                <SelectItem key={s.key} value={s.key} className="text-xs">
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
     </div>
   );
 }
