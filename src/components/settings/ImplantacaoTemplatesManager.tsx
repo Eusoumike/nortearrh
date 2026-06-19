@@ -15,10 +15,20 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Pencil, Trash2, FolderPlus, ListTodo, Loader2, LayoutTemplate } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderPlus, ListTodo, Loader2, LayoutTemplate, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-type Template = { id: string; user_id: string; nome: string; descricao: string | null };
+type ProdutoTpl = "ambos" | "rh_digital" | "vr_beneficios";
+type Template = { id: string; user_id: string; nome: string; descricao: string | null; produto: ProdutoTpl; is_default: boolean };
+
+const PRODUTO_LABEL: Record<ProdutoTpl, string> = {
+  ambos: "Ambos",
+  rh_digital: "RH Digital",
+  vr_beneficios: "VR Benefícios",
+};
 type TCat = { id: string; template_id: string; nome: string; icone: string | null; cor: string | null; ordem: number };
 type TTask = { id: string; template_id: string; categoria_id: string; descricao: string; prazo_dias_offset: number | null; ordem: number };
 
