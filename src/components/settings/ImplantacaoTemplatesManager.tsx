@@ -611,3 +611,88 @@ function TaskDialog({ open, onOpenChange, task, categoriaId, onSave }: {
     </Dialog>
   );
 }
+
+// ============== Sortable wrappers ==============
+function SortableCategoria({
+  cat, count, onAddTask, onEdit, onRemove, children,
+}: {
+  cat: TCat; count: number;
+  onAddTask: () => void; onEdit: () => void; onRemove: () => void;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: cat.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="rounded-md border bg-card">
+      <div className="flex items-center gap-2 p-2 bg-muted/30">
+        <button
+          {...attributes} {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none p-1 text-muted-foreground hover:text-foreground"
+          aria-label="Arrastar categoria"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <span className="h-2 w-2 rounded-full" style={{ background: cat.cor ?? "#3B82F6" }} />
+        <span className="text-sm font-medium">{cat.nome}</span>
+        <span className="text-xs text-muted-foreground">({count})</span>
+        <div className="ml-auto flex gap-1">
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onAddTask}>
+            <Plus className="h-3.5 w-3.5" /> Tarefa
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onEdit}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onRemove}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+      <div className="divide-y">{children}</div>
+    </div>
+  );
+}
+
+function SortableTarefa({
+  task, onEdit, onRemove,
+}: {
+  task: TTask; onEdit: () => void; onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: task.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    background: isDragging ? "hsl(var(--muted))" : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 text-sm">
+      <button
+        {...attributes} {...listeners}
+        className="cursor-grab active:cursor-grabbing touch-none p-1 text-muted-foreground hover:text-foreground"
+        aria-label="Arrastar tarefa"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <ListTodo className="h-4 w-4 text-muted-foreground" />
+      <span className="flex-1 truncate">{task.descricao}</span>
+      {task.prazo_dias_offset != null && (
+        <span className="text-[10px] rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+          +{task.prazo_dias_offset}d
+        </span>
+      )}
+      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onEdit}>
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onRemove}>
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
