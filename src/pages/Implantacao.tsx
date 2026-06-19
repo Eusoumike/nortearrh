@@ -802,8 +802,8 @@ function ImplantacaoKanban({
 }
 
 function KanbanCard({
-  item, count, lastActivity, onClick, onDelete,
-}: { item: any; count: { done: number; total: number }; lastActivity: string | null; onClick: () => void; onDelete: () => void }) {
+  item, count, lastActivity, stages, onChangeStage, onClick, onDelete,
+}: { item: any; count: { done: number; total: number }; lastActivity: string | null; stages: { key: string; label: string; tone: any }[]; onChangeStage: (key: string) => void; onClick: () => void; onDelete: () => void }) {
   const pct = count.total > 0 ? Math.round((count.done / count.total) * 100) : 0;
   const respName = item.responsavel?.full_name ?? null;
   const contato = item.contato_cliente?.trim() || null;
