@@ -914,15 +914,40 @@ function KanbanCard({
         </div>
       </div>
 
-      {/* Linha 4: tempo na etapa */}
-      <p
-        className={cn(
-          "mt-2 text-[10px] font-medium",
-          health === "atrasado" ? "text-danger" : health === "em_risco" ? "text-warning" : "text-muted-foreground",
-        )}
-      >
-        {daysInStage === 0 ? "Entrou hoje" : `${daysInStage} ${daysInStage === 1 ? "dia" : "dias"} nesta etapa`}
-      </p>
+      {/* Linha 4: tempo na etapa + seletor de etapa */}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p
+          className={cn(
+            "text-[10px] font-medium",
+            health === "atrasado" ? "text-danger" : health === "em_risco" ? "text-warning" : "text-muted-foreground",
+          )}
+        >
+          {daysInStage === 0 ? "Entrou hoje" : `${daysInStage} ${daysInStage === 1 ? "dia" : "dias"} nesta etapa`}
+        </p>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          draggable
+          onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          <Select value={item.etapa} onValueChange={onChangeStage}>
+            <SelectTrigger
+              className="h-6 w-auto gap-1 border-none bg-transparent px-1.5 py-0 text-[10px] font-medium text-muted-foreground hover:bg-muted/60 focus:ring-0 focus:ring-offset-0"
+              aria-label="Mudar etapa"
+            >
+              <SelectValue placeholder="Etapa" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {stages.map((s) => (
+                <SelectItem key={s.key} value={s.key} className="text-xs">
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
     </div>
   );
 }
