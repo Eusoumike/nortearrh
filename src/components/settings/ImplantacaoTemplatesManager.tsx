@@ -355,6 +355,48 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Troca a ordem de duas categorias (ou duas tarefas) usando uma ordem temporária para
+  // evitar conflito com unique constraints, caso existam.
+  async function swapOrdem(table: string, a: { id: string; ordem: number }, b: { id: string; ordem: number }) {
+    const tmp = -1 - Date.now() % 100000;
+    const { error: e1 } = await db.from(table).update({ ordem: tmp }).eq("id", a.id);
+    if (e1) throw e1;
+    const { error: e2 } = await db.from(table).update({ ordem: a.ordem }).eq("id", b.id);
+    if (e2) throw e2;
+    const { error: e3 } = await db.from(table).update({ ordem: b.ordem }).eq("id", a.id);
+    if (e3) throw e3;
+  }
+
+  const moveCat = useMutation({
+    mutationFn: async ({ cat, dir }: { cat: TCat; dir: "up" | "down" }) => {
+      const sorted = [...cats].sort((x, y) => x.ordem - y.ordem);
+      const idx = sorted.findIndex((c) => c.id === cat.id);
+      const newIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= sorted.length) return;
+      await swapOrdem("implantacao_template_categorias", cat, sorted[newIdx]);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-tpl-cats", templateId] });
+      toast.success("Ordem atualizada");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const moveTask = useMutation({
+    mutationFn: async ({ task, dir }: { task: TTask; dir: "up" | "down" }) => {
+      const sib = (tasksByCat.get(task.categoria_id) ?? []).slice().sort((a, b) => a.ordem - b.ordem);
+      const idx = sib.findIndex((t) => t.id === task.id);
+      const newIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= sib.length) return;
+      await swapOrdem("implantacao_template_tarefas", task, sib[newIdx]);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-tpl-tasks", templateId] });
+      toast.success("Ordem atualizada");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-3 pt-2">
       <div className="flex justify-end">
