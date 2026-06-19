@@ -364,147 +364,169 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Troca a ordem de duas categorias (ou duas tarefas) usando uma ordem temporária para
-  // evitar conflito com unique constraints, caso existam.
-  async function swapOrdem(table: string, a: { id: string; ordem: number }, b: { id: string; ordem: number }) {
-    const tmp = -1 - Date.now() % 100000;
-    const { error: e1 } = await db.from(table).update({ ordem: tmp }).eq("id", a.id);
-    if (e1) throw e1;
-    const { error: e2 } = await db.from(table).update({ ordem: a.ordem }).eq("id", b.id);
-    if (e2) throw e2;
-    const { error: e3 } = await db.from(table).update({ ordem: b.ordem }).eq("id", a.id);
-    if (e3) throw e3;
-  }
+  // ===== Estado local de ordenação (drag-and-drop, salvar manual) =====
+  const [catOrder, setCatOrder] = useState<string[]>([]);
+  const [taskOrder, setTaskOrder] = useState<Record<string, string[]>>({});
+  const [dirty, setDirty] = useState(false);
 
-  const moveCat = useMutation({
-    mutationFn: async ({ cat, dir }: { cat: TCat; dir: "up" | "down" }) => {
-      const sorted = [...cats].sort((x, y) => x.ordem - y.ordem);
-      const idx = sorted.findIndex((c) => c.id === cat.id);
-      const newIdx = dir === "up" ? idx - 1 : idx + 1;
-      if (newIdx < 0 || newIdx >= sorted.length) return;
-      await swapOrdem("implantacao_template_categorias", cat, sorted[newIdx]);
+  useEffect(() => {
+    setCatOrder(cats.map((c) => c.id));
+    const m: Record<string, string[]> = {};
+    cats.forEach((c) => {
+      m[c.id] = (tasksByCat.get(c.id) ?? []).map((t) => t.id);
+    });
+    setTaskOrder(m);
+    setDirty(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cats, tasks]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEndCats = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setCatOrder((items) => {
+      const oldIdx = items.indexOf(String(active.id));
+      const newIdx = items.indexOf(String(over.id));
+      if (oldIdx < 0 || newIdx < 0) return items;
+      return arrayMove(items, oldIdx, newIdx);
+    });
+    setDirty(true);
+  };
+
+  const handleDragEndTasks = (catId: string) => (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setTaskOrder((prev) => {
+      const list = prev[catId] ?? [];
+      const oldIdx = list.indexOf(String(active.id));
+      const newIdx = list.indexOf(String(over.id));
+      if (oldIdx < 0 || newIdx < 0) return prev;
+      return { ...prev, [catId]: arrayMove(list, oldIdx, newIdx) };
+    });
+    setDirty(true);
+  };
+
+  const saveOrder = useMutation({
+    mutationFn: async () => {
+      // categorias: usa ordem temporária negativa para evitar conflito
+      for (let i = 0; i < catOrder.length; i++) {
+        const { error } = await db.from("implantacao_template_categorias")
+          .update({ ordem: -1000 - i }).eq("id", catOrder[i]);
+        if (error) throw error;
+      }
+      for (let i = 0; i < catOrder.length; i++) {
+        const { error } = await db.from("implantacao_template_categorias")
+          .update({ ordem: i }).eq("id", catOrder[i]);
+        if (error) throw error;
+      }
+      // tarefas por categoria
+      for (const catId of catOrder) {
+        const list = taskOrder[catId] ?? [];
+        for (let i = 0; i < list.length; i++) {
+          const { error } = await db.from("implantacao_template_tarefas")
+            .update({ ordem: -1000 - i }).eq("id", list[i]);
+          if (error) throw error;
+        }
+        for (let i = 0; i < list.length; i++) {
+          const { error } = await db.from("implantacao_template_tarefas")
+            .update({ ordem: i }).eq("id", list[i]);
+          if (error) throw error;
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["impl-tpl-cats", templateId] });
-      toast.success("Ordem atualizada");
+      qc.invalidateQueries({ queryKey: ["impl-tpl-tasks", templateId] });
+      setDirty(false);
+      toast.success("Ordem salva");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const moveTask = useMutation({
-    mutationFn: async ({ task, dir }: { task: TTask; dir: "up" | "down" }) => {
-      const sib = (tasksByCat.get(task.categoria_id) ?? []).slice().sort((a, b) => a.ordem - b.ordem);
-      const idx = sib.findIndex((t) => t.id === task.id);
-      const newIdx = dir === "up" ? idx - 1 : idx + 1;
-      if (newIdx < 0 || newIdx >= sib.length) return;
-      await swapOrdem("implantacao_template_tarefas", task, sib[newIdx]);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["impl-tpl-tasks", templateId] });
-      toast.success("Ordem atualizada");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+  const resetOrder = () => {
+    setCatOrder(cats.map((c) => c.id));
+    const m: Record<string, string[]> = {};
+    cats.forEach((c) => { m[c.id] = (tasksByCat.get(c.id) ?? []).map((t) => t.id); });
+    setTaskOrder(m);
+    setDirty(false);
+  };
+
+  const catById = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats]);
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex justify-end">
-        <Button size="sm" variant="outline" onClick={() => { setEditCat(null); setOpenCat(true); }}>
-          <FolderPlus className="h-3.5 w-3.5" /> Categoria
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground">
+          {dirty ? "Alterações de ordem não salvas — arraste pelo ⋮⋮ para reordenar." : "Arraste pelo ⋮⋮ para reordenar."}
+        </div>
+        <div className="flex gap-2">
+          {dirty && (
+            <Button size="sm" variant="ghost" onClick={resetOrder} disabled={saveOrder.isPending}>
+              Cancelar
+            </Button>
+          )}
+          <Button size="sm" variant={dirty ? "default" : "outline"}
+            onClick={() => saveOrder.mutate()} disabled={!dirty || saveOrder.isPending}>
+            {saveOrder.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Salvar ordem
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setEditCat(null); setOpenCat(true); }}>
+            <FolderPlus className="h-3.5 w-3.5" /> Categoria
+          </Button>
+        </div>
       </div>
 
-      {cats.length === 0 ? (
+      {catOrder.length === 0 ? (
         <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
           Nenhuma categoria. Crie uma para começar a adicionar tarefas.
         </div>
       ) : (
-        cats.map((c, ci) => {
-          const its = tasksByCat.get(c.id) ?? [];
-          const isFirstCat = ci === 0;
-          const isLastCat = ci === cats.length - 1;
-          return (
-            <div key={c.id} className="rounded-md border transition-all duration-200">
-              <div className="flex items-center gap-2 p-2 bg-muted/30">
-                <div className="flex flex-col">
-                  <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                    disabled={isFirstCat || moveCat.isPending}
-                    onClick={() => moveCat.mutate({ cat: c, dir: "up" })}>
-                    <ArrowUp className="h-3 w-3" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                    disabled={isLastCat || moveCat.isPending}
-                    onClick={() => moveCat.mutate({ cat: c, dir: "down" })}>
-                    <ArrowDown className="h-3 w-3" />
-                  </Button>
-                </div>
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ background: c.cor ?? "#3B82F6" }}
-                />
-                <span className="text-sm font-medium">{c.nome}</span>
-                <span className="text-xs text-muted-foreground">({its.length})</span>
-                <div className="ml-auto flex gap-1">
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
-                    onClick={() => { setEditTask(null); setNewTaskCat(c.id); setOpenTask(true); }}>
-                    <Plus className="h-3.5 w-3.5" /> Tarefa
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7"
-                    onClick={() => { setEditCat(c); setOpenCat(true); }}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
-                    onClick={() => removeCat.mutate(c.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-              <div className="divide-y">
-                {its.length === 0 ? (
-                  <div className="p-3 text-center text-xs text-muted-foreground">
-                    Sem tarefas. <button className="text-primary hover:underline"
-                      onClick={() => { setEditTask(null); setNewTaskCat(c.id); setOpenTask(true); }}>+ Adicionar</button>
-                  </div>
-                ) : its.map((t, ti) => {
-                  const isFirstTask = ti === 0;
-                  const isLastTask = ti === its.length - 1;
-                  return (
-                  <div key={t.id} className="flex items-center gap-2 p-2 text-sm transition-all duration-200">
-                    <div className="flex flex-col">
-                      <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                        disabled={isFirstTask || moveTask.isPending}
-                        onClick={() => moveTask.mutate({ task: t, dir: "up" })}>
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                        disabled={isLastTask || moveTask.isPending}
-                        onClick={() => moveTask.mutate({ task: t, dir: "down" })}>
-                        <ArrowDown className="h-3 w-3" />
-                      </Button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndCats}>
+          <SortableContext items={catOrder} strategy={verticalListSortingStrategy}>
+            {catOrder.map((cid) => {
+              const c = catById.get(cid);
+              if (!c) return null;
+              const itsIds = taskOrder[cid] ?? [];
+              return (
+                <SortableCategoria key={cid} cat={c} count={itsIds.length}
+                  onAddTask={() => { setEditTask(null); setNewTaskCat(cid); setOpenTask(true); }}
+                  onEdit={() => { setEditCat(c); setOpenCat(true); }}
+                  onRemove={() => removeCat.mutate(cid)}>
+                  {itsIds.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      Sem tarefas.{" "}
+                      <button className="text-primary hover:underline"
+                        onClick={() => { setEditTask(null); setNewTaskCat(cid); setOpenTask(true); }}>
+                        + Adicionar
+                      </button>
                     </div>
-                    <ListTodo className="h-4 w-4 text-muted-foreground" />
-                    <span className="flex-1 truncate">{t.descricao}</span>
-                    {t.prazo_dias_offset != null && (
-                      <span className="text-[10px] rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
-                        +{t.prazo_dias_offset}d
-                      </span>
-                    )}
-                    <Button size="icon" variant="ghost" className="h-7 w-7"
-                      onClick={() => { setEditTask(t); setNewTaskCat(c.id); setOpenTask(true); }}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
-                      onClick={() => removeTask.mutate(t.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })
+                  ) : (
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndTasks(cid)}>
+                      <SortableContext items={itsIds} strategy={verticalListSortingStrategy}>
+                        {itsIds.map((tid) => {
+                          const t = taskById.get(tid);
+                          if (!t) return null;
+                          return (
+                            <SortableTarefa key={tid} task={t}
+                              onEdit={() => { setEditTask(t); setNewTaskCat(cid); setOpenTask(true); }}
+                              onRemove={() => removeTask.mutate(tid)} />
+                          );
+                        })}
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                </SortableCategoria>
+              );
+            })}
+          </SortableContext>
+        </DndContext>
       )}
+
 
       <CatDialog
         open={openCat}
