@@ -55,15 +55,22 @@ export function ImplantacaoTemplatesManager() {
   });
 
   const saveTpl = useMutation({
-    mutationFn: async (payload: { id?: string; nome: string; descricao: string }) => {
+    mutationFn: async (payload: { id?: string; nome: string; descricao: string; produto: ProdutoTpl; is_default: boolean }) => {
+      // se marcar como padrão, desmarcar outros do mesmo produto
+      if (payload.is_default) {
+        await db.from("implantacao_templates")
+          .update({ is_default: false })
+          .eq("produto", payload.produto)
+          .neq("id", payload.id ?? "00000000-0000-0000-0000-000000000000");
+      }
       if (payload.id) {
         const { error } = await db.from("implantacao_templates")
-          .update({ nome: payload.nome, descricao: payload.descricao || null })
+          .update({ nome: payload.nome, descricao: payload.descricao || null, produto: payload.produto, is_default: payload.is_default })
           .eq("id", payload.id);
         if (error) throw error;
       } else {
         const { error } = await db.from("implantacao_templates")
-          .insert({ user_id: user!.id, nome: payload.nome, descricao: payload.descricao || null });
+          .insert({ user_id: user!.id, nome: payload.nome, descricao: payload.descricao || null, produto: payload.produto, is_default: payload.is_default });
         if (error) throw error;
       }
     },
