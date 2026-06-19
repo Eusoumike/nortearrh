@@ -194,14 +194,18 @@ function TemplateDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   template: Template | null;
-  onSave: (p: { id?: string; nome: string; descricao: string }) => void;
+  onSave: (p: { id?: string; nome: string; descricao: string; produto: ProdutoTpl; is_default: boolean }) => void;
   saving: boolean;
 }) {
   const [nome, setNome] = useState("");
   const [desc, setDesc] = useState("");
+  const [produto, setProduto] = useState<ProdutoTpl>("ambos");
+  const [isDefault, setIsDefault] = useState(false);
   useMemo(() => {
     setNome(template?.nome ?? "");
     setDesc(template?.descricao ?? "");
+    setProduto((template?.produto as ProdutoTpl) ?? "ambos");
+    setIsDefault(template?.is_default ?? false);
   }, [template, open]);
 
   return (
@@ -209,7 +213,7 @@ function TemplateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{template ? "Editar template" : "Novo template"}</DialogTitle>
-          <DialogDescription>Defina nome e descrição. As tarefas você adiciona depois.</DialogDescription>
+          <DialogDescription>Defina nome, produto e se é o padrão. Tarefas se adicionam depois.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -220,10 +224,28 @@ function TemplateDialog({
             <Label>Descrição</Label>
             <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} />
           </div>
+          <div>
+            <Label>Produto</Label>
+            <Select value={produto} onValueChange={(v) => setProduto(v as ProdutoTpl)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ambos">Ambos</SelectItem>
+                <SelectItem value="rh_digital">RH Digital</SelectItem>
+                <SelectItem value="vr_beneficios">VR Benefícios</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label className="text-sm">Template padrão</Label>
+              <p className="text-xs text-muted-foreground">Aplicado automaticamente ao iniciar onboardings deste produto.</p>
+            </div>
+            <Switch checked={isDefault} onCheckedChange={setIsDefault} />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => onSave({ id: template?.id, nome: nome.trim(), descricao: desc.trim() })}
+          <Button onClick={() => onSave({ id: template?.id, nome: nome.trim(), descricao: desc.trim(), produto, is_default: isDefault })}
             disabled={saving || !nome.trim()}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
           </Button>
