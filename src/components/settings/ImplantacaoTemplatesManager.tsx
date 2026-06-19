@@ -15,10 +15,20 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Pencil, Trash2, FolderPlus, ListTodo, Loader2, LayoutTemplate } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderPlus, ListTodo, Loader2, LayoutTemplate, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-type Template = { id: string; user_id: string; nome: string; descricao: string | null };
+type ProdutoTpl = "ambos" | "rh_digital" | "vr_beneficios";
+type Template = { id: string; user_id: string; nome: string; descricao: string | null; produto: ProdutoTpl; is_default: boolean };
+
+const PRODUTO_LABEL: Record<ProdutoTpl, string> = {
+  ambos: "Ambos",
+  rh_digital: "RH Digital",
+  vr_beneficios: "VR Benefícios",
+};
 type TCat = { id: string; template_id: string; nome: string; icone: string | null; cor: string | null; ordem: number };
 type TTask = { id: string; template_id: string; categoria_id: string; descricao: string; prazo_dias_offset: number | null; ordem: number };
 
@@ -45,15 +55,22 @@ export function ImplantacaoTemplatesManager() {
   });
 
   const saveTpl = useMutation({
-    mutationFn: async (payload: { id?: string; nome: string; descricao: string }) => {
+    mutationFn: async (payload: { id?: string; nome: string; descricao: string; produto: ProdutoTpl; is_default: boolean }) => {
+      // se marcar como padrão, desmarcar outros do mesmo produto
+      if (payload.is_default) {
+        await db.from("implantacao_templates")
+          .update({ is_default: false })
+          .eq("produto", payload.produto)
+          .neq("id", payload.id ?? "00000000-0000-0000-0000-000000000000");
+      }
       if (payload.id) {
         const { error } = await db.from("implantacao_templates")
-          .update({ nome: payload.nome, descricao: payload.descricao || null })
+          .update({ nome: payload.nome, descricao: payload.descricao || null, produto: payload.produto, is_default: payload.is_default })
           .eq("id", payload.id);
         if (error) throw error;
       } else {
         const { error } = await db.from("implantacao_templates")
-          .insert({ user_id: user!.id, nome: payload.nome, descricao: payload.descricao || null });
+          .insert({ user_id: user!.id, nome: payload.nome, descricao: payload.descricao || null, produto: payload.produto, is_default: payload.is_default });
         if (error) throw error;
       }
     },
@@ -108,7 +125,15 @@ export function ImplantacaoTemplatesManager() {
                 <div className="flex items-center gap-2">
                   <AccordionTrigger className="flex-1">
                     <div className="flex flex-col items-start text-left">
-                      <span className="font-medium">{t.nome}</span>
+                      <span className="flex items-center gap-2 font-medium">
+                        {t.nome}
+                        {t.is_default && (
+                          <Badge variant="secondary" className="gap-1 text-[10px]">
+                            <Star className="h-3 w-3 fill-current" /> Padrão
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-[10px]">{PRODUTO_LABEL[t.produto] ?? "Ambos"}</Badge>
+                      </span>
                       {t.descricao && <span className="text-xs text-muted-foreground">{t.descricao}</span>}
                     </div>
                   </AccordionTrigger>
@@ -169,14 +194,18 @@ function TemplateDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   template: Template | null;
-  onSave: (p: { id?: string; nome: string; descricao: string }) => void;
+  onSave: (p: { id?: string; nome: string; descricao: string; produto: ProdutoTpl; is_default: boolean }) => void;
   saving: boolean;
 }) {
   const [nome, setNome] = useState("");
   const [desc, setDesc] = useState("");
+  const [produto, setProduto] = useState<ProdutoTpl>("ambos");
+  const [isDefault, setIsDefault] = useState(false);
   useMemo(() => {
     setNome(template?.nome ?? "");
     setDesc(template?.descricao ?? "");
+    setProduto((template?.produto as ProdutoTpl) ?? "ambos");
+    setIsDefault(template?.is_default ?? false);
   }, [template, open]);
 
   return (
@@ -184,7 +213,7 @@ function TemplateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{template ? "Editar template" : "Novo template"}</DialogTitle>
-          <DialogDescription>Defina nome e descrição. As tarefas você adiciona depois.</DialogDescription>
+          <DialogDescription>Defina nome, produto e se é o padrão. Tarefas se adicionam depois.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -195,10 +224,28 @@ function TemplateDialog({
             <Label>Descrição</Label>
             <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} />
           </div>
+          <div>
+            <Label>Produto</Label>
+            <Select value={produto} onValueChange={(v) => setProduto(v as ProdutoTpl)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ambos">Ambos</SelectItem>
+                <SelectItem value="rh_digital">RH Digital</SelectItem>
+                <SelectItem value="vr_beneficios">VR Benefícios</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label className="text-sm">Template padrão</Label>
+              <p className="text-xs text-muted-foreground">Aplicado automaticamente ao iniciar onboardings deste produto.</p>
+            </div>
+            <Switch checked={isDefault} onCheckedChange={setIsDefault} />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => onSave({ id: template?.id, nome: nome.trim(), descricao: desc.trim() })}
+          <Button onClick={() => onSave({ id: template?.id, nome: nome.trim(), descricao: desc.trim(), produto, is_default: isDefault })}
             disabled={saving || !nome.trim()}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
           </Button>

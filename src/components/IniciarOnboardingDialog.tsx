@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,17 +43,34 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
   const hasRh = products.includes("rh_digital");
   const hasVr = products.includes("vr_beneficios");
 
+  // produto preferencial para escolha do template padrão
+  const produtoAlvo: "rh_digital" | "vr_beneficios" | "ambos" =
+    hasRh && hasVr ? "ambos" : hasRh ? "rh_digital" : hasVr ? "vr_beneficios" : "ambos";
+
   const { data: templates = [] } = useQuery({
     queryKey: ["impl-templates"],
     enabled: open,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("implantacao_templates")
-        .select("id, nome")
+        .select("id, nome, produto, is_default")
+        .order("is_default", { ascending: false })
         .order("nome", { ascending: true });
-      return (data ?? []) as Array<{ id: string; nome: string }>;
+      return (data ?? []) as Array<{ id: string; nome: string; produto: string; is_default: boolean }>;
     },
   });
+
+  // Pré-seleciona o template padrão para o produto detectado (assim que carrega)
+  useEffect(() => {
+    if (!open || templates.length === 0) return;
+    if (templateId !== "none") return; // não sobrescrever escolha do usuário
+    const padrao =
+      templates.find((t) => t.is_default && t.produto === produtoAlvo) ||
+      templates.find((t) => t.is_default && t.produto === "ambos") ||
+      templates.find((t) => t.is_default);
+    if (padrao) setTemplateId(padrao.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, templates, produtoAlvo]);
 
   const startOnboarding = useMutation({
     mutationFn: async () => {
@@ -142,7 +160,12 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
               <SelectContent>
                 <SelectItem value="none">Iniciar em branco</SelectItem>
                 {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                  <SelectItem key={t.id} value={t.id}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t.is_default && <Star className="h-3 w-3 fill-current text-amber-500" />}
+                      {t.nome}
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
