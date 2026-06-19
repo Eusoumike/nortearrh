@@ -125,7 +125,15 @@ export function ImplantacaoTemplatesManager() {
                 <div className="flex items-center gap-2">
                   <AccordionTrigger className="flex-1">
                     <div className="flex flex-col items-start text-left">
-                      <span className="font-medium">{t.nome}</span>
+                      <span className="flex items-center gap-2 font-medium">
+                        {t.nome}
+                        {t.is_default && (
+                          <Badge variant="secondary" className="gap-1 text-[10px]">
+                            <Star className="h-3 w-3 fill-current" /> Padrão
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-[10px]">{PRODUTO_LABEL[t.produto] ?? "Ambos"}</Badge>
+                      </span>
                       {t.descricao && <span className="text-xs text-muted-foreground">{t.descricao}</span>}
                     </div>
                   </AccordionTrigger>
