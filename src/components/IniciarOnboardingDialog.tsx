@@ -160,7 +160,12 @@ export function IniciarOnboardingDialog({ client, open, onOpenChange }: Props) {
               <SelectContent>
                 <SelectItem value="none">Iniciar em branco</SelectItem>
                 {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                  <SelectItem key={t.id} value={t.id}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t.is_default && <Star className="h-3 w-3 fill-current text-amber-500" />}
+                      {t.nome}
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
