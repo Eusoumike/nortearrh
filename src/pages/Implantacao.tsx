@@ -733,12 +733,25 @@ function ImplantacaoKanban({
               {(grouped[stage.key] ?? []).map((it: any) => (
                 <div
                   key={it.id}
-                  className={cn(stage.key === finalKey && "opacity-70 transition-opacity hover:opacity-100")}
+                  className={cn(
+                    "animate-in fade-in duration-300",
+                    stage.key === finalKey && "opacity-70 transition-opacity hover:opacity-100",
+                  )}
                 >
                   <KanbanCard
                     item={it}
                     count={counts.get(it.id) ?? { done: 0, total: 0 }}
                     lastActivity={lastActMap.get(it.id) ?? null}
+                    stages={stages}
+                    onChangeStage={(newKey) => {
+                      if (newKey === it.etapa) return;
+                      setPendingMove({
+                        id: it.id,
+                        etapa: newKey,
+                        fromEtapa: it.etapa,
+                        clientName: it.client_name,
+                      });
+                    }}
                     onClick={() => onOpenCard(it.id)}
                     onDelete={() => {
                       if (confirm(`Excluir a implantação "${it.client_name}"? Os itens de checklist serão removidos.`)) {
