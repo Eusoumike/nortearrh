@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Pencil, Trash2, FolderPlus, ListTodo, Loader2, LayoutTemplate, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderPlus, ListTodo, Loader2, LayoutTemplate, Star, ArrowUp, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -355,6 +355,48 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Troca a ordem de duas categorias (ou duas tarefas) usando uma ordem temporária para
+  // evitar conflito com unique constraints, caso existam.
+  async function swapOrdem(table: string, a: { id: string; ordem: number }, b: { id: string; ordem: number }) {
+    const tmp = -1 - Date.now() % 100000;
+    const { error: e1 } = await db.from(table).update({ ordem: tmp }).eq("id", a.id);
+    if (e1) throw e1;
+    const { error: e2 } = await db.from(table).update({ ordem: a.ordem }).eq("id", b.id);
+    if (e2) throw e2;
+    const { error: e3 } = await db.from(table).update({ ordem: b.ordem }).eq("id", a.id);
+    if (e3) throw e3;
+  }
+
+  const moveCat = useMutation({
+    mutationFn: async ({ cat, dir }: { cat: TCat; dir: "up" | "down" }) => {
+      const sorted = [...cats].sort((x, y) => x.ordem - y.ordem);
+      const idx = sorted.findIndex((c) => c.id === cat.id);
+      const newIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= sorted.length) return;
+      await swapOrdem("implantacao_template_categorias", cat, sorted[newIdx]);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-tpl-cats", templateId] });
+      toast.success("Ordem atualizada");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const moveTask = useMutation({
+    mutationFn: async ({ task, dir }: { task: TTask; dir: "up" | "down" }) => {
+      const sib = (tasksByCat.get(task.categoria_id) ?? []).slice().sort((a, b) => a.ordem - b.ordem);
+      const idx = sib.findIndex((t) => t.id === task.id);
+      const newIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= sib.length) return;
+      await swapOrdem("implantacao_template_tarefas", task, sib[newIdx]);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["impl-tpl-tasks", templateId] });
+      toast.success("Ordem atualizada");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-3 pt-2">
       <div className="flex justify-end">
@@ -368,11 +410,25 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
           Nenhuma categoria. Crie uma para começar a adicionar tarefas.
         </div>
       ) : (
-        cats.map((c) => {
+        cats.map((c, ci) => {
           const its = tasksByCat.get(c.id) ?? [];
+          const isFirstCat = ci === 0;
+          const isLastCat = ci === cats.length - 1;
           return (
-            <div key={c.id} className="rounded-md border">
+            <div key={c.id} className="rounded-md border transition-all duration-200">
               <div className="flex items-center gap-2 p-2 bg-muted/30">
+                <div className="flex flex-col">
+                  <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={isFirstCat || moveCat.isPending}
+                    onClick={() => moveCat.mutate({ cat: c, dir: "up" })}>
+                    <ArrowUp className="h-3 w-3" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={isLastCat || moveCat.isPending}
+                    onClick={() => moveCat.mutate({ cat: c, dir: "down" })}>
+                    <ArrowDown className="h-3 w-3" />
+                  </Button>
+                </div>
                 <span
                   className="h-2 w-2 rounded-full"
                   style={{ background: c.cor ?? "#3B82F6" }}
@@ -400,8 +456,23 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
                     Sem tarefas. <button className="text-primary hover:underline"
                       onClick={() => { setEditTask(null); setNewTaskCat(c.id); setOpenTask(true); }}>+ Adicionar</button>
                   </div>
-                ) : its.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 p-2 text-sm">
+                ) : its.map((t, ti) => {
+                  const isFirstTask = ti === 0;
+                  const isLastTask = ti === its.length - 1;
+                  return (
+                  <div key={t.id} className="flex items-center gap-2 p-2 text-sm transition-all duration-200">
+                    <div className="flex flex-col">
+                      <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={isFirstTask || moveTask.isPending}
+                        onClick={() => moveTask.mutate({ task: t, dir: "up" })}>
+                        <ArrowUp className="h-3 w-3" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-4 w-5 p-0 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={isLastTask || moveTask.isPending}
+                        onClick={() => moveTask.mutate({ task: t, dir: "down" })}>
+                        <ArrowDown className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <ListTodo className="h-4 w-4 text-muted-foreground" />
                     <span className="flex-1 truncate">{t.descricao}</span>
                     {t.prazo_dias_offset != null && (
@@ -418,7 +489,8 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
