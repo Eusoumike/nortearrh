@@ -142,6 +142,7 @@ export const INTERACTION_LABEL: Record<InteractionType, string> = {
   reuniao: "Reunião",
   remoto: "Atendimento remoto",
   mudanca_status: "Mudança de status",
+  email_n2: "E-mail para N2",
 };
 
 // Defaults SLA (em horas) por prioridade — alinhado com trigger compute_ticket_sla_deadline

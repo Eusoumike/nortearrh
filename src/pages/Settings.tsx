@@ -71,6 +71,7 @@ export default function Settings() {
   // === Timezone ===
   const [systemTz, setSystemTz] = useState("America/Sao_Paulo");
   const [tzNow, setTzNow] = useState("");
+  const [emailN2, setEmailN2] = useState("");
 
   // === Profile ===
   const [fullName, setFullName] = useState("");
@@ -93,7 +94,7 @@ export default function Settings() {
     queryFn: async () => {
       const { data } = await supabase
         .from("system_settings")
-        .select("id, pipedrive_api_token, pipedrive_user_name, pipedrive_connected_at, timezone")
+        .select("id, pipedrive_api_token, pipedrive_user_name, pipedrive_connected_at, timezone, email_n2_fornecedor")
         .limit(1)
         .maybeSingle();
       return data;
@@ -148,6 +149,7 @@ export default function Settings() {
     if (systemSettings) {
       setPipedriveToken(systemSettings.pipedrive_api_token ?? "");
       setSystemTz(systemSettings.timezone ?? "America/Sao_Paulo");
+      setEmailN2((systemSettings as any).email_n2_fornecedor ?? "");
       if (systemSettings.pipedrive_user_name) {
         setPipedriveStatus({ ok: true, name: systemSettings.pipedrive_user_name });
       }
@@ -266,6 +268,24 @@ export default function Settings() {
     toast({ title: "Fuso horário salvo" });
     qc.invalidateQueries({ queryKey: ["system-settings"] });
   }
+
+  async function handleSaveEmailN2() {
+    const upsert: any = {
+      ...(systemSettings?.id ? { id: systemSettings.id } : {}),
+      email_n2_fornecedor: emailN2.trim() || null,
+      timezone: systemTz,
+      updated_by: user!.id,
+    };
+    const { error } = await supabase.from("system_settings").upsert(upsert);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "E-mail N2 do fornecedor salvo" });
+    qc.invalidateQueries({ queryKey: ["system-settings"] });
+  }
+
+
 
   // ----- Ações: Perfil -----
   async function handleSaveProfile() {
@@ -469,6 +489,31 @@ export default function Settings() {
               </div>
             </div>
             <Button onClick={handleSaveTimezone}>Salvar</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* E-mail N2 do fornecedor (admin) */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>E-mail N2 do fornecedor</CardTitle>
+            <CardDescription>
+              Destinatário sugerido ao gerar e-mails N2 a partir de um chamado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email-n2">E-mail</Label>
+              <Input
+                id="email-n2"
+                type="email"
+                placeholder="suporte.n2@fornecedor.com.br"
+                value={emailN2}
+                onChange={(e) => setEmailN2(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleSaveEmailN2}>Salvar</Button>
           </CardContent>
         </Card>
       )}
