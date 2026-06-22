@@ -168,8 +168,23 @@ Deno.serve(async (req) => {
 
     if (!aiRes.ok) {
       const t = await aiRes.text();
-      return new Response(JSON.stringify({ error: `Falha na IA: ${t.slice(0, 400)}` }), {
-        status: aiRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      let msg = `Falha na IA (${aiRes.status})`;
+      try {
+        const j = JSON.parse(t);
+        const inner = j?.error?.message ?? "";
+        if (/credit balance is too low/i.test(inner) || aiRes.status === 402) {
+          msg = "Sem créditos na Anthropic. Recarregue em console.anthropic.com → Plans & Billing.";
+        } else if (aiRes.status === 401) {
+          msg = "ANTHROPIC_API_KEY inválida. Atualize o secret nas configurações.";
+        } else if (aiRes.status === 429) {
+          msg = "Limite de requisições da Anthropic atingido. Tente novamente em instantes.";
+        } else if (inner) {
+          msg = inner.slice(0, 300);
+        }
+      } catch { /* keep default */ }
+      return new Response(JSON.stringify({ error: msg }), {
+        status: aiRes.status === 402 ? 402 : 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
