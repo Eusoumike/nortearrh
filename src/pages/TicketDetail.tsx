@@ -116,6 +116,7 @@ const TYPE_ICON: Record<InteractionType, React.ComponentType<{ className?: strin
   reuniao: CalendarIcon,
   remoto: Monitor,
   mudanca_status: RefreshCw,
+  email_n2: Mail,
 };
 
 const CHANNEL_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
