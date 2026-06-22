@@ -283,6 +283,9 @@ export default function Settings() {
     }
     toast({ title: "E-mail N2 do fornecedor salvo" });
     qc.invalidateQueries({ queryKey: ["system-settings"] });
+  }
+
+
 
   // ----- Ações: Perfil -----
   async function handleSaveProfile() {
