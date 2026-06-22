@@ -1646,6 +1646,7 @@ export type Database = {
       system_settings: {
         Row: {
           created_at: string
+          email_n2_fornecedor: string | null
           id: string
           percentual_ponto: number
           percentual_vr_primeira_carga: number
@@ -1659,6 +1660,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_n2_fornecedor?: string | null
           id?: string
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
@@ -1672,6 +1674,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_n2_fornecedor?: string | null
           id?: string
           percentual_ponto?: number
           percentual_vr_primeira_carga?: number
@@ -1794,6 +1797,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ticket_emails_n2: {
+        Row: {
+          assunto: string
+          corpo: string
+          destinatario: string | null
+          enviado_em: string | null
+          gerado_em: string
+          gerado_por: string | null
+          id: string
+          ticket_id: string
+          variante: string | null
+        }
+        Insert: {
+          assunto: string
+          corpo: string
+          destinatario?: string | null
+          enviado_em?: string | null
+          gerado_em?: string
+          gerado_por?: string | null
+          id?: string
+          ticket_id: string
+          variante?: string | null
+        }
+        Update: {
+          assunto?: string
+          corpo?: string
+          destinatario?: string | null
+          enviado_em?: string | null
+          gerado_em?: string
+          gerado_por?: string | null
+          id?: string
+          ticket_id?: string
+          variante?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_emails_n2_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ticket_interactions: {
         Row: {
@@ -1982,6 +2029,9 @@ export type Database = {
           client_name: string | null
           client_phone: string | null
           closed_at: string | null
+          contato_cargo: string | null
+          contato_nome: string | null
+          contato_telefone: string | null
           created_at: string
           created_by: string | null
           current_stage_started_at: string
@@ -1994,14 +2044,18 @@ export type Database = {
           entered_vera_n1_at: string | null
           first_response_at: string | null
           id: string
+          impacto: string | null
           ja_tentou: string | null
           kanban_stage_key: string | null
+          modulo: string | null
           opened_at: string
           organization: string | null
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           quem_reportou: string | null
           resolved_at: string | null
+          resultado_esperado: string | null
+          resultado_obtido: string | null
           sla_alert_sent: boolean
           sla_deadline: string | null
           sla_resolution_deadline: string | null
@@ -2036,6 +2090,9 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           closed_at?: string | null
+          contato_cargo?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
           created_at?: string
           created_by?: string | null
           current_stage_started_at?: string
@@ -2048,14 +2105,18 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          impacto?: string | null
           ja_tentou?: string | null
           kanban_stage_key?: string | null
+          modulo?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           quem_reportou?: string | null
           resolved_at?: string | null
+          resultado_esperado?: string | null
+          resultado_obtido?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
@@ -2090,6 +2151,9 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           closed_at?: string | null
+          contato_cargo?: string | null
+          contato_nome?: string | null
+          contato_telefone?: string | null
           created_at?: string
           created_by?: string | null
           current_stage_started_at?: string
@@ -2102,14 +2166,18 @@ export type Database = {
           entered_vera_n1_at?: string | null
           first_response_at?: string | null
           id?: string
+          impacto?: string | null
           ja_tentou?: string | null
           kanban_stage_key?: string | null
+          modulo?: string | null
           opened_at?: string
           organization?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           quem_reportou?: string | null
           resolved_at?: string | null
+          resultado_esperado?: string | null
+          resultado_obtido?: string | null
           sla_alert_sent?: boolean
           sla_deadline?: string | null
           sla_resolution_deadline?: string | null
@@ -2275,6 +2343,7 @@ export type Database = {
         | "mudanca_status"
         | "remoto"
         | "anotacao"
+        | "email_n2"
       lancamento_vr_tipo: "primeira_carga" | "recorrencia"
       parcela_rh_status: "pendente" | "pago" | "inadimplente"
       produto_parceiro: "rh_digital" | "vr_beneficios"
@@ -2483,6 +2552,7 @@ export const Constants = {
         "mudanca_status",
         "remoto",
         "anotacao",
+        "email_n2",
       ],
       lancamento_vr_tipo: ["primeira_carga", "recorrencia"],
       parcela_rh_status: ["pendente", "pago", "inadimplente"],
