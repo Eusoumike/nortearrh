@@ -78,6 +78,8 @@ import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { AssistPanel } from "@/components/tickets/AssistPanel";
+import { EmailN2Dialog } from "@/components/tickets/EmailN2Dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -150,6 +152,7 @@ export default function TicketDetail() {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [editOpen, setEditOpen] = useState(false);
+  const [emailN2Open, setEmailN2Open] = useState(false);
   const canDelete = role === "admin" || role === "manager";
 
   useEffect(() => {
@@ -1206,6 +1209,27 @@ export default function TicketDetail() {
               </Button>
             )}
 
+            {(() => {
+              const camposOk = !!ticket.client_id && !!ticket.title?.trim() && !!(ticket.description?.trim() || (ticket as any).descricao_problema?.trim());
+              const btn = (
+                <Button
+                  variant="default"
+                  className="w-full justify-start"
+                  disabled={!camposOk}
+                  onClick={() => setEmailN2Open(true)}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Gerar e-mail N2
+                </Button>
+              );
+              return camposOk ? btn : (
+                <Tooltip>
+                  <TooltipTrigger asChild><span className="w-full">{btn}</span></TooltipTrigger>
+                  <TooltipContent>Preencha cliente, título e descrição antes</TooltipContent>
+                </Tooltip>
+              );
+            })()}
+
             <Button
               variant="ghost"
               className="w-full justify-start text-muted-foreground"
@@ -1546,6 +1570,7 @@ export default function TicketDetail() {
       </div>
 
       <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
+      <EmailN2Dialog ticketId={ticket.id} ticketStatus={ticket.status} open={emailN2Open} onOpenChange={setEmailN2Open} />
     </div>
   );
 }
