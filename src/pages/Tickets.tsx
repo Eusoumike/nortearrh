@@ -25,11 +25,14 @@ type ViewMode = "kanban" | "list";
 
 export default function Tickets() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
+  const [novaEtapaOpen, setNovaEtapaOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "kanban";
     return (window.localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "kanban";
