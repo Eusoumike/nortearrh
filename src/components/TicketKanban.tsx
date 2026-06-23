@@ -372,30 +372,28 @@ export function TicketKanban({ tickets, showResolved = false, assistedIds, custo
             minWidth: "min-content", height: "100%", alignItems: "stretch", padding: "0 16px 16px",
           }}
         >
-          {visibleBaseStatuses.map((status) => (
-            <>
+          {visibleBaseStatuses.flatMap((status) => [
+            <MemoColumn
+              key={status}
+              droppableId={status}
+              label={STATUS_LABEL[status]}
+              stripeClass={STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40"}
+              tickets={grouped.baseMap[status]}
+              now={now}
+              assistedIds={assistedIds}
+            />,
+            ...(customByBase[status] ?? []).map((cs) => (
               <MemoColumn
-                key={status}
-                droppableId={status}
-                label={STATUS_LABEL[status]}
-                stripeClass={STRIPE_BY_TONE[STATUS_TONE[status]] ?? "bg-muted-foreground/40"}
-                tickets={grouped.baseMap[status]}
+                key={`custom-${cs.id}`}
+                droppableId={`custom:${cs.stage_key}`}
+                label={cs.label}
+                stripeColor={cs.color}
+                tickets={grouped.customMap[cs.stage_key] ?? []}
                 now={now}
                 assistedIds={assistedIds}
               />
-              {(customByBase[status] ?? []).map((cs) => (
-                <MemoColumn
-                  key={`custom-${cs.id}`}
-                  droppableId={`custom:${cs.stage_key}`}
-                  label={cs.label}
-                  stripeColor={cs.color}
-                  tickets={grouped.customMap[cs.stage_key] ?? []}
-                  now={now}
-                  assistedIds={assistedIds}
-                />
-              ))}
-            </>
-          ))}
+            )),
+          ])}
           {canManageStages && onAddStageClick && (
             <AddStageColumn onClick={onAddStageClick} />
           )}
