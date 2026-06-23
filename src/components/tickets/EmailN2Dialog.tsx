@@ -51,7 +51,24 @@ export function EmailN2Dialog({ ticketId, ticketStatus, open, onOpenChange }: Pr
         const { data, error } = await supabase.functions.invoke("gerar-email-n2", {
           body: { ticket_id: ticketId },
         });
-        if (error) throw new Error(error.message);
+        if (error) {
+          // supabase-js esconde o body em respostas não-2xx; ler manualmente
+          let detalhes = error.message;
+          try {
+            const ctx: any = (error as any).context;
+            if (ctx && typeof ctx.json === "function") {
+              const body = await ctx.json();
+              if (body?.error) detalhes = body.error;
+            } else if (ctx && typeof ctx.text === "function") {
+              const txt = await ctx.text();
+              try { detalhes = JSON.parse(txt)?.error || txt; } catch { detalhes = txt; }
+            } else if (ctx?.body) {
+              const body = typeof ctx.body === "string" ? JSON.parse(ctx.body) : ctx.body;
+              if (body?.error) detalhes = body.error;
+            }
+          } catch { /* mantém detalhes */ }
+          throw new Error(detalhes);
+        }
         if (data?.error) throw new Error(data.error);
         setEmailId(data.id);
         setAssunto(data.assunto || "");
