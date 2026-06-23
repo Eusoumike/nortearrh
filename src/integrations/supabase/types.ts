@@ -1499,6 +1499,50 @@ export type Database = {
           },
         ]
       }
+      parcelas_rh_digital_historico: {
+        Row: {
+          acao: string
+          created_at: string
+          data_pagamento_anterior: string | null
+          executado_por: string | null
+          executado_por_id: string | null
+          id: string
+          motivo: string | null
+          parcela_id: string
+          valor_anterior: number | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          data_pagamento_anterior?: string | null
+          executado_por?: string | null
+          executado_por_id?: string | null
+          id?: string
+          motivo?: string | null
+          parcela_id: string
+          valor_anterior?: number | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          data_pagamento_anterior?: string | null
+          executado_por?: string | null
+          executado_por_id?: string | null
+          id?: string
+          motivo?: string | null
+          parcela_id?: string
+          valor_anterior?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_rh_digital_historico_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas_rh_digital"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
