@@ -543,11 +543,11 @@ export function RhDigitalTab() {
                       <TableCell className="text-right">
                         {customPerc ? (
                           <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
-                            {formatPercent(percentualDinamico)}
+                            {formatPercent(p.percentual_nortear)}
                           </Badge>
                         ) : (
                           <span className="tabular-nums">
-                            {formatPercent(percentualDinamico)}
+                            {formatPercent(p.percentual_nortear)}
                           </span>
                         )}
                       </TableCell>
