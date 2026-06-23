@@ -812,7 +812,7 @@ export function RhDigitalTab() {
                         {BRL.format(Number(c.valor_mensalidade))}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatPercent(calcPercentualNortear(c.valor_nortear, c.valor_mensalidade))}
+                        {formatPercent(c.percentual_nortear)}
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums">
                         {BRL.format(Number(c.valor_nortear))}
