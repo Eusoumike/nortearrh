@@ -1076,6 +1076,72 @@ export function RhDigitalTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={!!estornarParcela}
+        onOpenChange={(v) => {
+          if (!v) {
+            setEstornarParcela(null);
+            setEstornoMotivo("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Estornar pagamento?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                {estornarParcela && (
+                  <div className="rounded-md border bg-muted/30 p-3 space-y-1">
+                    <div><span className="text-muted-foreground">Cliente:</span> <span className="font-medium text-foreground">{estornarParcela.cliente_nome}</span></div>
+                    <div><span className="text-muted-foreground">Competência:</span> <span className="font-medium text-foreground">{format(new Date(estornarParcela.competencia + "T00:00:00"), "LLLL/yyyy", { locale: ptBR })}</span></div>
+                    <div><span className="text-muted-foreground">Valor recebido:</span> <span className="font-medium text-foreground tabular-nums">{BRL.format(Number(estornarParcela.valor_recebido ?? estornarParcela.valor_mensalidade))}</span></div>
+                    <div><span className="text-muted-foreground">Data do pagamento:</span> <span className="font-medium text-foreground">{estornarParcela.data_pagamento ? formatBRDate(estornarParcela.data_pagamento) : "—"}</span></div>
+                  </div>
+                )}
+                <div>
+                  Esta ação:
+                  <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                    <li>Volta a parcela para status <strong>Pendente</strong></li>
+                    <li>Remove a data de pagamento e valores recebidos</li>
+                    <li>Atualiza o valor com o <strong>% atual do contrato</strong></li>
+                    <li>Permite reconfirmar o pagamento depois</li>
+                  </ul>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="motivo-estorno">Motivo do estorno (opcional)</Label>
+                  <Textarea
+                    id="motivo-estorno"
+                    rows={2}
+                    value={estornoMotivo}
+                    onChange={(e) => setEstornoMotivo(e.target.value)}
+                    placeholder="Ex.: Reajuste retroativo de %"
+                    maxLength={500}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={estornarMut.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={estornarMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (estornarParcela)
+                  estornarMut.mutate({ parcela: estornarParcela, motivo: estornoMotivo });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {estornarMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar estorno
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
