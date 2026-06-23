@@ -427,6 +427,8 @@ export function TicketKanban({ tickets, showResolved = false, assistedIds, custo
                 tickets={grouped.customMap[cs.stage_key] ?? []}
                 now={now}
                 assistedIds={assistedIds}
+                isCustom
+                onDelete={canManageStages && onDeleteStage ? () => onDeleteStage(cs) : undefined}
               />
             )),
           ])}
