@@ -164,9 +164,11 @@ interface ColumnProps {
   tickets: KanbanTicket[];
   now: number;
   assistedIds?: Set<string>;
+  onDelete?: () => void;
+  isCustom?: boolean;
 }
 
-function Column({ droppableId, label, stripeClass, stripeColor, tickets, now, assistedIds }: ColumnProps) {
+function Column({ droppableId, label, stripeClass, stripeColor, tickets, now, assistedIds, onDelete, isCustom }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: droppableId });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -198,11 +200,43 @@ function Column({ droppableId, label, stripeClass, stripeColor, tickets, now, as
         )}
         <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-2.5">
           <h3 className="truncate text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+            {isCustom && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ backgroundColor: stripeColor }} />
+                </TooltipTrigger>
+                <TooltipContent side="top">Etapa customizada</TooltipContent>
+              </Tooltip>
+            )}
             {label}
           </h3>
-          <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
-            {tickets.length}
-          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <span className="rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground">
+              {tickets.length}
+            </span>
+            {onDelete && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                    aria-label="Ações da etapa"
+                  >
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={onDelete}
+                    className="text-danger focus:text-danger"
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" />
+                    Excluir etapa
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </div>
       <div
