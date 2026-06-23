@@ -109,7 +109,9 @@ export function RhDigitalTab() {
   const [showEncerrados, setShowEncerrados] = useState(false);
   const [search, setSearch] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<StatusFilter>("todos");
-  const { role } = useAuth();
+  const [estornarParcela, setEstornarParcela] = useState<Parcela | null>(null);
+  const [estornoMotivo, setEstornoMotivo] = useState("");
+  const { role, user } = useAuth();
   const isAdmin = role === "admin";
 
 
