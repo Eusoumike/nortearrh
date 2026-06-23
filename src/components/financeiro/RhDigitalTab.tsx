@@ -380,7 +380,7 @@ export function RhDigitalTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro ao estornar pagamento"),
   });
 
-
+  const openNovoContrato = () => {
     setEditingContrato(null);
     setContratoDialog(true);
   };
