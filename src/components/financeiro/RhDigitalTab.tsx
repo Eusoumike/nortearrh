@@ -698,6 +698,20 @@ export function RhDigitalTab() {
                               </Button>
                             </>
                           )}
+                          {p.status === "pago" && isAdmin && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Estornar pagamento — voltar parcela para pendente para correção"
+                              onClick={() => {
+                                setEstornoMotivo("");
+                                setEstornarParcela(p);
+                              }}
+                              className="text-amber-600 hover:bg-amber-500/10 hover:text-amber-600"
+                            >
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
