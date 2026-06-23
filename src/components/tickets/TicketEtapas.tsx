@@ -93,7 +93,7 @@ export function TicketEtapas({ ticketId }: Props) {
         .eq("ticket_id", ticketId)
         .order("ordem", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Etapa[];
+      return (data ?? []) as unknown as Etapa[];
     },
   });
 
