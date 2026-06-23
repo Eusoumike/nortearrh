@@ -15,8 +15,10 @@ import {
   Plus,
   Search,
   Trash2,
+  Undo2,
   X,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -107,7 +109,9 @@ export function RhDigitalTab() {
   const [showEncerrados, setShowEncerrados] = useState(false);
   const [search, setSearch] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<StatusFilter>("todos");
-  const { role } = useAuth();
+  const [estornarParcela, setEstornarParcela] = useState<Parcela | null>(null);
+  const [estornoMotivo, setEstornoMotivo] = useState("");
+  const { role, user } = useAuth();
   const isAdmin = role === "admin";
 
 
@@ -324,7 +328,59 @@ export function RhDigitalTab() {
     },
   });
 
-  const openNovoContrato = () => {
+  const estornarMut = useMutation({
+    mutationFn: async ({ parcela, motivo }: { parcela: Parcela; motivo: string }) => {
+      // Buscar % vigente do contrato
+      const { data: contrato, error: cErr } = await supabase
+        .from("contratos_rh_digital")
+        .select("valor_mensalidade, percentual_nortear, valor_nortear")
+        .eq("id", parcela.contrato_id)
+        .single();
+      if (cErr) throw cErr;
+
+      // Registrar histórico antes de alterar
+      const { error: hErr } = await supabase
+        .from("parcelas_rh_digital_historico")
+        .insert({
+          parcela_id: parcela.id,
+          acao: "estorno",
+          valor_anterior: parcela.valor_recebido ?? parcela.valor_nortear,
+          data_pagamento_anterior: parcela.data_pagamento,
+          motivo: motivo.trim() || null,
+          executado_por: user?.email ?? null,
+          executado_por_id: user?.id ?? null,
+        });
+      if (hErr) throw hErr;
+
+      // Voltar para pendente aplicando % atual do contrato
+      const { error } = await supabase
+        .from("parcelas_rh_digital")
+        .update({
+          status: "pendente",
+          data_pagamento: null,
+          valor_recebido: null,
+          valor_nortear_recebido: null,
+          diferenca_valor: null,
+          valor_mensalidade: Number(contrato.valor_mensalidade),
+          percentual_nortear: Number(contrato.percentual_nortear),
+          valor_nortear: Number(contrato.valor_nortear),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", parcela.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento estornado. Parcela atualizada com o % atual do contrato.");
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
+      setEstornarParcela(null);
+      setEstornoMotivo("");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao estornar pagamento"),
+  });
+
+
     setEditingContrato(null);
     setContratoDialog(true);
   };
@@ -641,6 +697,20 @@ export function RhDigitalTab() {
                                 <X className="h-4 w-4" />
                               </Button>
                             </>
+                          )}
+                          {p.status === "pago" && isAdmin && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Estornar pagamento — voltar parcela para pendente para correção"
+                              onClick={() => {
+                                setEstornoMotivo("");
+                                setEstornarParcela(p);
+                              }}
+                              className="text-amber-600 hover:bg-amber-500/10 hover:text-amber-600"
+                            >
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
                           )}
                           <Button
                             size="icon"
@@ -1002,6 +1072,72 @@ export function RhDigitalTab() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!estornarParcela}
+        onOpenChange={(v) => {
+          if (!v) {
+            setEstornarParcela(null);
+            setEstornoMotivo("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Estornar pagamento?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                {estornarParcela && (
+                  <div className="rounded-md border bg-muted/30 p-3 space-y-1">
+                    <div><span className="text-muted-foreground">Cliente:</span> <span className="font-medium text-foreground">{estornarParcela.cliente_nome}</span></div>
+                    <div><span className="text-muted-foreground">Competência:</span> <span className="font-medium text-foreground">{format(new Date(estornarParcela.competencia + "T00:00:00"), "LLLL/yyyy", { locale: ptBR })}</span></div>
+                    <div><span className="text-muted-foreground">Valor recebido:</span> <span className="font-medium text-foreground tabular-nums">{BRL.format(Number(estornarParcela.valor_recebido ?? estornarParcela.valor_mensalidade))}</span></div>
+                    <div><span className="text-muted-foreground">Data do pagamento:</span> <span className="font-medium text-foreground">{estornarParcela.data_pagamento ? formatBRDate(estornarParcela.data_pagamento) : "—"}</span></div>
+                  </div>
+                )}
+                <div>
+                  Esta ação:
+                  <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                    <li>Volta a parcela para status <strong>Pendente</strong></li>
+                    <li>Remove a data de pagamento e valores recebidos</li>
+                    <li>Atualiza o valor com o <strong>% atual do contrato</strong></li>
+                    <li>Permite reconfirmar o pagamento depois</li>
+                  </ul>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="motivo-estorno">Motivo do estorno (opcional)</Label>
+                  <Textarea
+                    id="motivo-estorno"
+                    rows={2}
+                    value={estornoMotivo}
+                    onChange={(e) => setEstornoMotivo(e.target.value)}
+                    placeholder="Ex.: Reajuste retroativo de %"
+                    maxLength={500}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={estornarMut.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={estornarMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (estornarParcela)
+                  estornarMut.mutate({ parcela: estornarParcela, motivo: estornoMotivo });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {estornarMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar estorno
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
