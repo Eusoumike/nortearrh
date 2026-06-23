@@ -259,13 +259,19 @@ export default function Tickets() {
         {isLoading ? (
           <Skeleton className="h-full w-full rounded-xl" />
         ) : viewMode === "kanban" ? (
-          <TicketKanbanWithAssist tickets={filtered as any} showResolved={includeResolved} />
+          <TicketKanbanWithAssist
+            tickets={filtered as any}
+            showResolved={includeResolved}
+            canManageStages={isAdmin}
+            onAddStageClick={() => setNovaEtapaOpen(true)}
+          />
         ) : (
           <TicketList tickets={filtered as any} onOpen={(id) => navigate(`/tickets/${id}`)} />
         )}
       </div>
 
       <NewTicketDialog open={newOpen} onOpenChange={setNewOpen} />
+      <NovaEtapaDialog open={novaEtapaOpen} onOpenChange={setNovaEtapaOpen} />
     </div>
   );
 }
