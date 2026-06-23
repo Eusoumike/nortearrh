@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     const { data: ticket, error: tErr } = await admin
       .from("tickets")
       .select(
-        `*, clients!client_id (organization, razao_social, company, name, cnpj, contact_name, contact_email, contact_phone, phone, email), ticket_interactions (type, summary, content, created_at)`,
+        `*, clients!fk_tickets_client (organization, razao_social, company, name, cnpj, contact_name, contact_email, contact_phone, phone, email), ticket_interactions (type, summary, content, created_at)`,
       )
       .eq("id", ticket_id)
       .single();
