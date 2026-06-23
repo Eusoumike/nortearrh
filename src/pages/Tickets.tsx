@@ -88,7 +88,7 @@ export default function Tickets() {
     queryFn: async () => {
       let query = supabase
         .from("tickets")
-        .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
+        .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, active_custom_stage_key, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
