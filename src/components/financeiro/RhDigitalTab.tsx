@@ -328,7 +328,59 @@ export function RhDigitalTab() {
     },
   });
 
-  const openNovoContrato = () => {
+  const estornarMut = useMutation({
+    mutationFn: async ({ parcela, motivo }: { parcela: Parcela; motivo: string }) => {
+      // Buscar % vigente do contrato
+      const { data: contrato, error: cErr } = await supabase
+        .from("contratos_rh_digital")
+        .select("valor_mensalidade, percentual_nortear, valor_nortear")
+        .eq("id", parcela.contrato_id)
+        .single();
+      if (cErr) throw cErr;
+
+      // Registrar histórico antes de alterar
+      const { error: hErr } = await supabase
+        .from("parcelas_rh_digital_historico")
+        .insert({
+          parcela_id: parcela.id,
+          acao: "estorno",
+          valor_anterior: parcela.valor_recebido ?? parcela.valor_nortear,
+          data_pagamento_anterior: parcela.data_pagamento,
+          motivo: motivo.trim() || null,
+          executado_por: user?.email ?? null,
+          executado_por_id: user?.id ?? null,
+        });
+      if (hErr) throw hErr;
+
+      // Voltar para pendente aplicando % atual do contrato
+      const { error } = await supabase
+        .from("parcelas_rh_digital")
+        .update({
+          status: "pendente",
+          data_pagamento: null,
+          valor_recebido: null,
+          valor_nortear_recebido: null,
+          diferenca_valor: null,
+          valor_mensalidade: Number(contrato.valor_mensalidade),
+          percentual_nortear: Number(contrato.percentual_nortear),
+          valor_nortear: Number(contrato.valor_nortear),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", parcela.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento estornado. Parcela atualizada com o % atual do contrato.");
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas-pagas-contagem"] });
+      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
+      setEstornarParcela(null);
+      setEstornoMotivo("");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao estornar pagamento"),
+  });
+
+
     setEditingContrato(null);
     setContratoDialog(true);
   };
