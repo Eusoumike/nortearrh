@@ -58,17 +58,6 @@ import { formatCnpj, formatPercent } from "@/lib/formatters";
 
 const PADRAO_PERC = 40;
 
-/** Calcula o % Nortear sempre a partir dos valores atuais, evitando exibir percentual denormalizado defasado. */
-const calcPercentualNortear = (
-  valor_nortear: number | string | null | undefined,
-  valor_mensalidade: number | string | null | undefined,
-): number => {
-  const vm = Number(valor_mensalidade ?? 0);
-  const vn = Number(valor_nortear ?? 0);
-  if (!vm) return 0;
-  return (vn / vm) * 100;
-};
-
 type Parcela = {
   id: string;
   contrato_id: string;
@@ -501,7 +490,7 @@ export function RhDigitalTab() {
                   const isAnual = contratoP?.tipo_cobranca === "anual";
                   const valorMensalidade = Number(p.valor_mensalidade);
                   const valorNortear = Number(p.valor_nortear);
-                  const percentualDinamico = calcPercentualNortear(valorNortear, valorMensalidade);
+                  
                   const isPago = p.status === "pago";
                   const valorRecebido =
                     p.valor_recebido !== null && p.valor_recebido !== undefined
@@ -554,11 +543,11 @@ export function RhDigitalTab() {
                       <TableCell className="text-right">
                         {customPerc ? (
                           <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
-                            {formatPercent(percentualDinamico)}
+                            {formatPercent(p.percentual_nortear)}
                           </Badge>
                         ) : (
                           <span className="tabular-nums">
-                            {formatPercent(percentualDinamico)}
+                            {formatPercent(p.percentual_nortear)}
                           </span>
                         )}
                       </TableCell>
@@ -823,7 +812,7 @@ export function RhDigitalTab() {
                         {BRL.format(Number(c.valor_mensalidade))}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatPercent(calcPercentualNortear(c.valor_nortear, c.valor_mensalidade))}
+                        {formatPercent(c.percentual_nortear)}
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums">
                         {BRL.format(Number(c.valor_nortear))}
