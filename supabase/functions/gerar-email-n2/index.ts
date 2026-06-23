@@ -124,37 +124,36 @@ Retorne APENAS JSON puro (sem markdown, sem texto antes ou depois):
     const timer = setTimeout(() => controller.abort(), 30_000);
     let resp: Response;
     try {
-      resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2048,
-              responseMimeType: "application/json",
-            },
-          }),
+      resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
         },
-      );
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+        }),
+      });
     } catch (e: any) {
       clearTimeout(timer);
-      if (e?.name === "AbortError") return json(504, { error: "Tempo limite (30s) ao chamar Gemini" });
-      return json(502, { error: "Falha de rede ao chamar Gemini: " + (e?.message ?? "") });
+      if (e?.name === "AbortError") return json(504, { error: "Tempo limite (30s) ao chamar IA" });
+      return json(502, { error: "Falha de rede ao chamar IA: " + (e?.message ?? "") });
     }
     clearTimeout(timer);
 
     if (!resp.ok) {
       const errText = await resp.text();
-      return json(resp.status, { error: `Gemini ${resp.status}: ${errText.slice(0, 600)}` });
+      if (resp.status === 429) return json(429, { error: "Limite de uso da IA atingido. Tente novamente em instantes." });
+      if (resp.status === 402) return json(402, { error: "Créditos de IA esgotados. Adicione créditos em Settings → Plans & credits." });
+      return json(resp.status, { error: `IA ${resp.status}: ${errText.slice(0, 600)}` });
     }
 
     const data = await resp.json();
-    const responseText: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!responseText) return json(502, { error: "Gemini retornou estrutura inválida" });
+    const responseText: string | undefined = data?.choices?.[0]?.message?.content;
+    if (!responseText) return json(502, { error: "IA retornou estrutura inválida" });
 
     const cleaned = responseText.replace(/```json\n?/gi, "").replace(/```\n?/g, "").trim();
     let parsed: { assunto: string; corpo: string; variante: string };
