@@ -74,7 +74,6 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { TicketTasks } from "@/components/TicketTasks";
 import { TicketTasksSummary } from "@/components/TicketTasksSummary";
-import { TicketEtapas } from "@/components/tickets/TicketEtapas";
 import { EditTicketDialog } from "@/components/EditTicketDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
@@ -1403,14 +1402,6 @@ export default function TicketDetail() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* Etapas do chamado */}
-            <div>
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Etapas do chamado
-              </p>
-              <TicketEtapas ticketId={id!} />
             </div>
 
             {/* Tarefas */}
