@@ -490,7 +490,7 @@ export function RhDigitalTab() {
                   const isAnual = contratoP?.tipo_cobranca === "anual";
                   const valorMensalidade = Number(p.valor_mensalidade);
                   const valorNortear = Number(p.valor_nortear);
-                  const percentualDinamico = calcPercentualNortear(valorNortear, valorMensalidade);
+                  
                   const isPago = p.status === "pago";
                   const valorRecebido =
                     p.valor_recebido !== null && p.valor_recebido !== undefined
