@@ -60,6 +60,7 @@ interface Props {
   customStages?: CustomStage[];
   canManageStages?: boolean;
   onAddStageClick?: () => void;
+  onDeleteStage?: (stage: CustomStage) => void;
 }
 
 // Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
