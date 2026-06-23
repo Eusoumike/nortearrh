@@ -512,6 +512,7 @@ export type Database = {
       custom_ticket_stages: {
         Row: {
           ativo: boolean
+          base_status: Database["public"]["Enums"]["ticket_status"]
           color: string
           created_at: string
           created_by: string | null
@@ -525,6 +526,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          base_status?: Database["public"]["Enums"]["ticket_status"]
           color?: string
           created_at?: string
           created_by?: string | null
@@ -538,6 +540,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          base_status?: Database["public"]["Enums"]["ticket_status"]
           color?: string
           created_at?: string
           created_by?: string | null

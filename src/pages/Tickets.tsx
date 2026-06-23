@@ -9,9 +9,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter } from "lucide-react";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
-import { TicketKanban } from "@/components/TicketKanban";
+import { TicketKanban, type CustomStage } from "@/components/TicketKanban";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
+import { NovaEtapaDialog } from "@/components/tickets/NovaEtapaDialog";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,11 +25,14 @@ type ViewMode = "kanban" | "list";
 
 export default function Tickets() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") ?? "all");
   const [priorityFilter, setPriorityFilter] = useState<string>(searchParams.get("priority") ?? "all");
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
+  const [novaEtapaOpen, setNovaEtapaOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "kanban";
     return (window.localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "kanban";
@@ -86,7 +91,7 @@ export default function Tickets() {
     queryFn: async () => {
       let query = supabase
         .from("tickets")
-        .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
+        .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, active_custom_stage_key, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
@@ -254,13 +259,19 @@ export default function Tickets() {
         {isLoading ? (
           <Skeleton className="h-full w-full rounded-xl" />
         ) : viewMode === "kanban" ? (
-          <TicketKanbanWithAssist tickets={filtered as any} showResolved={includeResolved} />
+          <TicketKanbanWithAssist
+            tickets={filtered as any}
+            showResolved={includeResolved}
+            canManageStages={isAdmin}
+            onAddStageClick={() => setNovaEtapaOpen(true)}
+          />
         ) : (
           <TicketList tickets={filtered as any} onOpen={(id) => navigate(`/tickets/${id}`)} />
         )}
       </div>
 
       <NewTicketDialog open={newOpen} onOpenChange={setNewOpen} />
+      <NovaEtapaDialog open={novaEtapaOpen} onOpenChange={setNovaEtapaOpen} />
     </div>
   );
 }
@@ -330,7 +341,7 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
   );
 }
 
-function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; showResolved: boolean }) {
+function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddStageClick }: { tickets: any[]; showResolved: boolean; canManageStages?: boolean; onAddStageClick?: () => void }) {
   const { data: assistedIds } = useQuery({
     queryKey: ["assist-conversation-ids"],
     queryFn: async () => {
@@ -340,5 +351,27 @@ function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; sho
     },
     staleTime: 60_000,
   });
-  return <TicketKanban tickets={tickets} showResolved={showResolved} assistedIds={assistedIds ?? new Set()} />;
+  const { data: customStages } = useQuery({
+    queryKey: ["custom-ticket-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_ticket_stages" as any)
+        .select("id, stage_key, label, color, base_status, ordem")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) return [] as CustomStage[];
+      return (data as any[]) as CustomStage[];
+    },
+    staleTime: 60_000,
+  });
+  return (
+    <TicketKanban
+      tickets={tickets}
+      showResolved={showResolved}
+      assistedIds={assistedIds ?? new Set()}
+      customStages={customStages ?? []}
+      canManageStages={canManageStages}
+      onAddStageClick={onAddStageClick}
+    />
+  );
 }
