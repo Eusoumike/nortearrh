@@ -1842,6 +1842,99 @@ export type Database = {
           },
         ]
       }
+      ticket_etapa_historico: {
+        Row: {
+          acao: string
+          created_at: string
+          etapa_id: string | null
+          id: string
+          payload: Json | null
+          ticket_id: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          etapa_id?: string | null
+          id?: string
+          payload?: Json | null
+          ticket_id: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          etapa_id?: string | null
+          id?: string
+          payload?: Json | null
+          ticket_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ticket_etapas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_conclusao: string | null
+          data_inicio: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          prazo: string | null
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["etapa_status"]
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          prazo?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["etapa_status"]
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          prazo?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["etapa_status"]
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_etapas_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_etapas_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_interactions: {
         Row: {
           author_id: string | null
@@ -2318,6 +2411,7 @@ export type Database = {
         | "fechado_perdido"
       documento_financeiro_status: "pendente" | "pago"
       documento_financeiro_tipo: "nota_fiscal" | "boleto" | "outro"
+      etapa_status: "pendente" | "em_andamento" | "concluida"
       historico_comissao_produto:
         | "vr_primeira_carga"
         | "vr_recorrencia"
@@ -2524,6 +2618,7 @@ export const Constants = {
       ],
       documento_financeiro_status: ["pendente", "pago"],
       documento_financeiro_tipo: ["nota_fiscal", "boleto", "outro"],
+      etapa_status: ["pendente", "em_andamento", "concluida"],
       historico_comissao_produto: [
         "vr_primeira_carga",
         "vr_recorrencia",
