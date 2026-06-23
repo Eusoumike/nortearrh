@@ -449,11 +449,13 @@ export type Database = {
           id: string
           notificar_vencimento: boolean
           observacoes: string | null
+          percentual_cross_selling: number
           percentual_nortear: number
           tipo_cobranca: Database["public"]["Enums"]["tipo_cobranca_rh"]
           tipo_periodo: string
           updated_at: string
           valor_anual: number
+          valor_cross_selling: number
           valor_mensalidade: number
           valor_nortear: number
         }
@@ -471,11 +473,13 @@ export type Database = {
           id?: string
           notificar_vencimento?: boolean
           observacoes?: string | null
+          percentual_cross_selling?: number
           percentual_nortear?: number
           tipo_cobranca?: Database["public"]["Enums"]["tipo_cobranca_rh"]
           tipo_periodo?: string
           updated_at?: string
           valor_anual?: number
+          valor_cross_selling?: number
           valor_mensalidade?: number
           valor_nortear?: number
         }
@@ -493,11 +497,13 @@ export type Database = {
           id?: string
           notificar_vencimento?: boolean
           observacoes?: string | null
+          percentual_cross_selling?: number
           percentual_nortear?: number
           tipo_cobranca?: Database["public"]["Enums"]["tipo_cobranca_rh"]
           tipo_periodo?: string
           updated_at?: string
           valor_anual?: number
+          valor_cross_selling?: number
           valor_mensalidade?: number
           valor_nortear?: number
         }
@@ -1438,9 +1444,12 @@ export type Database = {
           diferenca_valor: number | null
           id: string
           observacoes: string | null
+          percentual_cross_selling: number
           percentual_nortear: number
           status: Database["public"]["Enums"]["parcela_rh_status"]
           updated_at: string
+          valor_cross_selling: number
+          valor_cross_selling_recebido: number | null
           valor_mensalidade: number
           valor_nortear: number
           valor_nortear_recebido: number | null
@@ -1456,9 +1465,12 @@ export type Database = {
           diferenca_valor?: number | null
           id?: string
           observacoes?: string | null
+          percentual_cross_selling?: number
           percentual_nortear?: number
           status?: Database["public"]["Enums"]["parcela_rh_status"]
           updated_at?: string
+          valor_cross_selling?: number
+          valor_cross_selling_recebido?: number | null
           valor_mensalidade?: number
           valor_nortear?: number
           valor_nortear_recebido?: number | null
@@ -1474,9 +1486,12 @@ export type Database = {
           diferenca_valor?: number | null
           id?: string
           observacoes?: string | null
+          percentual_cross_selling?: number
           percentual_nortear?: number
           status?: Database["public"]["Enums"]["parcela_rh_status"]
           updated_at?: string
+          valor_cross_selling?: number
+          valor_cross_selling_recebido?: number | null
           valor_mensalidade?: number
           valor_nortear?: number
           valor_nortear_recebido?: number | null

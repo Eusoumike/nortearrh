@@ -69,6 +69,9 @@ type Parcela = {
   valor_mensalidade: number;
   percentual_nortear: number;
   valor_nortear: number;
+  percentual_cross_selling: number;
+  valor_cross_selling: number;
+  valor_cross_selling_recebido: number | null;
   status: "pendente" | "pago" | "inadimplente";
   data_pagamento: string | null;
   valor_recebido: number | null;
@@ -84,6 +87,8 @@ type Contrato = {
   valor_mensalidade: number;
   percentual_nortear: number;
   valor_nortear: number;
+  percentual_cross_selling: number;
+  valor_cross_selling: number;
   data_inicio: string;
   fidelidade_meses: number | null;
   fidelidade_vencimento: string | null;
@@ -127,7 +132,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("parcelas_rh_digital")
         .select(
-          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, status, data_pagamento, valor_recebido, valor_nortear_recebido, diferenca_valor",
+          "id, contrato_id, client_id, cliente_nome, competencia, valor_mensalidade, percentual_nortear, valor_nortear, percentual_cross_selling, valor_cross_selling, valor_cross_selling_recebido, status, data_pagamento, valor_recebido, valor_nortear_recebido, diferenca_valor",
         )
         .eq("competencia", competencia)
         .order("valor_nortear", { ascending: false });
@@ -142,7 +147,7 @@ export function RhDigitalTab() {
       const { data, error } = await supabase
         .from("contratos_rh_digital")
         .select(
-          "id, client_id, cliente_nome, cnpj, valor_mensalidade, percentual_nortear, valor_nortear, data_inicio, fidelidade_meses, fidelidade_vencimento, notificar_vencimento, ativo, observacoes, tipo_cobranca, tipo_periodo, valor_anual",
+          "id, client_id, cliente_nome, cnpj, valor_mensalidade, percentual_nortear, valor_nortear, percentual_cross_selling, valor_cross_selling, data_inicio, fidelidade_meses, fidelidade_vencimento, notificar_vencimento, ativo, observacoes, tipo_cobranca, tipo_periodo, valor_anual",
         )
         .order("ativo", { ascending: false })
         .order("cliente_nome");
@@ -215,16 +220,26 @@ export function RhDigitalTab() {
   });
 
   const totalMensalidade = parcelas.reduce((s, p) => s + Number(p.valor_mensalidade), 0);
-  const totalNortear = parcelas.reduce((s, p) => s + Number(p.valor_nortear), 0);
+  const totalNortear = parcelas.reduce(
+    (s, p) => s + Number(p.valor_nortear) + Number(p.valor_cross_selling ?? 0),
+    0,
+  );
+  const totalCross = parcelas.reduce((s, p) => s + Number(p.valor_cross_selling ?? 0), 0);
   // Recebido total = valor_recebido das pagas + valor_mensalidade das pendentes (esperado)
   const totalRecebidoMensalidade = parcelas.reduce((s, p) => {
     if (p.status === "pago") return s + Number(p.valor_recebido ?? p.valor_mensalidade ?? 0);
     return s + Number(p.valor_mensalidade ?? 0);
   }, 0);
-  // Nortear efetivamente recebido (para o que está pago)
+  // Nortear efetivamente recebido (para o que está pago) — inclui cross
   const totalNortearRecebido = parcelas.reduce((s, p) => {
-    if (p.status === "pago") return s + Number(p.valor_nortear_recebido ?? p.valor_nortear ?? 0);
-    return s + Number(p.valor_nortear ?? 0);
+    if (p.status === "pago") {
+      return (
+        s +
+        Number(p.valor_nortear_recebido ?? p.valor_nortear ?? 0) +
+        Number(p.valor_cross_selling_recebido ?? p.valor_cross_selling ?? 0)
+      );
+    }
+    return s + Number(p.valor_nortear ?? 0) + Number(p.valor_cross_selling ?? 0);
   }, 0);
   // Diferença total apenas sobre parcelas pagas (recebido vs contratado)
   const pagasArr = parcelas.filter((p) => p.status === "pago");
@@ -333,7 +348,7 @@ export function RhDigitalTab() {
       // Buscar % vigente do contrato
       const { data: contrato, error: cErr } = await supabase
         .from("contratos_rh_digital")
-        .select("valor_mensalidade, percentual_nortear, valor_nortear")
+        .select("valor_mensalidade, percentual_nortear, valor_nortear, percentual_cross_selling, valor_cross_selling")
         .eq("id", parcela.contrato_id)
         .single();
       if (cErr) throw cErr;
@@ -360,12 +375,15 @@ export function RhDigitalTab() {
           data_pagamento: null,
           valor_recebido: null,
           valor_nortear_recebido: null,
+          valor_cross_selling_recebido: null,
           diferenca_valor: null,
           valor_mensalidade: Number(contrato.valor_mensalidade),
           percentual_nortear: Number(contrato.percentual_nortear),
           valor_nortear: Number(contrato.valor_nortear),
+          percentual_cross_selling: Number((contrato as any).percentual_cross_selling ?? 0),
+          valor_cross_selling: Number((contrato as any).valor_cross_selling ?? 0),
           updated_at: new Date().toISOString(),
-        })
+        } as any)
         .eq("id", parcela.id);
       if (error) throw error;
     },
@@ -393,6 +411,7 @@ export function RhDigitalTab() {
       cnpj: c.cnpj,
       valor_mensalidade: c.valor_mensalidade,
       percentual_nortear: c.percentual_nortear,
+      percentual_cross_selling: c.percentual_cross_selling ?? 0,
       data_inicio: c.data_inicio,
       fidelidade_meses: c.fidelidade_meses,
       notificar_vencimento: c.notificar_vencimento,
@@ -546,7 +565,10 @@ export function RhDigitalTab() {
                   const isAnual = contratoP?.tipo_cobranca === "anual";
                   const valorMensalidade = Number(p.valor_mensalidade);
                   const valorNortear = Number(p.valor_nortear);
-                  
+                  const percCross = Number(p.percentual_cross_selling ?? 0);
+                  const valorCross = Number(p.valor_cross_selling ?? 0);
+                  const hasCross = percCross > 0;
+
                   const isPago = p.status === "pago";
                   const valorRecebido =
                     p.valor_recebido !== null && p.valor_recebido !== undefined
@@ -565,7 +587,11 @@ export function RhDigitalTab() {
                     isPago &&
                     valorNortearRecebido !== null &&
                     Math.abs(valorNortearRecebido - valorNortear) >= 0.005;
-                  const nortearShown = nortearAjustado ? valorNortearRecebido! : valorNortear;
+                  const nortearBase = nortearAjustado ? valorNortearRecebido! : valorNortear;
+                  const crossShown = isPago
+                    ? Number(p.valor_cross_selling_recebido ?? valorCross)
+                    : valorCross;
+                  const nortearShown = nortearBase + crossShown;
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
@@ -597,15 +623,25 @@ export function RhDigitalTab() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        {customPerc ? (
-                          <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
-                            {formatPercent(p.percentual_nortear)}
-                          </Badge>
-                        ) : (
-                          <span className="tabular-nums">
-                            {formatPercent(p.percentual_nortear)}
-                          </span>
-                        )}
+                        <div className="flex flex-col items-end gap-0.5">
+                          {customPerc ? (
+                            <Badge className="border-transparent bg-amber-500/15 text-amber-600 hover:bg-amber-500/20">
+                              {formatPercent(p.percentual_nortear)}
+                            </Badge>
+                          ) : (
+                            <span className="tabular-nums">
+                              {formatPercent(p.percentual_nortear)}
+                            </span>
+                          )}
+                          {hasCross && (
+                            <Badge
+                              title={`Cross Selling +${formatPercent(percCross)} (${BRL.format(valorCross)})`}
+                              className="border-transparent bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20"
+                            >
+                              + {formatPercent(percCross)} cross
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         <span
@@ -615,14 +651,21 @@ export function RhDigitalTab() {
                             nortearAjustado && diferenca! < 0 && "text-destructive",
                           )}
                           title={
-                            nortearAjustado
+                            hasCross
+                              ? `Nortear ${BRL.format(nortearBase)} + Cross ${BRL.format(crossShown)}`
+                              : nortearAjustado
                               ? `Ajustado — cliente pagou ${BRL.format(valorRecebido!)}`
                               : undefined
                           }
                         >
                           {BRL.format(nortearShown)}
                         </span>
-                        {nortearAjustado && (
+                        {hasCross && (
+                          <div className="text-[10px] text-muted-foreground">
+                            {BRL.format(nortearBase)} + {BRL.format(crossShown)}
+                          </div>
+                        )}
+                        {!hasCross && nortearAjustado && (
                           <div className="text-[10px] text-muted-foreground">
                             esperado {BRL.format(valorNortear)}
                           </div>
@@ -681,6 +724,8 @@ export function RhDigitalTab() {
                                     valor_mensalidade: Number(p.valor_mensalidade),
                                     percentual_nortear: Number(p.percentual_nortear),
                                     valor_nortear: Number(p.valor_nortear),
+                                    percentual_cross_selling: Number(p.percentual_cross_selling ?? 0),
+                                    valor_cross_selling: Number(p.valor_cross_selling ?? 0),
                                   })
                                 }
                                 className="text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600"
@@ -881,11 +926,34 @@ export function RhDigitalTab() {
                       <TableCell className="text-right tabular-nums">
                         {BRL.format(Number(c.valor_mensalidade))}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatPercent(c.percentual_nortear)}
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end gap-0.5 tabular-nums">
+                          <span>{formatPercent(c.percentual_nortear)}</span>
+                          {Number(c.percentual_cross_selling ?? 0) > 0 && (
+                            <Badge
+                              title={`Cross Selling +${formatPercent(c.percentual_cross_selling)} (${BRL.format(Number(c.valor_cross_selling ?? 0))})`}
+                              className="border-transparent bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20"
+                            >
+                              + {formatPercent(c.percentual_cross_selling)} cross
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold tabular-nums">
-                        {BRL.format(Number(c.valor_nortear))}
+                        <span
+                          title={
+                            Number(c.valor_cross_selling ?? 0) > 0
+                              ? `Nortear ${BRL.format(Number(c.valor_nortear))} + Cross ${BRL.format(Number(c.valor_cross_selling))}`
+                              : undefined
+                          }
+                        >
+                          {BRL.format(Number(c.valor_nortear) + Number(c.valor_cross_selling ?? 0))}
+                        </span>
+                        {Number(c.valor_cross_selling ?? 0) > 0 && (
+                          <div className="text-[10px] font-normal text-muted-foreground">
+                            {BRL.format(Number(c.valor_nortear))} + {BRL.format(Number(c.valor_cross_selling))}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm">{formatBRDate(c.data_inicio)}</TableCell>
                       <TableCell>

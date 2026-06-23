@@ -45,6 +45,7 @@ export type ContratoRh = {
   cnpj: string | null;
   valor_mensalidade: number;
   percentual_nortear: number;
+  percentual_cross_selling?: number | null;
   data_inicio: string;
   fidelidade_meses: number | null;
   notificar_vencimento: boolean;
@@ -66,6 +67,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
   const [client, setClient] = useState<ClientOption | null>(null);
   const [valorMensalidade, setValorMensalidade] = useState<string>("0");
   const [percentual, setPercentual] = useState<string>("40");
+  const [percentualCross, setPercentualCross] = useState<string>("0");
   const [dataInicio, setDataInicio] = useState<string>(ymdFirst(new Date()));
   const [fidMeses, setFidMeses] = useState<string>("12");
   const [modo, setModo] = useState<ModoContrato>("mensal_fidelidade");
@@ -119,6 +121,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       );
       setValorMensalidade(String(initial.valor_mensalidade));
       setPercentual(String(initial.percentual_nortear));
+      setPercentualCross(String(initial.percentual_cross_selling ?? 0));
       setDataInicio(initial.data_inicio);
       setFidMeses(String(initial.fidelidade_meses ?? 12));
       const initModo: ModoContrato =
@@ -134,6 +137,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
       setClient(null);
       setValorMensalidade("0");
       setPercentual("40");
+      setPercentualCross("0");
       setDataInicio(ymdFirst(new Date()));
       setFidMeses("12");
       setModo("mensal_fidelidade");
@@ -150,10 +154,15 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
 
   const valorMensalNum = Number(valorMensalidade || 0);
   const percentualNum = Number(percentual || 0);
+  const percentualCrossNum = Number(percentualCross || 0);
   const valorNorteaMensal = Math.round(valorMensalNum * (percentualNum / 100) * 100) / 100;
+  const valorCrossMensal = Math.round(valorMensalNum * (percentualCrossNum / 100) * 100) / 100;
+  const valorTotalMensal = Math.round((valorNorteaMensal + valorCrossMensal) * 100) / 100;
+  const percentualTotalNum = Math.round((percentualNum + percentualCrossNum) * 100) / 100;
   // Para anual, valor informado JÁ é o valor total do ano (não multiplica por 12)
   const valorAnual = valorMensalNum;
   const valorNorteaAnual = Math.round(valorAnual * (percentualNum / 100) * 100) / 100;
+  const valorCrossAnual = Math.round(valorAnual * (percentualCrossNum / 100) * 100) / 100;
 
   const meses = useMemo(() => {
     const m = Number(fidMeses || 0);
@@ -203,6 +212,8 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
         throw new Error("Valor da mensalidade deve ser maior que zero.");
       if (modo === "mensal_fidelidade" && !fidMeses)
         throw new Error("Selecione o período de fidelidade.");
+      if (percentualNum + percentualCrossNum > 100)
+        throw new Error("Soma de % Nortear + % Cross Selling não pode passar de 100%.");
 
       const userRes = await supabase.auth.getUser();
       const userId = userRes.data.user?.id ?? null;
@@ -213,12 +224,13 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           .update({
             valor_mensalidade: Number(valorMensalidade),
             percentual_nortear: Number(percentual),
+            percentual_cross_selling: Number(percentualCross) || 0,
             notificar_vencimento: notificar,
             observacoes: observacoes.trim() || null,
             cliente_nome: client.razao_social || client.company || client.name,
             cnpj: client.cnpj,
             client_id: client.id,
-          })
+          } as any)
           .eq("id", initial.id);
         if (error) throw error;
       } else {
@@ -230,6 +242,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           cnpj: client.cnpj,
           valor_mensalidade: Number(valorMensalidade),
           percentual_nortear: Number(percentual),
+          percentual_cross_selling: Number(percentualCross) || 0,
           data_inicio: dataInicio,
           fidelidade_meses,
           tipo_cobranca: tipoCobranca,
@@ -338,25 +351,49 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 </p>
               )}
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="perc-rh">% Nortear *</Label>
-              <Input
-                id="perc-rh"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                max="100"
-                value={percentual}
-                onChange={(e) => setPercentual(e.target.value)}
-              />
-              {!isEdit && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="perc-rh">% Nortear *</Label>
+                <Input
+                  id="perc-rh"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={percentual}
+                  onChange={(e) => setPercentual(e.target.value)}
+                />
+                {!isEdit && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {Number(percentual) === padraoPonto ? "(padrão global)" : "(exceção)"}
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="perc-cross-rh">% Cross Selling</Label>
+                <Input
+                  id="perc-cross-rh"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={percentualCross}
+                  onChange={(e) => setPercentualCross(e.target.value)}
+                />
                 <p className="text-[11px] text-muted-foreground">
-                  {Number(percentual) === padraoPonto ? "(padrão global)" : "(exceção)"}
+                  Comissão extra de venda cruzada (opcional).
                 </p>
-              )}
+              </div>
             </div>
           </div>
+
+          {percentualTotalNum > 100 && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              Soma de % Nortear + % Cross Selling não pode passar de 100% (atual: {percentualTotalNum}%).
+            </div>
+          )}
 
           <div className="grid gap-1.5">
             <Label>Tipo de cobrança *</Label>
@@ -381,11 +418,21 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           </div>
 
           {modo === "mensal_fidelidade" && (
-            <div className="rounded-md border bg-primary/5 px-4 py-3 text-center">
-              <div className="text-xs text-muted-foreground">Valor mensal Nortear</div>
-              <div className="text-xl font-semibold tabular-nums">
-                = {BRL.format(valorNorteaMensal)} / mês
+            <div className="rounded-md border bg-primary/5 px-4 py-3">
+              <div className="text-center text-xs text-muted-foreground">
+                {percentualCrossNum > 0 ? "Composição mensal Nortear" : "Valor mensal Nortear"}
               </div>
+              {percentualCrossNum > 0 ? (
+                <div className="mx-auto mt-2 max-w-xs space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Nortear ({percentualNum}%)</span><span className="tabular-nums">{BRL.format(valorNorteaMensal)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">+ Cross Selling ({percentualCrossNum}%)</span><span className="tabular-nums text-emerald-600">{BRL.format(valorCrossMensal)}</span></div>
+                  <div className="mt-1 flex justify-between border-t pt-1 font-semibold"><span>Total/mês ({percentualTotalNum}%)</span><span className="tabular-nums">{BRL.format(valorTotalMensal)}</span></div>
+                </div>
+              ) : (
+                <div className="text-center text-xl font-semibold tabular-nums">
+                  = {BRL.format(valorNorteaMensal)} / mês
+                </div>
+              )}
             </div>
           )}
 
@@ -396,8 +443,13 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 Contrato sem prazo definido
               </div>
               <div className="mt-2 text-center text-sm">
-                <strong className="tabular-nums">{BRL.format(valorNorteaMensal)}</strong>{" "}
+                <strong className="tabular-nums">{BRL.format(valorTotalMensal)}</strong>{" "}
                 <span className="text-muted-foreground">/ mês para a Nortear</span>
+                {percentualCrossNum > 0 && (
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    Nortear {BRL.format(valorNorteaMensal)} + Cross {BRL.format(valorCrossMensal)}
+                  </div>
+                )}
               </div>
               <p className="mt-2 text-center text-[11px] text-muted-foreground">
                 Válido até cancelamento manual. As 12 primeiras parcelas são geradas agora e novas
@@ -417,6 +469,12 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
                 Valor Nortear:{" "}
                 <span className="tabular-nums text-foreground">{BRL.format(valorNorteaAnual)}</span>{" "}
                 ({percentualNum}%)
+                {percentualCrossNum > 0 && (
+                  <> + Cross{" "}
+                    <span className="tabular-nums text-foreground">{BRL.format(valorCrossAnual)}</span>{" "}
+                    ({percentualCrossNum}%)
+                  </>
+                )}
               </div>
               {dataInicio && vencimentoCalc && (
                 <div className="mt-1 text-xs text-muted-foreground">

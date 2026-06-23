@@ -29,6 +29,8 @@ export type ParcelaSummary = {
   valor_mensalidade: number;
   percentual_nortear: number;
   valor_nortear: number;
+  percentual_cross_selling?: number;
+  valor_cross_selling?: number;
 };
 
 interface Props {
@@ -55,14 +57,18 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
 
   const valorMensalidade = parcela ? Number(parcela.valor_mensalidade) : 0;
   const valorNortear = parcela ? Number(parcela.valor_nortear) : 0;
-  const percNortear =
-    valorMensalidade > 0 ? valorNortear / valorMensalidade : 0;
+  const percNortearPct = parcela ? Number(parcela.percentual_nortear) : 0;
+  const percCrossPct = parcela ? Number(parcela.percentual_cross_selling ?? 0) : 0;
+  const valorCross = parcela ? Number(parcela.valor_cross_selling ?? 0) : 0;
+  const percNortear = percNortearPct / 100;
+  const percCross = percCrossPct / 100;
 
   const valorRecebido = (() => {
     const n = Number(String(valorRecebidoStr).replace(",", "."));
     return Number.isFinite(n) && n >= 0 ? n : 0;
   })();
   const valorNortearRecebido = Number((valorRecebido * percNortear).toFixed(2));
+  const valorCrossRecebido = Number((valorRecebido * percCross).toFixed(2));
   const diferenca = Number((valorRecebido - valorMensalidade).toFixed(2));
 
   const mutation = useMutation({
@@ -75,9 +81,10 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
           data_pagamento: dataPag,
           valor_recebido: valorRecebido,
           valor_nortear_recebido: valorNortearRecebido,
+          valor_cross_selling_recebido: valorCrossRecebido,
           diferenca_valor: diferenca,
           observacoes: obs.trim() || null,
-        })
+        } as any)
         .eq("id", parcela.id);
       if (error) throw error;
     },
@@ -166,6 +173,26 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
                 {parcela ? BRL.format(valorNortear) : "—"}
               </span>
             </div>
+            {percCrossPct > 0 && (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    + Cross Selling ({formatPercent(percCrossPct)}):
+                  </span>
+                  <span className="font-semibold tabular-nums text-emerald-600">
+                    {BRL.format(valorCross)}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between border-t pt-1 text-sm">
+                  <span className="font-medium">
+                    Total Nortear ({formatPercent(percNortearPct + percCrossPct)}):
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    {BRL.format(valorNortear + valorCross)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid gap-1.5">
