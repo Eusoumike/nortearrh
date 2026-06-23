@@ -37,6 +37,7 @@ type ContratoAtivo = {
   cliente_nome: string;
   valor_mensalidade: number;
   valor_nortear: number;
+  valor_cross_selling?: number | null;
   percentual_nortear: number;
   fidelidade_vencimento: string | null;
   tipo_periodo: "fidelidade" | "enquanto_ativo";
@@ -63,7 +64,7 @@ export function RhDashboard({ month, onVerInadimplencia, onVerContratos, onVerRe
       const { data, error } = await supabase
         .from("contratos_rh_digital")
         .select(
-          "id, client_id, cliente_nome, valor_mensalidade, valor_nortear, percentual_nortear, fidelidade_vencimento, tipo_periodo",
+          "id, client_id, cliente_nome, valor_mensalidade, valor_nortear, valor_cross_selling, percentual_nortear, fidelidade_vencimento, tipo_periodo",
         )
         .eq("ativo", true);
       if (error) throw error;
@@ -206,7 +207,10 @@ export function RhDashboard({ month, onVerInadimplencia, onVerContratos, onVerRe
       (s, c) => s + Number(c.valor_mensalidade ?? 0),
       0,
     );
-    const totalComissao = contratos.reduce((s, c) => s + Number(c.valor_nortear ?? 0), 0);
+    const totalComissao = contratos.reduce(
+      (s, c) => s + Number(c.valor_nortear ?? 0) + Number(c.valor_cross_selling ?? 0),
+      0,
+    );
     const taxa = totalMensalidades > 0 ? (totalComissao / totalMensalidades) * 100 : 0;
     return { totalMensalidades, totalComissao, taxa };
   }, [contratos]);
