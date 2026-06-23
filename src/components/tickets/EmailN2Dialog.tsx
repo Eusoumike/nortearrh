@@ -48,29 +48,9 @@ export function EmailN2Dialog({ ticketId, ticketStatus, open, onOpenChange }: Pr
 
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("gerar-email-n2", {
-          body: { ticket_id: ticketId },
-        });
-        if (error) {
-          // supabase-js esconde o body em respostas não-2xx; ler manualmente
-          let detalhes = error.message;
-          try {
-            const ctx: any = (error as any).context;
-            if (ctx && typeof ctx.json === "function") {
-              const body = await ctx.json();
-              if (body?.error) detalhes = body.error;
-            } else if (ctx && typeof ctx.text === "function") {
-              const txt = await ctx.text();
-              try { detalhes = JSON.parse(txt)?.error || txt; } catch { detalhes = txt; }
-            } else if (ctx?.body) {
-              const body = typeof ctx.body === "string" ? JSON.parse(ctx.body) : ctx.body;
-              if (body?.error) detalhes = body.error;
-            }
-          } catch { /* mantém detalhes */ }
-          throw new Error(detalhes);
-        }
-        if (data?.error) throw new Error(data.error);
-        setEmailId(data.id);
+        const { gerarEmailN2 } = await import("@/lib/gerar-email-n2");
+        const data = await gerarEmailN2(ticketId);
+        setEmailId(data.id ?? null);
         setAssunto(data.assunto || "");
         setCorpo(data.corpo || "");
         setVariante(data.variante || "padrao");
