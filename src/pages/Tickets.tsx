@@ -341,7 +341,7 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
   );
 }
 
-function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; showResolved: boolean }) {
+function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddStageClick }: { tickets: any[]; showResolved: boolean; canManageStages?: boolean; onAddStageClick?: () => void }) {
   const { data: assistedIds } = useQuery({
     queryKey: ["assist-conversation-ids"],
     queryFn: async () => {
@@ -351,5 +351,27 @@ function TicketKanbanWithAssist({ tickets, showResolved }: { tickets: any[]; sho
     },
     staleTime: 60_000,
   });
-  return <TicketKanban tickets={tickets} showResolved={showResolved} assistedIds={assistedIds ?? new Set()} />;
+  const { data: customStages } = useQuery({
+    queryKey: ["custom-ticket-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_ticket_stages" as any)
+        .select("id, stage_key, label, color, base_status, ordem")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) return [] as CustomStage[];
+      return (data as any[]) as CustomStage[];
+    },
+    staleTime: 60_000,
+  });
+  return (
+    <TicketKanban
+      tickets={tickets}
+      showResolved={showResolved}
+      assistedIds={assistedIds ?? new Set()}
+      customStages={customStages ?? []}
+      canManageStages={canManageStages}
+      onAddStageClick={onAddStageClick}
+    />
+  );
 }
