@@ -122,5 +122,8 @@ export function formatPercent(value: number | string | null | undefined): string
   if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
+  // Mostrar inteiro quando não houver casas decimais significativas (tolerância 0,005)
+  const rounded = Math.round(n);
+  if (Math.abs(n - rounded) < 0.005) return `${rounded}%`;
   return `${n.toFixed(2).replace(".", ",")}%`;
 }
