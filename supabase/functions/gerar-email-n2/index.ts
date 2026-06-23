@@ -18,11 +18,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
       return json(500, {
-        error:
-          "GEMINI_API_KEY não configurada. Cadastre o secret em Lovable Cloud (botão 'View Backend' > Edge Functions > Secrets) com o nome exato GEMINI_API_KEY.",
+        error: "LOVABLE_API_KEY não configurada no projeto.",
       });
     }
 
