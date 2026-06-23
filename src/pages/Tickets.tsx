@@ -342,6 +342,7 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
 }
 
 function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddStageClick }: { tickets: any[]; showResolved: boolean; canManageStages?: boolean; onAddStageClick?: () => void }) {
+  const [excluirEtapa, setExcluirEtapa] = useState<CustomStage | null>(null);
   const { data: assistedIds } = useQuery({
     queryKey: ["assist-conversation-ids"],
     queryFn: async () => {
@@ -365,13 +366,22 @@ function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddS
     staleTime: 60_000,
   });
   return (
-    <TicketKanban
-      tickets={tickets}
-      showResolved={showResolved}
-      assistedIds={assistedIds ?? new Set()}
-      customStages={customStages ?? []}
-      canManageStages={canManageStages}
-      onAddStageClick={onAddStageClick}
-    />
+    <>
+      <TicketKanban
+        tickets={tickets}
+        showResolved={showResolved}
+        assistedIds={assistedIds ?? new Set()}
+        customStages={customStages ?? []}
+        canManageStages={canManageStages}
+        onAddStageClick={onAddStageClick}
+        onDeleteStage={canManageStages ? (s) => setExcluirEtapa(s) : undefined}
+      />
+      <ExcluirEtapaDialog
+        open={!!excluirEtapa}
+        onOpenChange={(v) => { if (!v) setExcluirEtapa(null); }}
+        etapa={excluirEtapa}
+        customStages={customStages ?? []}
+      />
+    </>
   );
 }
