@@ -58,6 +58,17 @@ import { formatCnpj, formatPercent } from "@/lib/formatters";
 
 const PADRAO_PERC = 40;
 
+/** Calcula o % Nortear sempre a partir dos valores atuais, evitando exibir percentual denormalizado defasado. */
+const calcPercentualNortear = (
+  valor_nortear: number | string | null | undefined,
+  valor_mensalidade: number | string | null | undefined,
+): number => {
+  const vm = Number(valor_mensalidade ?? 0);
+  const vn = Number(valor_nortear ?? 0);
+  if (!vm) return 0;
+  return (vn / vm) * 100;
+};
+
 type Parcela = {
   id: string;
   contrato_id: string;
