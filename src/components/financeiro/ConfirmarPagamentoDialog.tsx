@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 import { BRL, formatBRDate } from "./financeiroUtils";
 import { formatPercent } from "@/lib/formatters";
@@ -44,6 +43,8 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
   const [dataPag, setDataPag] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [obs, setObs] = useState("");
   const [valorRecebidoStr, setValorRecebidoStr] = useState("");
+  const [percNortearStr, setPercNortearStr] = useState("");
+  const [percCrossStr, setPercCrossStr] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -52,14 +53,23 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
       setValorRecebidoStr(
         parcela ? String(Number(parcela.valor_mensalidade).toFixed(2)) : "",
       );
+      setPercNortearStr(parcela ? String(Number(parcela.percentual_nortear ?? 0)) : "0");
+      setPercCrossStr(
+        parcela ? String(Number(parcela.percentual_cross_selling ?? 0)) : "0",
+      );
     }
   }, [open, parcela]);
 
   const valorMensalidade = parcela ? Number(parcela.valor_mensalidade) : 0;
-  const valorNortear = parcela ? Number(parcela.valor_nortear) : 0;
-  const percNortearPct = parcela ? Number(parcela.percentual_nortear) : 0;
-  const percCrossPct = parcela ? Number(parcela.percentual_cross_selling ?? 0) : 0;
-  const valorCross = parcela ? Number(parcela.valor_cross_selling ?? 0) : 0;
+
+  const percNortearPct = (() => {
+    const n = Number(String(percNortearStr).replace(",", "."));
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  })();
+  const percCrossPct = (() => {
+    const n = Number(String(percCrossStr).replace(",", "."));
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  })();
   const percNortear = percNortearPct / 100;
   const percCross = percCrossPct / 100;
 
@@ -67,9 +77,17 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
     const n = Number(String(valorRecebidoStr).replace(",", "."));
     return Number.isFinite(n) && n >= 0 ? n : 0;
   })();
+
+  const valorNortearContrato = Number((valorMensalidade * percNortear).toFixed(2));
+  const valorCrossContrato = Number((valorMensalidade * percCross).toFixed(2));
+  const totalContrato = Number((valorNortearContrato + valorCrossContrato).toFixed(2));
+
   const valorNortearRecebido = Number((valorRecebido * percNortear).toFixed(2));
   const valorCrossRecebido = Number((valorRecebido * percCross).toFixed(2));
+  const totalRecebido = Number((valorNortearRecebido + valorCrossRecebido).toFixed(2));
+
   const diferenca = Number((valorRecebido - valorMensalidade).toFixed(2));
+  const temCross = percCrossPct > 0;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -80,6 +98,10 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
           status: "pago",
           data_pagamento: dataPag,
           valor_recebido: valorRecebido,
+          percentual_nortear: percNortearPct,
+          percentual_cross_selling: percCrossPct,
+          valor_nortear: valorNortearContrato,
+          valor_cross_selling: valorCrossContrato,
           valor_nortear_recebido: valorNortearRecebido,
           valor_cross_selling_recebido: valorCrossRecebido,
           diferenca_valor: diferenca,
@@ -99,44 +121,49 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
 
   const diffBlock = (() => {
     if (!parcela) return null;
-    if (Math.abs(diferenca) < 0.005) {
-      return (
-        <div className="rounded-md border bg-muted/40 px-4 py-3 text-center">
-          <div className="text-sm text-muted-foreground">Valor exato do contrato</div>
-          <div className="mt-1 text-sm">
-            Valor Nortear:{" "}
-            <span className="font-semibold tabular-nums">{BRL.format(valorNortear)}</span>
-          </div>
-        </div>
-      );
-    }
-    if (diferenca > 0) {
-      return (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center">
-          <div className="font-semibold text-emerald-600 tabular-nums">
-            + {BRL.format(diferenca)} acima do contrato
-          </div>
-          <div className="text-xs text-muted-foreground">Cliente pagou com juros/multa</div>
-          <div className="mt-2 text-sm">
-            Valor Nortear ajustado:{" "}
-            <span className="font-semibold tabular-nums text-emerald-600">
+    const isExact = Math.abs(diferenca) < 0.005;
+    const wrapperClass = isExact
+      ? "rounded-md border bg-muted/40 px-4 py-3"
+      : diferenca > 0
+        ? "rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-3"
+        : "rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3";
+    const header = isExact ? (
+      <div className="text-sm font-medium text-muted-foreground">
+        ✓ Valor exato do contrato
+      </div>
+    ) : diferenca > 0 ? (
+      <div className="text-sm font-semibold text-emerald-600 tabular-nums">
+        🟢 + {BRL.format(diferenca)} acima do contrato
+      </div>
+    ) : (
+      <div className="text-sm font-semibold text-destructive tabular-nums">
+        🔴 − {BRL.format(Math.abs(diferenca))} abaixo do contrato
+      </div>
+    );
+    return (
+      <div className={wrapperClass}>
+        {header}
+        <div className="mt-2 space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Valor Nortear:</span>
+            <span className="font-semibold tabular-nums">
               {BRL.format(valorNortearRecebido)}
             </span>
           </div>
-        </div>
-      );
-    }
-    return (
-      <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-center">
-        <div className="font-semibold text-destructive tabular-nums">
-          − {BRL.format(Math.abs(diferenca))} abaixo do contrato
-        </div>
-        <div className="text-xs text-muted-foreground">Pagamento parcial ou com desconto</div>
-        <div className="mt-2 text-sm">
-          Valor Nortear ajustado:{" "}
-          <span className="font-semibold tabular-nums text-destructive">
-            {BRL.format(valorNortearRecebido)}
-          </span>
+          {temCross && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Cross Selling:</span>
+              <span className="font-semibold tabular-nums">
+                {BRL.format(valorCrossRecebido)}
+              </span>
+            </div>
+          )}
+          <div className="mt-1 flex justify-between border-t pt-1">
+            <span className="font-medium">Total a receber:</span>
+            <span className="font-bold tabular-nums text-primary">
+              {BRL.format(totalRecebido)}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -144,7 +171,7 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Confirmar pagamento</DialogTitle>
           <DialogDescription>
@@ -167,32 +194,63 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                Valor Nortear ({parcela ? formatPercent(parcela.percentual_nortear) : "—"}):
+                Valor Nortear ({formatPercent(percNortearPct)}):
               </span>
               <span className="font-semibold tabular-nums">
-                {parcela ? BRL.format(valorNortear) : "—"}
+                {BRL.format(valorNortearContrato)}
               </span>
             </div>
-            {percCrossPct > 0 && (
-              <>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    + Cross Selling ({formatPercent(percCrossPct)}):
-                  </span>
-                  <span className="font-semibold tabular-nums text-emerald-600">
-                    {BRL.format(valorCross)}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between border-t pt-1 text-sm">
-                  <span className="font-medium">
-                    Total Nortear ({formatPercent(percNortearPct + percCrossPct)}):
-                  </span>
-                  <span className="font-semibold tabular-nums">
-                    {BRL.format(valorNortear + valorCross)}
-                  </span>
-                </div>
-              </>
-            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Valor Cross Selling ({formatPercent(percCrossPct)}):
+              </span>
+              <span
+                className={
+                  temCross
+                    ? "font-semibold tabular-nums text-emerald-600"
+                    : "font-semibold tabular-nums text-muted-foreground"
+                }
+              >
+                {BRL.format(valorCrossContrato)}
+              </span>
+            </div>
+            <div className="mt-1 flex items-center justify-between border-t pt-1 text-sm">
+              <span className="font-medium">TOTAL Nortear:</span>
+              <span className="font-bold tabular-nums text-primary">
+                {BRL.format(totalContrato)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="perc-nortear">% Nortear</Label>
+              <Input
+                id="perc-nortear"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                inputMode="decimal"
+                value={percNortearStr}
+                onChange={(e) => setPercNortearStr(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Pré-preenchido com o % do contrato</p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="perc-cross">% Cross Selling</Label>
+              <Input
+                id="perc-cross"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                inputMode="decimal"
+                value={percCrossStr}
+                onChange={(e) => setPercCrossStr(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Adicione % de cross selling se aplicável</p>
+            </div>
           </div>
 
           <div className="grid gap-1.5">
@@ -228,6 +286,10 @@ export function ConfirmarPagamentoDialog({ open, onOpenChange, parcela }: Props)
             <Label htmlFor="obs-pag">Observações</Label>
             <Textarea id="obs-pag" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
           </div>
+
+          <p className="text-xs italic text-muted-foreground">
+            💡 Alterações de % aqui valem apenas para esta parcela. Para alterar o contrato, use Editar contrato.
+          </p>
         </div>
 
         <DialogFooter>
