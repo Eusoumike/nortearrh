@@ -242,7 +242,7 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(
         isEdit
           ? "Contrato atualizado. Parcelas futuras pendentes foram sincronizadas."
@@ -252,13 +252,18 @@ export function ContratoRhDialog({ open, onOpenChange, initial }: Props) {
           ? "Contrato criado. 12 parcelas iniciais geradas — novas parcelas são adicionadas todo mês."
           : `Contrato criado e ${meses.length} parcelas geradas.`,
       );
-      qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] });
-      qc.invalidateQueries({ queryKey: ["contratos-rh-digital"] });
-      qc.invalidateQueries({ queryKey: ["parcelas-rh-digital"] });
-      qc.refetchQueries({ queryKey: ["financeiro-rh"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-ponto"] });
-      qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["financeiro-rh-contratos"] }),
+        qc.invalidateQueries({ queryKey: ["financeiro-rh-parcelas"] }),
+        qc.invalidateQueries({ queryKey: ["contratos-rh-digital"] }),
+        qc.invalidateQueries({ queryKey: ["parcelas-rh-digital"] }),
+        qc.invalidateQueries({ queryKey: ["financeiro-ponto"] }),
+        qc.invalidateQueries({ queryKey: ["financeiro-fidelidade-alertas"] }),
+      ]);
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ["financeiro-rh-contratos"] }),
+        qc.refetchQueries({ queryKey: ["financeiro-rh-parcelas"] }),
+      ]);
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
