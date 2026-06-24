@@ -1191,22 +1191,55 @@ export default function TicketDetail() {
               </Button>
             )}
 
-            <Select
-              value=""
-              onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}
-            >
-              <SelectTrigger className="w-full justify-start">
-                <ArrowUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Escalar / mudar status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FLOW.filter((s) => s !== effectiveStatusTyped).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {(() => {
+              const etapaAtual = getEtapaAtual(ticket as any, etapas);
+              const disponiveis = etapas.filter((e) => e.slug !== etapaAtual?.slug);
+              const base = disponiveis.filter((e) => e.is_system);
+              const custom = disponiveis.filter((e) => !e.is_system);
+              return (
+                <Select
+                  value=""
+                  onValueChange={(v) => {
+                    const etapa = etapas.find((e) => e.slug === v);
+                    if (etapa) updateStatus.mutate(etapa);
+                  }}
+                >
+                  <SelectTrigger className="w-full justify-start">
+                    <ArrowUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Escalar / mudar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Etapas principais</SelectLabel>
+                      {base.map((e) => (
+                        <SelectItem key={e.slug} value={e.slug}>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} />
+                            {e.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    {custom.length > 0 && (
+                      <>
+                        <SelectSeparator />
+                        <SelectGroup>
+                          <SelectLabel>Etapas customizadas</SelectLabel>
+                          {custom.map((e) => (
+                            <SelectItem key={e.slug} value={e.slug}>
+                              <span className="inline-flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} />
+                                {e.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              );
+            })()}
 
             {ticket.status !== "aguardando_cliente" && !isClosed && (
               <Button
