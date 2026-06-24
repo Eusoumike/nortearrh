@@ -95,8 +95,13 @@ export default function Tickets() {
         .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, active_custom_stage_key, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(200);
-      if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
-      else if (!includeResolved) query = query.not("status", "in", "(resolvido,fechado)");
+      if (statusFilter.startsWith("custom:")) {
+        query = query.eq("active_custom_stage_key", statusFilter.slice("custom:".length));
+      } else if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as TicketStatus);
+      } else if (!includeResolved) {
+        query = query.not("status", "in", "(resolvido,fechado)");
+      }
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
       const { data, error } = await query;
       if (error) throw error;
