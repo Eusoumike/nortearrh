@@ -351,17 +351,34 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <StatusEtapaSelect
-                value={
-                  (ticket as any)?.active_custom_stage_key
-                    ? `custom:${(ticket as any).active_custom_stage_key}`
-                    : `base:${form.status}`
-                }
-                onChange={(etapa) => {
-                  setForm({ ...form, status: etapa.status_base });
-                  (ticket as any).active_custom_stage_key = etapa.is_system ? null : etapa.slug;
+              <Select
+                value={form.active_custom_stage_key ? `custom:${form.active_custom_stage_key}` : `base:${form.status}`}
+                onValueChange={(v) => {
+                  if (v.startsWith("base:")) {
+                    setForm({ ...form, status: v.slice(5) as TicketStatus, active_custom_stage_key: null });
+                  } else {
+                    const slug = v.slice("custom:".length);
+                    const etapa = etapas.find((e) => !e.is_system && e.slug === slug);
+                    if (etapa) setForm({ ...form, status: etapa.status_base, active_custom_stage_key: slug });
+                  }
                 }}
-              />
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {etapas.map((e) => (
+                    <SelectItem
+                      key={`${e.is_system ? "base" : "custom"}:${e.slug}`}
+                      value={`${e.is_system ? "base" : "custom"}:${e.slug}`}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} />
+                        {e.name}
+                        {!e.is_system && <span className="text-xs text-muted-foreground">(sub-etapa)</span>}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Prioridade</Label>
