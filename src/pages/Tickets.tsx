@@ -10,6 +10,7 @@ import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter } from "lucide-r
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban, type CustomStage } from "@/components/TicketKanban";
+import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { NovaEtapaDialog } from "@/components/tickets/NovaEtapaDialog";
@@ -353,19 +354,7 @@ function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddS
     },
     staleTime: 60_000,
   });
-  const { data: customStages } = useQuery({
-    queryKey: ["custom-ticket-stages"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("custom_ticket_stages" as any)
-        .select("id, stage_key, label, color, base_status, ordem")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true });
-      if (error) return [] as CustomStage[];
-      return (data as any[]) as CustomStage[];
-    },
-    staleTime: 60_000,
-  });
+  const { customStages } = useEtapasKanban();
   return (
     <>
       <TicketKanban

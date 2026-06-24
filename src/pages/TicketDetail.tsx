@@ -79,6 +79,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { AssistPanel } from "@/components/tickets/AssistPanel";
 import { EmailN2Dialog } from "@/components/tickets/EmailN2Dialog";
+import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -175,6 +176,8 @@ export default function TicketDetail() {
     },
     enabled: !!id,
   });
+
+  const { items: etapasItems } = useEtapasKanban();
 
   const { data: interactions } = useQuery({
     queryKey: ["interactions", id],
@@ -298,14 +301,20 @@ export default function TicketDetail() {
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
   const updateStatus = useMutation({
-    mutationFn: async (status: TicketStatus) => {
-      const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
+    mutationFn: async (input: TicketStatus | { status: TicketStatus; customKey: string | null; label?: string }) => {
+      const payload =
+        typeof input === "string"
+          ? { status: input, active_custom_stage_key: null }
+          : { status: input.status, active_custom_stage_key: input.customKey };
+      const { error } = await supabase.from("tickets").update(payload as any).eq("id", id!);
       if (error) throw error;
+      return input;
     },
-    onSuccess: (_d, status) => {
+    onSuccess: (_d, input) => {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
+      const label = typeof input === "string" ? STATUS_LABEL[input] : (input.label ?? STATUS_LABEL[input.status]);
+      toast.success(`Status alterado para ${label}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -1183,18 +1192,42 @@ export default function TicketDetail() {
 
             <Select
               value=""
-              onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}
+              onValueChange={(v) => {
+                const etapa = etapasItems.find((e) => e.key === v);
+                if (!etapa) return;
+                updateStatus.mutate({ status: etapa.base, customKey: etapa.customKey, label: etapa.label });
+              }}
             >
               <SelectTrigger className="w-full justify-start">
                 <ArrowUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Escalar / mudar status" />
               </SelectTrigger>
               <SelectContent>
-                {STATUS_FLOW.filter((s) => s !== effectiveStatusTyped).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </SelectItem>
-                ))}
+                {etapasItems
+                  .filter((e) => {
+                    const currentKey = (ticket as any).active_custom_stage_key
+                      ? `custom:${(ticket as any).active_custom_stage_key}`
+                      : effectiveStatusTyped;
+                    return e.key !== currentKey && !(e.kind === "base" && e.base === "fechado");
+                  })
+                  .map((e) => (
+                    <SelectItem key={e.key} value={e.key}>
+                      <span className="inline-flex items-center gap-2">
+                        {e.kind === "custom" && (
+                          <span
+                            className="inline-block h-2 w-2 rounded-full"
+                            style={{ backgroundColor: e.color ?? "#6B7280" }}
+                          />
+                        )}
+                        {e.label}
+                        {e.kind === "custom" && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ({STATUS_LABEL[e.base]})
+                          </span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
