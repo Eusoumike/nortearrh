@@ -1192,18 +1192,42 @@ export default function TicketDetail() {
 
             <Select
               value=""
-              onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}
+              onValueChange={(v) => {
+                const etapa = etapasItems.find((e) => e.key === v);
+                if (!etapa) return;
+                updateStatus.mutate({ status: etapa.base, customKey: etapa.customKey, label: etapa.label });
+              }}
             >
               <SelectTrigger className="w-full justify-start">
                 <ArrowUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Escalar / mudar status" />
               </SelectTrigger>
               <SelectContent>
-                {STATUS_FLOW.filter((s) => s !== effectiveStatusTyped).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </SelectItem>
-                ))}
+                {etapasItems
+                  .filter((e) => {
+                    const currentKey = (ticket as any).active_custom_stage_key
+                      ? `custom:${(ticket as any).active_custom_stage_key}`
+                      : effectiveStatusTyped;
+                    return e.key !== currentKey && !(e.kind === "base" && e.base === "fechado");
+                  })
+                  .map((e) => (
+                    <SelectItem key={e.key} value={e.key}>
+                      <span className="inline-flex items-center gap-2">
+                        {e.kind === "custom" && (
+                          <span
+                            className="inline-block h-2 w-2 rounded-full"
+                            style={{ backgroundColor: e.color ?? "#6B7280" }}
+                          />
+                        )}
+                        {e.label}
+                        {e.kind === "custom" && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ({STATUS_LABEL[e.base]})
+                          </span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
