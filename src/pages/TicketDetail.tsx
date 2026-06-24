@@ -299,14 +299,20 @@ export default function TicketDetail() {
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
   const updateStatus = useMutation({
-    mutationFn: async (status: TicketStatus) => {
-      const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
+    mutationFn: async (input: TicketStatus | { status: TicketStatus; customKey: string | null; label?: string }) => {
+      const payload =
+        typeof input === "string"
+          ? { status: input, active_custom_stage_key: null }
+          : { status: input.status, active_custom_stage_key: input.customKey };
+      const { error } = await supabase.from("tickets").update(payload as any).eq("id", id!);
       if (error) throw error;
+      return input;
     },
-    onSuccess: (_d, status) => {
+    onSuccess: (_d, input) => {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
+      const label = typeof input === "string" ? STATUS_LABEL[input] : (input.label ?? STATUS_LABEL[input.status]);
+      toast.success(`Status alterado para ${label}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
