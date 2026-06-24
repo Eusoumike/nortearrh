@@ -220,14 +220,8 @@ export default function Tickets() {
 
       {/* CHIPS + FILTROS */}
       <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <FilterChip active={statusFilter === "all"} onClick={() => updateStatus("all")}>Todos</FilterChip>
-          {STATUS_FLOW.map((s) => (
-            <FilterChip key={s} active={statusFilter === s} onClick={() => updateStatus(s)}>
-              {STATUS_LABEL[s]}
-            </FilterChip>
-          ))}
-        </div>
+        <StatusChips statusFilter={statusFilter} onUpdate={updateStatus} />
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
