@@ -155,6 +155,7 @@ export default function TicketDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [emailN2Open, setEmailN2Open] = useState(false);
   const canDelete = role === "admin" || role === "manager";
+  const { data: etapas = [] } = useEtapasKanban();
 
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
