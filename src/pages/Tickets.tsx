@@ -10,6 +10,7 @@ import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter } from "lucide-r
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban, type CustomStage } from "@/components/TicketKanban";
+import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { NovaEtapaDialog } from "@/components/tickets/NovaEtapaDialog";
