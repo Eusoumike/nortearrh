@@ -82,7 +82,6 @@ import { EmailN2Dialog } from "@/components/tickets/EmailN2Dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useEtapasKanban, getEtapaAtual, type EtapaKanban } from "@/hooks/useEtapasKanban";
 import {
   STATUS_LABEL,
   STATUS_FLOW,
@@ -155,7 +154,6 @@ export default function TicketDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [emailN2Open, setEmailN2Open] = useState(false);
   const canDelete = role === "admin" || role === "manager";
-  const { data: etapas = [] } = useEtapasKanban();
 
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
@@ -300,22 +298,14 @@ export default function TicketDetail() {
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
   const updateStatus = useMutation({
-    mutationFn: async (target: TicketStatus | EtapaKanban) => {
-      const isEtapa = typeof target === "object" && target !== null && "slug" in target;
-      const patch = isEtapa
-        ? {
-            status: (target as EtapaKanban).status_base,
-            active_custom_stage_key: (target as EtapaKanban).is_system ? null : (target as EtapaKanban).slug,
-          }
-        : { status: target as TicketStatus, active_custom_stage_key: null };
-      const { error } = await supabase.from("tickets").update(patch as any).eq("id", id!);
+    mutationFn: async (status: TicketStatus) => {
+      const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
       if (error) throw error;
-      return isEtapa ? (target as EtapaKanban).name : STATUS_LABEL[target as TicketStatus];
     },
-    onSuccess: (label) => {
+    onSuccess: (_d, status) => {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success(`Status alterado para ${label}.`);
+      toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -1191,55 +1181,22 @@ export default function TicketDetail() {
               </Button>
             )}
 
-            {(() => {
-              const etapaAtual = getEtapaAtual(ticket as any, etapas);
-              const disponiveis = etapas.filter((e) => e.slug !== etapaAtual?.slug);
-              const base = disponiveis.filter((e) => e.is_system);
-              const custom = disponiveis.filter((e) => !e.is_system);
-              return (
-                <Select
-                  value=""
-                  onValueChange={(v) => {
-                    const etapa = etapas.find((e) => e.slug === v);
-                    if (etapa) updateStatus.mutate(etapa);
-                  }}
-                >
-                  <SelectTrigger className="w-full justify-start">
-                    <ArrowUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Escalar / mudar status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Etapas principais</SelectLabel>
-                      {base.map((e) => (
-                        <SelectItem key={e.slug} value={e.slug}>
-                          <span className="inline-flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} />
-                            {e.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                    {custom.length > 0 && (
-                      <>
-                        <SelectSeparator />
-                        <SelectGroup>
-                          <SelectLabel>Etapas customizadas</SelectLabel>
-                          {custom.map((e) => (
-                            <SelectItem key={e.slug} value={e.slug}>
-                              <span className="inline-flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} />
-                                {e.name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              );
-            })()}
+            <Select
+              value=""
+              onValueChange={(v) => updateStatus.mutate(v as TicketStatus)}
+            >
+              <SelectTrigger className="w-full justify-start">
+                <ArrowUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Escalar / mudar status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FLOW.filter((s) => s !== effectiveStatusTyped).map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {ticket.status !== "aguardando_cliente" && !isClosed && (
               <Button
