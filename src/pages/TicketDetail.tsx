@@ -177,6 +177,8 @@ export default function TicketDetail() {
     enabled: !!id,
   });
 
+  const { items: etapasItems } = useEtapasKanban();
+
   const { data: interactions } = useQuery({
     queryKey: ["interactions", id],
     queryFn: async () => {
