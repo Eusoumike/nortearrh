@@ -53,6 +53,7 @@ import {
   type TicketChannel,
   type TicketType,
 } from "@/lib/constants";
+import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { brazilInputToISO, formatBrazilDateTime } from "@/lib/formatters";
 
 interface EditTicketDialogProps {
