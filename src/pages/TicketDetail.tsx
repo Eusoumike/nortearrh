@@ -82,6 +82,7 @@ import { EmailN2Dialog } from "@/components/tickets/EmailN2Dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useEtapasKanban, getEtapaAtual, type EtapaKanban } from "@/hooks/useEtapasKanban";
 import {
   STATUS_LABEL,
   STATUS_FLOW,
