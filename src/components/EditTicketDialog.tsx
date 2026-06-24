@@ -53,6 +53,7 @@ import {
   type TicketChannel,
   type TicketType,
 } from "@/lib/constants";
+import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { brazilInputToISO, formatBrazilDateTime } from "@/lib/formatters";
 
 interface EditTicketDialogProps {
@@ -179,6 +180,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
     client_phone: "",
     channel: "portal" as TicketChannel,
     status: "novo" as TicketStatus,
+    active_custom_stage_key: null as string | null,
     priority: "media" as TicketPriority,
     category: "",
     ticket_type: "" as string,
@@ -186,6 +188,8 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
     opened_at: "",
     anydesk_id: "",
   });
+
+  const { data: etapas = [] } = useEtapasKanban();
 
   // Sincroniza form quando dialog abre / ticket muda
   useEffect(() => {
@@ -199,6 +203,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
       client_phone: ticket.client_phone ?? "",
       channel: ticket.channel ?? "portal",
       status: ticket.status ?? "novo",
+      active_custom_stage_key: ticket.active_custom_stage_key ?? null,
       priority: ticket.priority ?? "media",
       category: ticket.category ?? "",
       ticket_type: ticket.ticket_type ?? "",
@@ -223,6 +228,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
         client_phone: form.client_phone.trim() || null,
         channel: form.channel,
         status: form.status,
+        active_custom_stage_key: form.active_custom_stage_key,
         priority: form.priority,
         category: form.category.trim() || null,
         ticket_type: form.ticket_type || null,
@@ -345,11 +351,31 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as TicketStatus })}>
+              <Select
+                value={form.active_custom_stage_key ? `custom:${form.active_custom_stage_key}` : `base:${form.status}`}
+                onValueChange={(v) => {
+                  if (v.startsWith("base:")) {
+                    setForm({ ...form, status: v.slice(5) as TicketStatus, active_custom_stage_key: null });
+                  } else {
+                    const slug = v.slice("custom:".length);
+                    const etapa = etapas.find((e) => !e.is_system && e.slug === slug);
+                    if (etapa) setForm({ ...form, status: etapa.status_base, active_custom_stage_key: slug });
+                  }
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STATUS_FLOW.map((k) => (
-                    <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
+                  {etapas.map((e) => (
+                    <SelectItem
+                      key={`${e.is_system ? "base" : "custom"}:${e.slug}`}
+                      value={`${e.is_system ? "base" : "custom"}:${e.slug}`}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} />
+                        {e.name}
+                        {!e.is_system && <span className="text-xs text-muted-foreground">(sub-etapa)</span>}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -14,6 +14,7 @@ import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { NovaEtapaDialog } from "@/components/tickets/NovaEtapaDialog";
 import { ExcluirEtapaDialog } from "@/components/tickets/ExcluirEtapaDialog";
+import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -95,8 +96,13 @@ export default function Tickets() {
         .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, active_custom_stage_key, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(200);
-      if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
-      else if (!includeResolved) query = query.not("status", "in", "(resolvido,fechado)");
+      if (statusFilter.startsWith("custom:")) {
+        query = query.eq("active_custom_stage_key", statusFilter.slice("custom:".length));
+      } else if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as TicketStatus);
+      } else if (!includeResolved) {
+        query = query.not("status", "in", "(resolvido,fechado)");
+      }
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
       const { data, error } = await query;
       if (error) throw error;
@@ -214,14 +220,8 @@ export default function Tickets() {
 
       {/* CHIPS + FILTROS */}
       <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <FilterChip active={statusFilter === "all"} onClick={() => updateStatus("all")}>Todos</FilterChip>
-          {STATUS_FLOW.map((s) => (
-            <FilterChip key={s} active={statusFilter === s} onClick={() => updateStatus(s)}>
-              {STATUS_LABEL[s]}
-            </FilterChip>
-          ))}
-        </div>
+        <StatusChips statusFilter={statusFilter} onUpdate={updateStatus} />
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -290,6 +290,28 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
     >
       {children}
     </button>
+  );
+}
+
+function StatusChips({ statusFilter, onUpdate }: { statusFilter: string; onUpdate: (v: string) => void }) {
+  const { data: etapas = [] } = useEtapasKanban();
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <FilterChip active={statusFilter === "all"} onClick={() => onUpdate("all")}>Todos</FilterChip>
+      {etapas.map((e) => {
+        const value = e.is_system ? e.slug : `custom:${e.slug}`;
+        return (
+          <FilterChip key={value} active={statusFilter === value} onClick={() => onUpdate(value)}>
+            <span className="inline-flex items-center gap-1.5">
+              {!e.is_system && (
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: e.color }} />
+              )}
+              {e.name}
+            </span>
+          </FilterChip>
+        );
+      })}
+    </div>
   );
 }
 
