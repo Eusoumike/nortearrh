@@ -293,6 +293,28 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
+function StatusChips({ statusFilter, onUpdate }: { statusFilter: string; onUpdate: (v: string) => void }) {
+  const { data: etapas = [] } = useEtapasKanban();
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <FilterChip active={statusFilter === "all"} onClick={() => onUpdate("all")}>Todos</FilterChip>
+      {etapas.map((e) => {
+        const value = e.is_system ? e.slug : `custom:${e.slug}`;
+        return (
+          <FilterChip key={value} active={statusFilter === value} onClick={() => onUpdate(value)}>
+            <span className="inline-flex items-center gap-1.5">
+              {!e.is_system && (
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: e.color }} />
+              )}
+              {e.name}
+            </span>
+          </FilterChip>
+        );
+      })}
+    </div>
+  );
+}
+
 function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) => void }) {
   if (!tickets.length) {
     return (
