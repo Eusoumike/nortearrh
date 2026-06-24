@@ -180,6 +180,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
     client_phone: "",
     channel: "portal" as TicketChannel,
     status: "novo" as TicketStatus,
+    active_custom_stage_key: null as string | null,
     priority: "media" as TicketPriority,
     category: "",
     ticket_type: "" as string,
@@ -187,6 +188,8 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
     opened_at: "",
     anydesk_id: "",
   });
+
+  const { data: etapas = [] } = useEtapasKanban();
 
   // Sincroniza form quando dialog abre / ticket muda
   useEffect(() => {
@@ -200,6 +203,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
       client_phone: ticket.client_phone ?? "",
       channel: ticket.channel ?? "portal",
       status: ticket.status ?? "novo",
+      active_custom_stage_key: ticket.active_custom_stage_key ?? null,
       priority: ticket.priority ?? "media",
       category: ticket.category ?? "",
       ticket_type: ticket.ticket_type ?? "",
@@ -224,6 +228,7 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
         client_phone: form.client_phone.trim() || null,
         channel: form.channel,
         status: form.status,
+        active_custom_stage_key: form.active_custom_stage_key,
         priority: form.priority,
         category: form.category.trim() || null,
         ticket_type: form.ticket_type || null,
