@@ -299,14 +299,22 @@ export default function TicketDetail() {
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
   const updateStatus = useMutation({
-    mutationFn: async (status: TicketStatus) => {
-      const { error } = await supabase.from("tickets").update({ status }).eq("id", id!);
+    mutationFn: async (target: TicketStatus | EtapaKanban) => {
+      const isEtapa = typeof target === "object" && target !== null && "slug" in target;
+      const patch = isEtapa
+        ? {
+            status: (target as EtapaKanban).status_base,
+            active_custom_stage_key: (target as EtapaKanban).is_system ? null : (target as EtapaKanban).slug,
+          }
+        : { status: target as TicketStatus, active_custom_stage_key: null };
+      const { error } = await supabase.from("tickets").update(patch as any).eq("id", id!);
       if (error) throw error;
+      return isEtapa ? (target as EtapaKanban).name : STATUS_LABEL[target as TicketStatus];
     },
-    onSuccess: (_d, status) => {
+    onSuccess: (label) => {
       qc.invalidateQueries({ queryKey: ["ticket", id] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
-      toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
+      toast.success(`Status alterado para ${label}.`);
     },
     onError: (e: any) => toast.error(e.message),
   });
