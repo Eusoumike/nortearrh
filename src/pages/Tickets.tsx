@@ -353,19 +353,7 @@ function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddS
     },
     staleTime: 60_000,
   });
-  const { data: customStages } = useQuery({
-    queryKey: ["custom-ticket-stages"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("custom_ticket_stages" as any)
-        .select("id, stage_key, label, color, base_status, ordem")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true });
-      if (error) return [] as CustomStage[];
-      return (data as any[]) as CustomStage[];
-    },
-    staleTime: 60_000,
-  });
+  const { customStages } = useEtapasKanban();
   return (
     <>
       <TicketKanban
