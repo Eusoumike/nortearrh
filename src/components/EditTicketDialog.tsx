@@ -345,14 +345,17 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as TicketStatus })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_FLOW.map((k) => (
-                    <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <StatusEtapaSelect
+                value={
+                  (ticket as any)?.active_custom_stage_key
+                    ? `custom:${(ticket as any).active_custom_stage_key}`
+                    : `base:${form.status}`
+                }
+                onChange={(etapa) => {
+                  setForm({ ...form, status: etapa.status_base });
+                  (ticket as any).active_custom_stage_key = etapa.is_system ? null : etapa.slug;
+                }}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Prioridade</Label>
