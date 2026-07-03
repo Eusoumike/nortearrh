@@ -282,6 +282,7 @@ export default function Tickets() {
 
       <NewTicketDialog open={newOpen} onOpenChange={setNewOpen} />
       <NovaEtapaDialog open={novaEtapaOpen} onOpenChange={setNovaEtapaOpen} />
+      <ExportTicketsDialog open={exportOpen} onOpenChange={setExportOpen} />
     </div>
   );
 }
