@@ -150,9 +150,7 @@ export function ExportTicketsDialog({ open, onOpenChange }: Props) {
           clients:clients!fk_tickets_client (
             id, razao_social, company, name, cnpj, products,
             status_nortear, contact_cargo
-          ),
-          ticket_interactions ( type, content, created_at, is_internal ),
-          ticket_status_history ( from_status, to_status, created_at, changed_by, duration_seconds )
+          )
         `)
         .order("created_at", { ascending: false });
       if (inicio) q = q.gte("created_at", inicio.toISOString());
@@ -166,6 +164,40 @@ export function ExportTicketsDialog({ open, onOpenChange }: Props) {
         setLoading(false);
         return;
       }
+
+      // Fetch interactions and status history in separate queries to avoid
+      // PostgREST ambiguity when multiple FKs exist between tables.
+      const ticketIds = tickets.map((t) => t.id);
+      const [interRes, histRes] = await Promise.all([
+        supabase
+          .from("ticket_interactions")
+          .select("ticket_id, type, content, created_at, is_internal")
+          .in("ticket_id", ticketIds),
+        supabase
+          .from("ticket_status_history")
+          .select("ticket_id, from_status, to_status, created_at, changed_by, duration_seconds")
+          .in("ticket_id", ticketIds),
+      ]);
+      if (interRes.error) throw interRes.error;
+      if (histRes.error) throw histRes.error;
+
+      const interByTicket = new Map<string, any[]>();
+      for (const i of interRes.data ?? []) {
+        const arr = interByTicket.get(i.ticket_id) ?? [];
+        arr.push(i);
+        interByTicket.set(i.ticket_id, arr);
+      }
+      const histByTicket = new Map<string, any[]>();
+      for (const h of histRes.data ?? []) {
+        const arr = histByTicket.get(h.ticket_id) ?? [];
+        arr.push(h);
+        histByTicket.set(h.ticket_id, arr);
+      }
+      for (const t of tickets) {
+        t.ticket_interactions = interByTicket.get(t.id) ?? [];
+        t.ticket_status_history = histByTicket.get(t.id) ?? [];
+      }
+
 
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
 
