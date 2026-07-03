@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter } from "lucide-react";
+import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter, Download } from "lucide-react";
+import { ExportTicketsDialog } from "@/components/tickets/ExportTicketsDialog";
 import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban, type CustomStage } from "@/components/TicketKanban";
@@ -35,6 +36,7 @@ export default function Tickets() {
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [novaEtapaOpen, setNovaEtapaOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "kanban";
     return (window.localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "kanban";
@@ -205,6 +207,12 @@ export default function Tickets() {
             Resolvidos
           </Button>
           <Button
+            type="button" size="sm" variant="outline" onClick={() => setExportOpen(true)}
+            className="h-9 gap-1.5 rounded-xl text-xs"
+          >
+            <Download className="h-3.5 w-3.5" /> Exportar dados
+          </Button>
+          <Button
             type="button" size="sm" onClick={() => setNewOpen(true)}
             className="h-9 gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:scale-95"
           >
@@ -274,6 +282,7 @@ export default function Tickets() {
 
       <NewTicketDialog open={newOpen} onOpenChange={setNewOpen} />
       <NovaEtapaDialog open={novaEtapaOpen} onOpenChange={setNovaEtapaOpen} />
+      <ExportTicketsDialog open={exportOpen} onOpenChange={setExportOpen} />
     </div>
   );
 }
