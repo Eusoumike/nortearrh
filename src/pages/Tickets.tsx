@@ -36,6 +36,7 @@ export default function Tickets() {
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [novaEtapaOpen, setNovaEtapaOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "kanban";
     return (window.localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "kanban";
