@@ -207,6 +207,12 @@ export default function Tickets() {
             Resolvidos
           </Button>
           <Button
+            type="button" size="sm" variant="outline" onClick={() => setExportOpen(true)}
+            className="h-9 gap-1.5 rounded-xl text-xs"
+          >
+            <Download className="h-3.5 w-3.5" /> Exportar dados
+          </Button>
+          <Button
             type="button" size="sm" onClick={() => setNewOpen(true)}
             className="h-9 gap-1.5 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:scale-95"
           >
