@@ -402,11 +402,23 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as TicketStatus })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {STATUS_FLOW.map((k) => (
-                      <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
-                    ))}
+                    {STATUS_FLOW
+                      .filter((k) => wasResolvido || k !== "resolvido")
+                      .map((k) => (
+                        <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
+                {!wasResolvido && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Use o botão “Encerrar Chamado” para fechar o chamado.
+                  </p>
+                )}
+                {isReabrindo && (
+                  <p className="text-[11px] text-warning">
+                    Ao salvar, o chamado será reaberto (data de resolução será apagada).
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Prioridade</Label>
