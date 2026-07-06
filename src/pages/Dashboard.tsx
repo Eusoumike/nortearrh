@@ -730,7 +730,10 @@ export default function Dashboard() {
             </Card>
           </div>
         </section>
+
+        <InsightsChamados />
       </div>
+
 
       {/* FAB */}
       <div className="group fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
