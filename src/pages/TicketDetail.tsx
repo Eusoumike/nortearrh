@@ -79,6 +79,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { AssistPanel } from "@/components/tickets/AssistPanel";
 import { EmailN2Dialog } from "@/components/tickets/EmailN2Dialog";
+import { FecharChamadoDialog } from "@/components/tickets/FecharChamadoDialog";
+import { useEncerrarChamado } from "@/hooks/useEncerrarChamado";
 import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
