@@ -16,6 +16,8 @@ import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { NovaEtapaDialog } from "@/components/tickets/NovaEtapaDialog";
 import { ExcluirEtapaDialog } from "@/components/tickets/ExcluirEtapaDialog";
+import { FecharChamadoDialog } from "@/components/tickets/FecharChamadoDialog";
+import { useEncerrarChamado } from "@/hooks/useEncerrarChamado";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -354,6 +356,7 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
 
 function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddStageClick }: { tickets: any[]; showResolved: boolean; canManageStages?: boolean; onAddStageClick?: () => void }) {
   const [excluirEtapa, setExcluirEtapa] = useState<CustomStage | null>(null);
+  const { dialogAberto, ticketAlvo, abrirModal, fecharModal } = useEncerrarChamado();
   const { data: assistedIds } = useQuery({
     queryKey: ["assist-conversation-ids"],
     queryFn: async () => {
@@ -374,12 +377,18 @@ function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddS
         canManageStages={canManageStages}
         onAddStageClick={onAddStageClick}
         onDeleteStage={canManageStages ? (s) => setExcluirEtapa(s) : undefined}
+        onRequestClose={(t) => abrirModal(t as any)}
       />
       <ExcluirEtapaDialog
         open={!!excluirEtapa}
         onOpenChange={(v) => { if (!v) setExcluirEtapa(null); }}
         etapa={excluirEtapa}
         customStages={customStages ?? []}
+      />
+      <FecharChamadoDialog
+        open={dialogAberto}
+        onClose={fecharModal}
+        ticket={ticketAlvo}
       />
     </>
   );

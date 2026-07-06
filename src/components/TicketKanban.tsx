@@ -61,6 +61,7 @@ interface Props {
   canManageStages?: boolean;
   onAddStageClick?: () => void;
   onDeleteStage?: (stage: CustomStage) => void;
+  onRequestClose?: (ticket: KanbanTicket) => void;
 }
 
 // Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
@@ -288,7 +289,7 @@ function AddStageColumn({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function TicketKanban({ tickets, showResolved = false, assistedIds, customStages = [], canManageStages = false, onAddStageClick, onDeleteStage }: Props) {
+export function TicketKanban({ tickets, showResolved = false, assistedIds, customStages = [], canManageStages = false, onAddStageClick, onDeleteStage, onRequestClose }: Props) {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -392,9 +393,16 @@ export function TicketKanban({ tickets, showResolved = false, assistedIds, custo
       }
 
       if (currentBase === targetStatus && currentCustom === targetCustom) return;
+
+      // Interceptar movimentação para "resolvido" — força passar pelo modal
+      if (targetStatus === "resolvido" && onRequestClose) {
+        onRequestClose(ticket);
+        return;
+      }
+
       updateStage.mutate({ id, status: targetStatus, customKey: targetCustom });
     },
-    [tickets, updateStage, customStages],
+    [tickets, updateStage, customStages, onRequestClose],
   );
 
   const visibleBaseStatuses = STATUS_FLOW.filter((s) => showResolved || s !== "resolvido");

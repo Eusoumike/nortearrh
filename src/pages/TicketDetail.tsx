@@ -64,6 +64,7 @@ import {
   Sparkles,
   Clock,
   RefreshCw,
+  RotateCcw,
   Settings,
 } from "lucide-react";
 import { AudioTranscription } from "@/components/tickets/AudioTranscription";
@@ -79,6 +80,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { AssistPanel } from "@/components/tickets/AssistPanel";
 import { EmailN2Dialog } from "@/components/tickets/EmailN2Dialog";
+import { FecharChamadoDialog } from "@/components/tickets/FecharChamadoDialog";
+import { useEncerrarChamado } from "@/hooks/useEncerrarChamado";
 import { useEtapasKanban } from "@/hooks/useEtapasKanban";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
@@ -300,6 +303,8 @@ export default function TicketDetail() {
 
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
+  const encerrar = useEncerrarChamado();
+
   const updateStatus = useMutation({
     mutationFn: async (input: TicketStatus | { status: TicketStatus; customKey: string | null; label?: string }) => {
       const payload =
@@ -315,6 +320,22 @@ export default function TicketDetail() {
       qc.invalidateQueries({ queryKey: ["tickets"] });
       const label = typeof input === "string" ? STATUS_LABEL[input] : (input.label ?? STATUS_LABEL[input.status]);
       toast.success(`Status alterado para ${label}.`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const reabrirChamado = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("tickets")
+        .update({ status: "em_atendimento", resolved_at: null } as any)
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket", id] });
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Chamado reaberto.");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -1182,11 +1203,22 @@ export default function TicketDetail() {
               <Button
                 variant="outline"
                 className="w-full justify-start font-semibold"
-                onClick={() => updateStatus.mutate("resolvido")}
-                disabled={updateStatus.isPending}
+                onClick={() => encerrar.abrirModal(ticket as any)}
               >
                 <CheckCircle2 className="mr-2 h-4 w-4 text-success" />
                 Encerrar Chamado
+              </Button>
+            )}
+
+            {isClosed && (
+              <Button
+                variant="outline"
+                className="w-full justify-start font-semibold"
+                onClick={() => reabrirChamado.mutate()}
+                disabled={reabrirChamado.isPending}
+              >
+                <RotateCcw className="mr-2 h-4 w-4 text-primary" />
+                Reabrir Chamado
               </Button>
             )}
 
@@ -1195,6 +1227,10 @@ export default function TicketDetail() {
               onValueChange={(v) => {
                 const etapa = etapasItems.find((e) => e.key === v);
                 if (!etapa) return;
+                if (etapa.base === "resolvido") {
+                  encerrar.abrirModal(ticket as any);
+                  return;
+                }
                 updateStatus.mutate({ status: etapa.base, customKey: etapa.customKey, label: etapa.label });
               }}
             >
@@ -1604,6 +1640,11 @@ export default function TicketDetail() {
 
       <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
       <EmailN2Dialog ticketId={ticket.id} ticketStatus={ticket.status} open={emailN2Open} onOpenChange={setEmailN2Open} />
+      <FecharChamadoDialog
+        open={encerrar.dialogAberto}
+        onClose={encerrar.fecharModal}
+        ticket={encerrar.ticketAlvo}
+      />
     </div>
   );
 }
