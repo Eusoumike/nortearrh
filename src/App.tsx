@@ -14,6 +14,7 @@ import MyTasks from "./pages/MyTasks";
 import Implantacao from "./pages/Implantacao";
 import ImplantacaoDetail from "./pages/ImplantacaoDetail";
 import Performance from "./pages/Performance";
+import Assist from "./pages/Assist";
 
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
