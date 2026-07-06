@@ -22,6 +22,7 @@ import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES
 import { formatDuration } from "@/lib/formatters";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { cn } from "@/lib/utils";
+import { ModuloBadge } from "@/components/tickets/ModuloBadge";
 
 const PAGE_SIZE = 30;
 
