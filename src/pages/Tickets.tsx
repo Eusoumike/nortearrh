@@ -412,7 +412,8 @@ function TicketList({ tickets, onOpen, extraCols }: { tickets: any[]; onOpen: (i
           return (
             <button
               key={t.id} type="button" onClick={() => onOpen(t.id)}
-              className={cn(gridCls, "w-full items-center border-b border-border/60 px-5 py-3 text-left text-sm transition-colors hover:bg-muted/40")}
+              style={gridStyle}
+              className="w-full items-center border-b border-border/60 px-5 py-3 text-left text-sm transition-colors hover:bg-muted/40"
             >
               <span className="font-mono text-[12px] text-muted-foreground">#{t.ticket_number}</span>
               <p className="truncate font-medium text-foreground">{tema}</p>
