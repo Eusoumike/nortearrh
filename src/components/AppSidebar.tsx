@@ -64,6 +64,7 @@ const groups: NavGroup[] = [
     icon: Headphones,
     children: [
       { title: "Chamados", url: "/tickets" },
+      { title: "Base de conhecimento", url: "/assist" },
     ],
   },
   {
