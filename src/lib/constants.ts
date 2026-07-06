@@ -202,4 +202,22 @@ export const QUEM_REPORTOU_OPTIONS: { value: string; label: string }[] = [
   { value: "contador", label: "Contador" },
 ];
 
+export const QUEM_REPORTOU_LABEL: Record<string, string> = Object.fromEntries(
+  QUEM_REPORTOU_OPTIONS.map((o) => [o.value, o.label]),
+);
+
+export const MODULO_AFETADO_COLORS: Record<string, string> = {
+  ponto: "#3B82F6",
+  escalas: "#8B5CF6",
+  feriados: "#EC4899",
+  beneficios_vr: "#10B981",
+  faturamento: "#F59E0B",
+  acessos: "#EF4444",
+  relatorios: "#6366F1",
+  app_rep: "#14B8A6",
+  integracao_folha: "#F97316",
+  outros: "#6B7280",
+};
+
+
 
