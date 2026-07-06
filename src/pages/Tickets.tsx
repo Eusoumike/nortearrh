@@ -336,7 +336,7 @@ export default function Tickets() {
             onAddStageClick={() => setNovaEtapaOpen(true)}
           />
         ) : (
-          <TicketList tickets={filtered as any} onOpen={(id) => navigate(`/tickets/${id}`)} />
+          <TicketList tickets={filtered as any} onOpen={(id) => navigate(`/tickets/${id}`)} extraCols={extraCols} />
         )}
       </div>
 
