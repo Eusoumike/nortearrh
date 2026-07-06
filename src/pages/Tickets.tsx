@@ -394,7 +394,7 @@ function TicketList({ tickets, onOpen, extraCols }: { tickets: any[]; onOpen: (i
   }
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className={cn(gridCls, "border-b border-border bg-muted/40 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground")}>
+      <div style={gridStyle} className="border-b border-border bg-muted/40 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         <span>#</span>
         <span>Tema</span>
         <span>Cliente</span>
