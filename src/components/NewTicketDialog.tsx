@@ -18,12 +18,17 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic } from "lucide-react";
+import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic, ChevronDown } from "lucide-react";
 import { TicketStatusPopup } from "@/components/tickets/TicketStatusPopup";
 import { AudioTranscription } from "@/components/tickets/AudioTranscription";
-import { cn } from "@/lib/utils";
 import { TemaAutocomplete } from "@/components/tickets/TemaAutocomplete";
+import { cn } from "@/lib/utils";
 import {
   SLA_RESPONSE_HOURS,
   SLA_RESOLUTION_HOURS,
@@ -31,10 +36,7 @@ import {
   QUEM_REPORTOU_OPTIONS,
   type TicketPriority,
   type TicketChannel,
-  type TicketType,
 } from "@/lib/constants";
-
-import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 import {
   getClientPrimary,
@@ -59,6 +61,7 @@ const PRIORITY_OPTIONS: { value: TicketPriority; label: string }[] = [
   { value: "baixa", label: "Baixa" },
   { value: "media", label: "Média" },
   { value: "alta", label: "Alta" },
+  { value: "urgente", label: "Urgente" },
 ];
 
 const UNASSIGNED = "unassigned";
@@ -124,11 +127,11 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const [form, setForm] = useState({
     ticket_number: "",
     tema: "",
-    modulo_afetado: "" as string,
+    modulo_afetado: "",
     descricao_problema: "",
-    quem_reportou: "" as string,
-    client_id: "" as string,
-    assigned_to: UNASSIGNED as string,
+    quem_reportou: "",
+    client_id: "",
+    assigned_to: UNASSIGNED,
     organization: "",
     email: "",
     channel: "whatsapp" as TicketChannel,
@@ -138,9 +141,9 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     opened_at: openedDefault,
     sla_deadline: slaDefault,
   });
-
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [contatoOpen, setContatoOpen] = useState(false);
   const [statusPopup, setStatusPopup] = useState<{ open: boolean; id: string | null; number: string | null; title: string | null }>({
     open: false,
     id: null,
@@ -148,13 +151,12 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     title: null,
   });
 
-  // Reset on open + busca próximo número sequencial
+  // Reset on open + próximo número
   useEffect(() => {
     if (open) {
       const n = nowBrasilia();
       const sla = addHoursToBrasiliaInput(n, SLA_RESOLUTION_HOURS.media);
 
-      // Busca o maior ticket_number numérico para sugerir o próximo
       (async () => {
         const { data } = await supabase
           .from("tickets")
@@ -165,8 +167,8 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         (data ?? []).forEach((t: any) => {
           const digits = String(t.ticket_number ?? "").replace(/\D/g, "");
           if (digits) {
-            const n = parseInt(digits, 10);
-            if (!isNaN(n) && n > maxNum) maxNum = n;
+            const parsed = parseInt(digits, 10);
+            if (!isNaN(parsed) && parsed > maxNum) maxNum = parsed;
           }
         });
         const next = String(maxNum + 1).padStart(3, "0");
@@ -175,25 +177,22 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
       setForm({
         ticket_number: "",
-        title: "",
-        description: "",
+        tema: "",
+        modulo_afetado: "",
         descricao_problema: "",
         quem_reportou: "",
-        acao_tentada: "",
-        ja_tentou: "",
         client_id: "",
         assigned_to: UNASSIGNED,
         organization: "",
         email: "",
-        category: "",
         channel: "whatsapp",
         priority: "media",
-        ticket_type: "",
         phone: "",
         anydesk: "",
         opened_at: n,
         sla_deadline: sla,
       });
+      setContatoOpen(false);
     }
   }, [open]);
 
@@ -226,9 +225,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
 
   const selectedClient = clients?.find((c) => c.id === form.client_id);
-  const selectedAssignee = profiles?.find((p) => p.id === form.assigned_to);
 
-  // AnyDesk state derivado: cliente já tem cadastro?
   const clientHasAnydesk = Boolean((selectedClient as any)?.anydesk_id);
   const anydeskMatchesClient =
     clientHasAnydesk &&
@@ -247,7 +244,6 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         .update({ anydesk_id: idDigits, anydesk_senha: null } as any)
         .eq("id", form.client_id);
       if (error) throw error;
-      // sincroniza form com versão normalizada
       setForm((f) => ({ ...f, anydesk: idDigits }));
     },
     onSuccess: () => {
@@ -278,16 +274,14 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
         .from("tickets")
         .insert({
           ticket_number: form.ticket_number.trim() || undefined,
-          title: form.title.trim(),
-          description: form.description.trim() || null,
+          // title mantém compatibilidade com telas ainda não migradas
+          title: form.tema.trim(),
+          tema: form.tema.trim(),
+          modulo_afetado: form.modulo_afetado || null,
           descricao_problema: form.descricao_problema.trim() || null,
           quem_reportou: form.quem_reportou || null,
-          acao_tentada: form.acao_tentada.trim() || null,
-          ja_tentou: form.ja_tentou.trim() || null,
           priority: form.priority,
           channel: form.channel,
-          ticket_type: form.ticket_type as TicketType,
-          category: form.category.trim() || null,
           client_id: form.client_id || null,
           client_phone: form.phone || null,
           client_email: form.email.trim() || null,
@@ -310,6 +304,7 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["tickets"] });
       qc.invalidateQueries({ queryKey: ["dashboard-tickets"] });
+      qc.invalidateQueries({ queryKey: ["temas-frequentes"] });
       toast.success(`Chamado #${data.ticket_number} criado.`);
       onOpenChange(false);
       setStatusPopup({ open: true, id: data.id, number: data.ticket_number, title: data.title });
@@ -318,7 +313,13 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   });
 
   const requiredOk =
-    form.title.trim() && form.descricao_problema.trim() && form.client_id && form.channel && form.priority && form.ticket_type && form.opened_at;
+    form.tema.trim() &&
+    form.modulo_afetado &&
+    form.descricao_problema.trim() &&
+    form.client_id &&
+    form.channel &&
+    form.priority &&
+    form.opened_at;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,449 +332,393 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col rounded-xl shadow-2xl">
-        <DialogHeader className="border-b border-border bg-muted/30 px-6 py-4">
-          <DialogTitle className="text-lg font-semibold tracking-tight">Novo Chamado</DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Preencha os dados do atendimento. SLA de resposta calculado pela prioridade.
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-[760px] sm:max-w-[760px] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col rounded-xl shadow-2xl">
+          <DialogHeader className="border-b border-border bg-muted/30 px-6 py-4">
+            <DialogTitle className="text-lg font-semibold tracking-tight">Novo Chamado</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Preencha os dados do atendimento. SLA calculado pela prioridade.
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-            {/* Número do chamado */}
-            <div className="space-y-1">
-              <Label htmlFor="ticket_number" className="text-xs">
-                Número do chamado
-              </Label>
-              <Input
-                id="ticket_number"
-                value={form.ticket_number}
-                onChange={(e) => setForm({ ...form, ticket_number: e.target.value })}
-                placeholder="Ex: 031, VR-2024-001"
-                className="h-9 font-mono"
-                maxLength={50}
-              />
+          <form onSubmit={handleSubmit} className="px-5 py-4 overflow-y-auto">
+            {/* ─── Sobre o problema ────────────────────────────── */}
+            <div className="mb-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Sobre o problema
+              </h3>
             </div>
 
-            {/* Título */}
-            <div className="space-y-1">
-              <Label htmlFor="title" className="text-xs">
-                Título <span className="text-destructive">*</span>
-              </Label>
-              <TicketTitleCombobox
-                id="title"
-                required
-                compact
-                value={form.title}
-                onChange={(v) => setForm((f) => ({ ...f, title: v }))}
-                placeholder="Selecione ou digite o título…"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+              {/* Nº chamado */}
+              <div className="space-y-1">
+                <Label htmlFor="ticket_number" className="text-xs">Número do chamado</Label>
+                <Input
+                  id="ticket_number"
+                  value={form.ticket_number}
+                  onChange={(e) => setForm({ ...form, ticket_number: e.target.value })}
+                  placeholder="Ex: 031"
+                  className="h-9 font-mono"
+                  maxLength={50}
+                />
+              </div>
 
-            {/* Descrição do problema */}
-            <div className="col-span-2 space-y-1">
-              <Label htmlFor="descricao_problema" className="text-xs">
-                Descrição do problema <span className="text-destructive">*</span>
-              </Label>
-              <Textarea
-                id="descricao_problema"
-                value={form.descricao_problema}
-                onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })}
-                placeholder="Descreva o problema com mais detalhes... Ex: Cliente não consegue registrar ponto pelo app, a câmera abre mas não reconhece o rosto."
-                rows={3}
-                maxLength={2000}
-              />
-              <AudioToggle
-                onConfirm={(text) =>
-                  setForm((f) => ({
-                    ...f,
-                    descricao_problema: f.descricao_problema
-                      ? `${f.descricao_problema}\n${text}`
-                      : text,
-                  }))
-                }
-              />
-            </div>
+              {/* Cliente */}
+              <div className="space-y-1">
+                <Label className="text-xs">
+                  Cliente <span className="text-destructive">*</span>
+                </Label>
+                <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "h-9 w-full justify-between font-normal",
+                        !selectedClient && "text-muted-foreground",
+                      )}
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <Search className="h-3.5 w-3.5 shrink-0" />
+                        {selectedClient ? getClientLabel(selectedClient as any) : "Nome do cliente"}
+                      </span>
+                      <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Buscar por empresa ou contato…"
+                        className="h-9"
+                        value={clientSearch}
+                        onValueChange={setClientSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {filterAndSortClients((clients ?? []) as any[], clientSearch).map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.id}
+                              onSelect={() => {
+                                const anyC = c as any;
+                                setForm((prev) => ({
+                                  ...prev,
+                                  client_id: c.id,
+                                  organization:
+                                    anyC.razao_social ?? anyC.company ?? c.name ?? prev.organization,
+                                  email: anyC.contact_email ?? anyC.email ?? prev.email,
+                                  phone: (anyC.contact_phone ?? anyC.phone)
+                                    ? maskPhone(anyC.contact_phone ?? anyC.phone)
+                                    : prev.phone,
+                                  anydesk: anyC.anydesk_id ?? prev.anydesk,
+                                }));
+                                setClientPickerOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-3.5 w-3.5",
+                                  form.client_id === c.id ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">{getClientPrimary(c)}</span>
+                                {getClientSecondary(c) && (
+                                  <span className="text-xs text-muted-foreground">{getClientSecondary(c)}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-            {/* Quem está com o problema | O que estava tentando fazer */}
-            <div className="space-y-1">
-              <Label className="text-xs">Quem está com o problema</Label>
-              <Select
-                value={form.quem_reportou || undefined}
-                onValueChange={(v) => setForm({ ...form, quem_reportou: v })}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="colaborador">Colaborador</SelectItem>
-                  <SelectItem value="gestor">Gestor</SelectItem>
-                  <SelectItem value="administrador">Administrador (admin)</SelectItem>
-                  <SelectItem value="rh">RH</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="acao_tentada" className="text-xs">O que estava tentando fazer</Label>
-              <Input
-                id="acao_tentada"
-                value={form.acao_tentada}
-                onChange={(e) => setForm({ ...form, acao_tentada: e.target.value })}
-                placeholder="Ex: Registrar ponto facial, fechamento, aprovar abono…"
-                className="h-9"
-                maxLength={300}
-              />
-            </div>
-
-            {/* O que já foi tentado */}
-            <div className="col-span-2 space-y-1">
-              <Label htmlFor="ja_tentou" className="text-xs">O que já foi tentado (opcional)</Label>
-              <Textarea
-                id="ja_tentou"
-                value={form.ja_tentou}
-                onChange={(e) => setForm({ ...form, ja_tentou: e.target.value })}
-                placeholder="Ex: Já limpou o cache, testou em outro celular, verificou as permissões…"
-                rows={2}
-                maxLength={1000}
-              />
-            </div>
-
-            {/* Tipo de chamado */}
-            <div className="col-span-2 space-y-1">
-              <Label className="text-xs">
-                Tipo de chamado <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={form.ticket_type || undefined}
-                onValueChange={(v) => setForm({ ...form, ticket_type: v as TicketType })}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Selecione o tipo de chamado" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[360px]">
-                  {TICKET_TYPE_GROUPS.map((group, idx) => (
-                    <div key={group.label}>
-                      {idx > 0 && <SelectSeparator />}
-                      <SelectGroup>
-                        <SelectLabel className="flex items-center justify-between text-[10px] uppercase tracking-wider">
-                          <span>{group.label}</span>
-                          <span className="font-normal text-muted-foreground normal-case tracking-normal">{group.hint}</span>
-                        </SelectLabel>
-                        {group.types.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {TICKET_TYPE_LABEL[t]}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Cliente | Atendente */}
-            <div className="space-y-1">
-              <Label className="text-xs">
-                Cliente <span className="text-destructive">*</span>
-              </Label>
-              <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    className={cn(
-                      "h-9 w-full justify-between font-normal",
-                      !selectedClient && "text-muted-foreground",
-                    )}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      <Search className="h-3.5 w-3.5 shrink-0" />
-                      {selectedClient ? getClientLabel(selectedClient as any) : "Nome do cliente"}
-                    </span>
-                    <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command shouldFilter={false}>
-                    <CommandInput
-                      placeholder="Buscar por empresa ou contato…"
-                      className="h-9"
-                      value={clientSearch}
-                      onValueChange={setClientSearch}
-                    />
-                    <CommandList>
-                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {filterAndSortClients((clients ?? []) as any[], clientSearch).map((c) => (
-                          <CommandItem
-                            key={c.id}
-                            value={c.id}
-                            onSelect={() => {
-                              const anyC = c as any;
-                              setForm((prev) => ({
-                                ...prev,
-                                client_id: c.id,
-                                organization:
-                                  anyC.razao_social ?? anyC.company ?? c.name ?? prev.organization,
-                                email: anyC.contact_email ?? anyC.email ?? prev.email,
-                                phone: (anyC.contact_phone ?? anyC.phone)
-                                  ? maskPhone(anyC.contact_phone ?? anyC.phone)
-                                  : prev.phone,
-                                anydesk: anyC.anydesk_id ?? prev.anydesk,
-                              }));
-                              setClientPickerOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-3.5 w-3.5",
-                                form.client_id === c.id ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">{getClientPrimary(c)}</span>
-                              {getClientSecondary(c) && (
-                                <span className="text-xs text-muted-foreground">{getClientSecondary(c)}</span>
-                              )}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
               {selectedClient && (
-                <div className="mt-2">
+                <div className="col-span-2">
                   <ClientPreviewCard client={selectedClient} />
                 </div>
               )}
-            </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">Atendente Responsável</Label>
-              <Select
-                value={form.assigned_to}
-                onValueChange={(v) => setForm({ ...form, assigned_to: v })}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNASSIGNED}>Não atribuído</SelectItem>
-                  {(profiles ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.full_name ?? "—"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Organização | Email */}
-            <div className="space-y-1">
-              <Label htmlFor="org" className="text-xs">Organização</Label>
-              <Input
-                id="org"
-                value={form.organization}
-                onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                placeholder="Empresa"
-                className="h-9"
-                maxLength={150}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="email" className="text-xs">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="email@empresa.com"
-                className="h-9"
-                maxLength={150}
-              />
-            </div>
-
-            {/* Telefone | Categoria */}
-            <div className="space-y-1">
-              <Label htmlFor="phone" className="text-xs">Telefone</Label>
-              <Input
-                id="phone"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: maskPhone(e.target.value) })}
-                placeholder="(11) 99999-9999"
-                className="h-9"
-                inputMode="tel"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="category" className="text-xs">Categoria</Label>
-              <Input
-                id="category"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                placeholder="Ex: Folha, Benefícios…"
-                className="h-9"
-                maxLength={100}
-              />
-            </div>
-
-            {/* Canal | Prioridade */}
-            <div className="space-y-1">
-              <Label className="text-xs">
-                Canal <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={form.channel}
-                onValueChange={(v) => setForm({ ...form, channel: v as TicketChannel })}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CHANNEL_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">
-                Prioridade <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={form.priority}
-                onValueChange={(v) => setForm({ ...form, priority: v as TicketPriority })}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITY_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* AnyDesk (col-span-2 com ID + senha + indicador) */}
-            <div className="col-span-2 space-y-1.5 rounded-lg border border-border bg-surface-muted/30 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="flex items-center gap-1.5 text-xs font-medium">
-                  <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-                  AnyDesk do Cliente
+              {/* Tema */}
+              <div className="col-span-2 space-y-1">
+                <Label className="text-xs">
+                  Tema / Assunto <span className="text-destructive">*</span>
                 </Label>
-                {form.client_id && (
-                  clientHasAnydesk ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-success">
-                      <Check className="h-3 w-3" /> Importado do perfil
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-warning">
-                      Cliente sem AnyDesk cadastrado
-                    </span>
-                  )
+                <TemaAutocomplete
+                  compact
+                  value={form.tema}
+                  onChange={(tema, moduloSugerido) =>
+                    setForm((f) => ({
+                      ...f,
+                      tema,
+                      modulo_afetado:
+                        f.modulo_afetado || moduloSugerido || f.modulo_afetado,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Módulo | Quem reportou */}
+              <div className="space-y-1">
+                <Label className="text-xs">
+                  Módulo afetado <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.modulo_afetado || undefined}
+                  onValueChange={(v) => setForm({ ...form, modulo_afetado: v })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione o módulo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MODULO_AFETADO_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Quem reportou</Label>
+                <Select
+                  value={form.quem_reportou || undefined}
+                  onValueChange={(v) => setForm({ ...form, quem_reportou: v })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUEM_REPORTOU_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Prioridade | Canal */}
+              <div className="space-y-1">
+                <Label className="text-xs">
+                  Prioridade <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.priority}
+                  onValueChange={(v) => setForm({ ...form, priority: v as TicketPriority })}
+                >
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PRIORITY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">
+                  Canal <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={form.channel}
+                  onValueChange={(v) => setForm({ ...form, channel: v as TicketChannel })}
+                >
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CHANNEL_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Descrição */}
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="descricao_problema" className="text-xs">
+                  Descrição do problema <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="descricao_problema"
+                  value={form.descricao_problema}
+                  onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })}
+                  placeholder="Descreva o problema com detalhes. Ex: Cliente não consegue registrar ponto pelo app; a câmera abre mas não reconhece o rosto."
+                  rows={4}
+                  maxLength={2000}
+                />
+                <AudioToggle
+                  onConfirm={(text) =>
+                    setForm((f) => ({
+                      ...f,
+                      descricao_problema: f.descricao_problema
+                        ? `${f.descricao_problema}\n${text}`
+                        : text,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Datas */}
+              <div className="space-y-1">
+                <Label htmlFor="opened" className="text-xs">
+                  Data de Abertura <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="opened"
+                  type="datetime-local"
+                  required
+                  value={form.opened_at}
+                  onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sla" className="text-xs">Prazo SLA</Label>
+                <Input
+                  id="sla"
+                  type="date"
+                  value={form.sla_deadline}
+                  onChange={(e) => setForm({ ...form, sla_deadline: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+
+              {/* AnyDesk */}
+              <div className="col-span-2 space-y-1.5 rounded-lg border border-border bg-surface-muted/30 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="flex items-center gap-1.5 text-xs font-medium">
+                    <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                    AnyDesk do Cliente
+                  </Label>
+                  {form.client_id && (
+                    clientHasAnydesk ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-success">
+                        <Check className="h-3 w-3" /> Importado do perfil
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-warning">
+                        Cliente sem AnyDesk cadastrado
+                      </span>
+                    )
+                  )}
+                </div>
+                <Input
+                  id="anydesk"
+                  value={form.anydesk}
+                  onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
+                  placeholder="ID (123 456 789)"
+                  className="h-9"
+                  inputMode="numeric"
+                  maxLength={50}
+                />
+                {form.client_id && !anydeskMatchesClient && form.anydesk.trim() && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={saveAnydeskToClient.isPending || !form.anydesk.trim()}
+                    onClick={() => saveAnydeskToClient.mutate()}
+                  >
+                    {saveAnydeskToClient.isPending ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Save className="mr-1 h-3 w-3" />
+                    )}
+                    {clientHasAnydesk ? "Atualizar no perfil do cliente" : "Cadastrar no perfil do cliente"}
+                  </Button>
                 )}
               </div>
-              <Input
-                id="anydesk"
-                value={form.anydesk}
-                onChange={(e) => setForm({ ...form, anydesk: e.target.value })}
-                placeholder="ID (123 456 789)"
-                className="h-9"
-                inputMode="numeric"
-                maxLength={50}
-              />
-              {form.client_id && !anydeskMatchesClient && form.anydesk.trim() && (
-                <Button
+            </div>
+
+            {/* ─── Contato (opcional) ─────────────────────────── */}
+            <Collapsible open={contatoOpen} onOpenChange={setContatoOpen} className="mt-4">
+              <CollapsibleTrigger asChild>
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={saveAnydeskToClient.isPending || !form.anydesk.trim()}
-                  onClick={() => saveAnydeskToClient.mutate()}
+                  className="flex w-full items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/50"
                 >
-                  {saveAnydeskToClient.isPending ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Save className="mr-1 h-3 w-3" />
-                  )}
-                  {clientHasAnydesk ? "Atualizar no perfil do cliente" : "Cadastrar no perfil do cliente"}
-                </Button>
-              )}
-            </div>
+                  Contato (opcional)
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", contatoOpen && "rotate-180")} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="org" className="text-xs">Organização</Label>
+                    <Input
+                      id="org"
+                      value={form.organization}
+                      onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                      className="h-9"
+                      maxLength={150}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="email" className="text-xs">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="email@empresa.com"
+                      className="h-9"
+                      maxLength={150}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="phone" className="text-xs">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: maskPhone(e.target.value) })}
+                      placeholder="(11) 99999-9999"
+                      className="h-9"
+                      inputMode="tel"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Atendente responsável</Label>
+                    <Select
+                      value={form.assigned_to}
+                      onValueChange={(v) => setForm({ ...form, assigned_to: v })}
+                    >
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UNASSIGNED}>Não atribuído</SelectItem>
+                        {(profiles ?? []).map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.full_name ?? "—"}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-            <div className="space-y-1">
-              <Label htmlFor="opened" className="text-xs">
-                Data de Abertura <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="opened"
-                type="datetime-local"
-                required
-                value={form.opened_at}
-                onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
-                className="h-9"
-              />
+            <div className="mt-5 flex justify-end gap-2 border-t border-border pt-3 -mx-5 px-5">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={create.isPending || !requiredOk}
+                className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+              >
+                {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Criar Chamado
+              </Button>
             </div>
-
-            {/* Prazo SLA */}
-            <div className="space-y-1">
-              <Label htmlFor="sla" className="text-xs">Prazo SLA</Label>
-              <Input
-                id="sla"
-                type="date"
-                value={form.sla_deadline}
-                onChange={(e) => setForm({ ...form, sla_deadline: e.target.value })}
-                className="h-9"
-              />
-            </div>
-
-            {/* Descrição (opcional, full width) */}
-            <div className="col-span-2 space-y-1">
-              <Label htmlFor="description" className="text-xs">Descrição do problema</Label>
-              <Textarea
-                id="description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Detalhes adicionais — o que o cliente relatou, contexto, prints, etc. (opcional)"
-                rows={4}
-                maxLength={2000}
-              />
-            </div>
-          </div>
-
-          <div className="mt-5 flex justify-end gap-2 border-t border-border pt-3 -mx-5 px-5">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={create.isPending || !requiredOk}
-              className="bg-gradient-brand text-primary-foreground hover:opacity-90"
-            >
-              {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Criar Chamado
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-    <TicketStatusPopup
-      open={statusPopup.open}
-      onOpenChange={(o) => setStatusPopup((s) => ({ ...s, open: o }))}
-      ticketId={statusPopup.id}
-      ticketNumber={statusPopup.number}
-      ticketTitle={statusPopup.title}
-    />
+          </form>
+        </DialogContent>
+      </Dialog>
+      <TicketStatusPopup
+        open={statusPopup.open}
+        onOpenChange={(o) => setStatusPopup((s) => ({ ...s, open: o }))}
+        ticketId={statusPopup.id}
+        ticketNumber={statusPopup.number}
+        ticketTitle={statusPopup.title}
+      />
     </>
   );
 }
