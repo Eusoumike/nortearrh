@@ -11,7 +11,17 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { STATUS_LABEL, PRIORITY_LABEL, CHANNEL_LABEL, SLA_RESPONSE_HOURS, SLA_RESOLUTION_HOURS, type TicketPriority, type TicketChannel } from "@/lib/constants";
+import { TemaAutocomplete } from "@/components/tickets/TemaAutocomplete";
+import {
+  PRIORITY_LABEL,
+  CHANNEL_LABEL,
+  SLA_RESPONSE_HOURS,
+  SLA_RESOLUTION_HOURS,
+  MODULO_AFETADO_OPTIONS,
+  QUEM_REPORTOU_OPTIONS,
+  type TicketPriority,
+  type TicketChannel,
+} from "@/lib/constants";
 import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 
 export default function NewTicket() {
@@ -20,11 +30,12 @@ export default function NewTicket() {
   const qc = useQueryClient();
 
   const [form, setForm] = useState({
-    title: "",
-    description: "",
+    tema: "",
+    modulo_afetado: "",
+    quem_reportou: "",
+    descricao_problema: "",
     priority: "media" as TicketPriority,
-    channel: "portal" as TicketChannel,
-    category: "",
+    channel: "whatsapp" as TicketChannel,
     client_id: "" as string,
     opened_at: nowBrasilia(),
   });
@@ -41,16 +52,22 @@ export default function NewTicket() {
   const create = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
+      if (!form.tema.trim()) throw new Error("Tema é obrigatório");
+      if (!form.modulo_afetado) throw new Error("Módulo afetado é obrigatório");
+      if (!form.descricao_problema.trim()) throw new Error("Descrição é obrigatória");
+
       const openedISO = brazilInputToISO(form.opened_at) ?? new Date().toISOString();
       const openedDate = new Date(openedISO);
       const respDeadline = new Date(openedDate.getTime() + SLA_RESPONSE_HOURS[form.priority] * 3600_000);
       const resDeadline = new Date(openedDate.getTime() + SLA_RESOLUTION_HOURS[form.priority] * 3600_000);
       const { data, error } = await supabase.from("tickets").insert({
-        title: form.title,
-        description: form.description || null,
+        title: form.tema.trim(),
+        tema: form.tema.trim(),
+        modulo_afetado: form.modulo_afetado,
+        quem_reportou: form.quem_reportou || null,
+        descricao_problema: form.descricao_problema.trim(),
         priority: form.priority,
         channel: form.channel,
-        category: form.category || null,
         client_id: form.client_id || null,
         created_by: user.id,
         created_at: openedISO,
@@ -63,11 +80,15 @@ export default function NewTicket() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["tickets"] });
       qc.invalidateQueries({ queryKey: ["dashboard-tickets"] });
+      qc.invalidateQueries({ queryKey: ["temas-frequentes"] });
       toast.success(`Ticket #${data.ticket_number} criado.`);
       navigate(`/tickets/${data.id}`);
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const requiredOk =
+    form.tema.trim() && form.modulo_afetado && form.descricao_problema.trim();
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
@@ -75,20 +96,66 @@ export default function NewTicket() {
         <ArrowLeft className="h-3.5 w-3.5" /> Voltar
       </Link>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Novo ticket</h1>
-        <p className="text-sm text-muted-foreground">SLA será calculado automaticamente com base na prioridade.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Novo chamado</h1>
+        <p className="text-sm text-muted-foreground">SLA calculado automaticamente com base na prioridade.</p>
       </div>
 
       <Card className="p-6">
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
           <div className="space-y-1.5">
-            <Label htmlFor="title">Título *</Label>
-            <Input id="title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex.: Erro ao gerar relatório fiscal" />
+            <Label>Tema *</Label>
+            <TemaAutocomplete
+              value={form.tema}
+              onChange={(tema, moduloSugerido) =>
+                setForm((f) => ({
+                  ...f,
+                  tema,
+                  modulo_afetado: f.modulo_afetado || moduloSugerido || f.modulo_afetado,
+                }))
+              }
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Módulo afetado *</Label>
+              <Select
+                value={form.modulo_afetado || undefined}
+                onValueChange={(v) => setForm({ ...form, modulo_afetado: v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {MODULO_AFETADO_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Quem reportou</Label>
+              <Select
+                value={form.quem_reportou || undefined}
+                onValueChange={(v) => setForm({ ...form, quem_reportou: v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {QUEM_REPORTOU_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="desc">Descrição</Label>
-            <Textarea id="desc" rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalhe o que está acontecendo, passos para reproduzir, impacto…" />
+            <Label htmlFor="desc">Descrição do problema *</Label>
+            <Textarea
+              id="desc"
+              rows={4}
+              value={form.descricao_problema}
+              onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })}
+              placeholder="Descreva o problema em detalhes, passos para reproduzir e impacto…"
+            />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -109,10 +176,6 @@ export default function NewTicket() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Categoria</Label>
-              <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Ex.: Financeiro, Bug, Dúvida…" />
-            </div>
-            <div className="space-y-1.5">
               <Label>Prioridade *</Label>
               <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as TicketPriority })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -131,7 +194,7 @@ export default function NewTicket() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5">
               <Label htmlFor="opened_at">Data de abertura *</Label>
               <Input
                 id="opened_at"
@@ -146,9 +209,9 @@ export default function NewTicket() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => navigate(-1)}>Cancelar</Button>
-            <Button type="submit" disabled={create.isPending || !form.title} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
+            <Button type="submit" disabled={create.isPending || !requiredOk} className="bg-gradient-brand text-primary-foreground hover:opacity-90">
               {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Criar ticket
+              Criar chamado
             </Button>
           </div>
         </form>
