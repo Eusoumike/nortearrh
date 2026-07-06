@@ -162,3 +162,44 @@ export const SLA_RESOLUTION_HOURS: Record<TicketPriority, number> = {
   baixa: 72,
 };
 
+// ─── Novos campos de tratativa (Fase 1/2) ─────────────────────────
+export const MODULO_AFETADO_OPTIONS: { value: string; label: string }[] = [
+  { value: "ponto", label: "Ponto" },
+  { value: "escalas", label: "Escalas" },
+  { value: "feriados", label: "Feriados" },
+  { value: "beneficios_vr", label: "Benefícios VR" },
+  { value: "faturamento", label: "Faturamento" },
+  { value: "acessos", label: "Acessos" },
+  { value: "relatorios", label: "Relatórios" },
+  { value: "app_rep", label: "App / REP" },
+  { value: "integracao_folha", label: "Integração folha" },
+  { value: "outros", label: "Outros" },
+];
+
+export const MODULO_AFETADO_LABEL: Record<string, string> = Object.fromEntries(
+  MODULO_AFETADO_OPTIONS.map((o) => [o.value, o.label]),
+);
+
+export const ORIGEM_PROBLEMA_OPTIONS: { value: string; label: string }[] = [
+  { value: "erro_configuracao", label: "Erro de configuração" },
+  { value: "duvida_operacional", label: "Dúvida operacional" },
+  { value: "bug_sistema", label: "Bug do sistema" },
+  { value: "permissao_faltando", label: "Permissão faltando" },
+  { value: "dado_incorreto", label: "Dado incorreto" },
+  { value: "cliente_resolveu_sozinho", label: "Cliente resolveu sozinho" },
+  { value: "outros", label: "Outros" },
+];
+
+export const ORIGEM_PROBLEMA_LABEL: Record<string, string> = Object.fromEntries(
+  ORIGEM_PROBLEMA_OPTIONS.map((o) => [o.value, o.label]),
+);
+
+export const QUEM_REPORTOU_OPTIONS: { value: string; label: string }[] = [
+  { value: "administrador", label: "Administrador" },
+  { value: "rh", label: "RH" },
+  { value: "gestor", label: "Gestor" },
+  { value: "colaborador", label: "Colaborador" },
+  { value: "contador", label: "Contador" },
+];
+
+
