@@ -1203,11 +1203,22 @@ export default function TicketDetail() {
               <Button
                 variant="outline"
                 className="w-full justify-start font-semibold"
-                onClick={() => updateStatus.mutate("resolvido")}
-                disabled={updateStatus.isPending}
+                onClick={() => encerrar.abrirModal(ticket as any)}
               >
                 <CheckCircle2 className="mr-2 h-4 w-4 text-success" />
                 Encerrar Chamado
+              </Button>
+            )}
+
+            {isClosed && (
+              <Button
+                variant="outline"
+                className="w-full justify-start font-semibold"
+                onClick={() => reabrirChamado.mutate()}
+                disabled={reabrirChamado.isPending}
+              >
+                <RotateCcw className="mr-2 h-4 w-4 text-primary" />
+                Reabrir Chamado
               </Button>
             )}
 
@@ -1216,6 +1227,10 @@ export default function TicketDetail() {
               onValueChange={(v) => {
                 const etapa = etapasItems.find((e) => e.key === v);
                 if (!etapa) return;
+                if (etapa.base === "resolvido") {
+                  encerrar.abrirModal(ticket as any);
+                  return;
+                }
                 updateStatus.mutate({ status: etapa.base, customKey: etapa.customKey, label: etapa.label });
               }}
             >
