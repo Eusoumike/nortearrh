@@ -123,25 +123,22 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
 
   const [form, setForm] = useState({
     ticket_number: "",
-    title: "",
-    description: "",
+    tema: "",
+    modulo_afetado: "" as string,
     descricao_problema: "",
     quem_reportou: "" as string,
-    acao_tentada: "",
-    ja_tentou: "",
     client_id: "" as string,
     assigned_to: UNASSIGNED as string,
     organization: "",
     email: "",
-    category: "",
     channel: "whatsapp" as TicketChannel,
     priority: "media" as TicketPriority,
-    ticket_type: "" as TicketType | "",
     phone: "",
     anydesk: "",
     opened_at: openedDefault,
     sla_deadline: slaDefault,
   });
+
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
   const [statusPopup, setStatusPopup] = useState<{ open: boolean; id: string | null; number: string | null; title: string | null }>({
