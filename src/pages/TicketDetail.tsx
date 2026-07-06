@@ -64,6 +64,7 @@ import {
   Sparkles,
   Clock,
   RefreshCw,
+  RotateCcw,
   Settings,
 } from "lucide-react";
 import { AudioTranscription } from "@/components/tickets/AudioTranscription";
