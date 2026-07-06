@@ -23,6 +23,7 @@ import {
   Circle,
   ArrowRight,
 } from "lucide-react";
+import { InsightsChamados } from "@/components/dashboard/InsightsChamados";
 
 /* ============================================================
  * Helpers
