@@ -289,7 +289,7 @@ function AddStageColumn({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function TicketKanban({ tickets, showResolved = false, assistedIds, customStages = [], canManageStages = false, onAddStageClick, onDeleteStage }: Props) {
+export function TicketKanban({ tickets, showResolved = false, assistedIds, customStages = [], canManageStages = false, onAddStageClick, onDeleteStage, onRequestClose }: Props) {
   const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const [activeId, setActiveId] = useState<string | null>(null);
