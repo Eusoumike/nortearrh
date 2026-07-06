@@ -61,6 +61,7 @@ interface Props {
   canManageStages?: boolean;
   onAddStageClick?: () => void;
   onDeleteStage?: (stage: CustomStage) => void;
+  onRequestClose?: (ticket: KanbanTicket) => void;
 }
 
 // Map de cor da barra superior da coluna (estilo Pipedrive) por tom semântico
