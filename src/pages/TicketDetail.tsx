@@ -1640,6 +1640,11 @@ export default function TicketDetail() {
 
       <EditTicketDialog ticket={ticket} open={editOpen} onOpenChange={setEditOpen} />
       <EmailN2Dialog ticketId={ticket.id} ticketStatus={ticket.status} open={emailN2Open} onOpenChange={setEmailN2Open} />
+      <FecharChamadoDialog
+        open={encerrar.dialogAberto}
+        onClose={encerrar.fecharModal}
+        ticket={encerrar.ticketAlvo}
+      />
     </div>
   );
 }
