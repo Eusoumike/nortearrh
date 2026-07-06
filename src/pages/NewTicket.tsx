@@ -147,6 +147,10 @@ export default function NewTicket() {
             </div>
           </div>
 
+          <AssistSugestoes tema={form.tema} moduloAfetado={form.modulo_afetado} />
+
+
+
           <div className="space-y-1.5">
             <Label htmlFor="desc">Descrição do problema *</Label>
             <Textarea
