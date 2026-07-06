@@ -303,6 +303,8 @@ export default function TicketDetail() {
 
   const myProfile = profiles?.find((p) => p.id === user?.id);
 
+  const encerrar = useEncerrarChamado();
+
   const updateStatus = useMutation({
     mutationFn: async (input: TicketStatus | { status: TicketStatus; customKey: string | null; label?: string }) => {
       const payload =
@@ -318,6 +320,22 @@ export default function TicketDetail() {
       qc.invalidateQueries({ queryKey: ["tickets"] });
       const label = typeof input === "string" ? STATUS_LABEL[input] : (input.label ?? STATUS_LABEL[input.status]);
       toast.success(`Status alterado para ${label}.`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const reabrirChamado = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("tickets")
+        .update({ status: "em_atendimento", resolved_at: null } as any)
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ticket", id] });
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success("Chamado reaberto.");
     },
     onError: (e: any) => toast.error(e.message),
   });
