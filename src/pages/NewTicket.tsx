@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { TemaAutocomplete } from "@/components/tickets/TemaAutocomplete";
+import { AssistSugestoes } from "@/components/tickets/AssistSugestoes";
 import {
   PRIORITY_LABEL,
   CHANNEL_LABEL,
