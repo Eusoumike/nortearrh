@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      assist_artigos: {
+        Row: {
+          causa_raiz: string | null
+          created_at: string
+          criado_por: string | null
+          id: string
+          modulo_afetado: string | null
+          origem_ticket_id: string | null
+          passos_solucao: string | null
+          problema_relatado: string | null
+          publicado: boolean | null
+          tags: string[] | null
+          tema_relacionado: string | null
+          titulo: string
+          updated_at: string
+          util_negativo: number | null
+          util_positivo: number | null
+          visualizacoes: number | null
+        }
+        Insert: {
+          causa_raiz?: string | null
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          modulo_afetado?: string | null
+          origem_ticket_id?: string | null
+          passos_solucao?: string | null
+          problema_relatado?: string | null
+          publicado?: boolean | null
+          tags?: string[] | null
+          tema_relacionado?: string | null
+          titulo: string
+          updated_at?: string
+          util_negativo?: number | null
+          util_positivo?: number | null
+          visualizacoes?: number | null
+        }
+        Update: {
+          causa_raiz?: string | null
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          modulo_afetado?: string | null
+          origem_ticket_id?: string | null
+          passos_solucao?: string | null
+          problema_relatado?: string | null
+          publicado?: boolean | null
+          tags?: string[] | null
+          tema_relacionado?: string | null
+          titulo?: string
+          updated_at?: string
+          util_negativo?: number | null
+          util_positivo?: number | null
+          visualizacoes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assist_artigos_origem_ticket_id_fkey"
+            columns: ["origem_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assist_conversations: {
         Row: {
           created_at: string
@@ -2145,6 +2210,39 @@ export type Database = {
           },
         ]
       }
+      ticket_temas_frequentes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          id: string
+          modulo_afetado_sugerido: string | null
+          tema: string
+          total_ocorrencias: number | null
+          ultima_ocorrencia: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          modulo_afetado_sugerido?: string | null
+          tema: string
+          total_ocorrencias?: number | null
+          ultima_ocorrencia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          modulo_afetado_sugerido?: string | null
+          tema?: string
+          total_ocorrencias?: number | null
+          ultima_ocorrencia?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ticket_titles: {
         Row: {
           created_at: string
@@ -2203,8 +2301,10 @@ export type Database = {
           ja_tentou: string | null
           kanban_stage_key: string | null
           modulo: string | null
+          modulo_afetado: string | null
           opened_at: string
           organization: string | null
+          origem_problema: string | null
           pipedrive_deal_id: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           quem_reportou: string | null
@@ -2216,11 +2316,13 @@ export type Database = {
           sla_resolution_deadline: string | null
           sla_response_deadline: string | null
           solucao_aplicada: string | null
+          solucao_curta: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde: string | null
           status_ativo_key: string | null
           status_changed_at: string
           tags: string[] | null
+          tema: string | null
           ticket_number: string
           ticket_type: Database["public"]["Enums"]["ticket_type"] | null
           title: string
@@ -2230,6 +2332,7 @@ export type Database = {
           total_n2_seconds: number
           total_vera_n1_seconds: number
           updated_at: string
+          vira_artigo_assist: boolean | null
         }
         Insert: {
           acao_tentada?: string | null
@@ -2264,8 +2367,10 @@ export type Database = {
           ja_tentou?: string | null
           kanban_stage_key?: string | null
           modulo?: string | null
+          modulo_afetado?: string | null
           opened_at?: string
           organization?: string | null
+          origem_problema?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           quem_reportou?: string | null
@@ -2277,11 +2382,13 @@ export type Database = {
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
           solucao_aplicada?: string | null
+          solucao_curta?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
           status_changed_at?: string
           tags?: string[] | null
+          tema?: string | null
           ticket_number: string
           ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title: string
@@ -2291,6 +2398,7 @@ export type Database = {
           total_n2_seconds?: number
           total_vera_n1_seconds?: number
           updated_at?: string
+          vira_artigo_assist?: boolean | null
         }
         Update: {
           acao_tentada?: string | null
@@ -2325,8 +2433,10 @@ export type Database = {
           ja_tentou?: string | null
           kanban_stage_key?: string | null
           modulo?: string | null
+          modulo_afetado?: string | null
           opened_at?: string
           organization?: string | null
+          origem_problema?: string | null
           pipedrive_deal_id?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           quem_reportou?: string | null
@@ -2338,11 +2448,13 @@ export type Database = {
           sla_resolution_deadline?: string | null
           sla_response_deadline?: string | null
           solucao_aplicada?: string | null
+          solucao_curta?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_ativo_desde?: string | null
           status_ativo_key?: string | null
           status_changed_at?: string
           tags?: string[] | null
+          tema?: string | null
           ticket_number?: string
           ticket_type?: Database["public"]["Enums"]["ticket_type"] | null
           title?: string
@@ -2352,6 +2464,7 @@ export type Database = {
           total_n2_seconds?: number
           total_vera_n1_seconds?: number
           updated_at?: string
+          vira_artigo_assist?: boolean | null
         }
         Relationships: [
           {
