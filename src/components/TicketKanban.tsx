@@ -52,6 +52,8 @@ interface KanbanTicket {
   entered_vera_n1_at: string | null;
   entered_n2_at: string | null;
   active_custom_stage_key: string | null;
+  modulo_afetado?: string | null;
+  tema?: string | null;
 }
 
 interface Props {
