@@ -28,6 +28,7 @@ import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic, ChevronDown
 import { TicketStatusPopup } from "@/components/tickets/TicketStatusPopup";
 import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { TemaAutocomplete } from "@/components/tickets/TemaAutocomplete";
+import { AssistSugestoes } from "@/components/tickets/AssistSugestoes";
 import { cn } from "@/lib/utils";
 import {
   SLA_RESPONSE_HOURS,
