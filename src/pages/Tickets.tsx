@@ -363,7 +363,28 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) => void }) {
+const COL_DEFS = [
+  { key: "origem_problema", label: "Origem", width: "140px" },
+  { key: "quem_reportou", label: "Quem reportou", width: "130px" },
+  { key: "channel", label: "Canal", width: "100px" },
+  { key: "priority", label: "Prioridade", width: "110px" },
+  { key: "solucao_curta", label: "Solução", width: "minmax(180px,1.5fr)" },
+] as const;
+
+function TicketList({ tickets, onOpen, extraCols }: { tickets: any[]; onOpen: (id: string) => void; extraCols: Record<string, boolean> }) {
+  const activeExtras = COL_DEFS.filter((c) => extraCols[c.key]);
+  const gridTemplate = [
+    "80px",
+    "minmax(180px,1fr)",
+    "minmax(200px,2fr)",
+    "150px",
+    "150px",
+    ...activeExtras.map((c) => c.width),
+    "140px",
+    "120px",
+  ].join("_");
+  const gridCls = `grid grid-cols-[${gridTemplate}] gap-3`;
+
   if (!tickets.length) {
     return (
       <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-card">
@@ -373,30 +394,39 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
   }
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className="grid grid-cols-[80px_minmax(180px,1fr)_minmax(220px,2fr)_140px_110px_140px_120px] gap-3 border-b border-border bg-muted/40 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className={cn(gridCls, "border-b border-border bg-muted/40 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground")}>
         <span>#</span>
+        <span>Tema</span>
         <span>Cliente</span>
-        <span>Título</span>
+        <span>Módulo</span>
         <span>Status</span>
-        <span>Prioridade</span>
+        {activeExtras.map((c) => <span key={c.key}>{c.label}</span>)}
         <span>Responsável</span>
         <span>Aberto</span>
       </div>
       <div className="flex-1 overflow-y-auto">
         {tickets.map((t) => {
           const opened = t.opened_at ?? t.created_at;
+          const tema = t.tema ?? t.title ?? "—";
+          const isClosed = t.status === "resolvido" || t.status === "fechado";
           return (
             <button
               key={t.id} type="button" onClick={() => onOpen(t.id)}
-              className="grid w-full grid-cols-[80px_minmax(180px,1fr)_minmax(220px,2fr)_140px_110px_140px_120px] items-center gap-3 border-b border-border/60 px-5 py-3 text-left text-sm transition-colors hover:bg-muted/40"
+              className={cn(gridCls, "w-full items-center border-b border-border/60 px-5 py-3 text-left text-sm transition-colors hover:bg-muted/40")}
             >
               <span className="font-mono text-[12px] text-muted-foreground">#{t.ticket_number}</span>
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-foreground">{t.client?.name ?? t.client_name ?? "—"}</p>
-              </div>
-              <p className="truncate text-foreground">{t.title}</p>
+              <p className="truncate font-medium text-foreground">{tema}</p>
+              <p className="truncate text-foreground">{t.client?.name ?? t.client_name ?? "—"}</p>
+              <div><ModuloBadge modulo={t.modulo_afetado} size="sm" /></div>
               <div><StatusBadge status={t.status} /></div>
-              <div><PriorityBadge priority={t.priority} /></div>
+              {activeExtras.map((c) => {
+                if (c.key === "priority") return <div key={c.key}><PriorityBadge priority={t.priority} /></div>;
+                if (c.key === "channel") return <span key={c.key} className="text-xs text-muted-foreground truncate">{CHANNEL_LABEL[t.channel as keyof typeof CHANNEL_LABEL] ?? "—"}</span>;
+                if (c.key === "origem_problema") return <span key={c.key} className="text-xs text-muted-foreground truncate">{t.origem_problema ? (ORIGEM_PROBLEMA_LABEL[t.origem_problema] ?? t.origem_problema) : "—"}</span>;
+                if (c.key === "quem_reportou") return <span key={c.key} className="text-xs text-muted-foreground truncate">{t.quem_reportou ? (QUEM_REPORTOU_LABEL[t.quem_reportou] ?? t.quem_reportou) : "—"}</span>;
+                if (c.key === "solucao_curta") return <span key={c.key} className="text-xs text-muted-foreground truncate" title={t.solucao_curta ?? ""}>{isClosed ? (t.solucao_curta ?? "—") : "—"}</span>;
+                return <span key={c.key} />;
+              })}
               <span className="truncate text-xs text-muted-foreground">{t.assignee?.full_name ?? "—"}</span>
               <span className="text-xs text-muted-foreground">
                 {opened ? formatDistanceToNow(new Date(opened), { locale: ptBR, addSuffix: true }) : "—"}
@@ -411,6 +441,114 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
     </div>
   );
 }
+
+function MultiFilter({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (v: string) => {
+    if (value.includes(v)) onChange(value.filter((x) => x !== v));
+    else onChange([...value, v]);
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs">
+          <SlidersHorizontal className="h-3 w-3" />
+          {label}
+          {value.length > 0 && (
+            <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{value.length}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-1">
+        <div className="max-h-64 overflow-y-auto">
+          {options.map((o) => (
+            <label key={o.value} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
+              <Checkbox checked={value.includes(o.value)} onCheckedChange={() => toggle(o.value)} />
+              <span className="flex-1">{o.label}</span>
+            </label>
+          ))}
+        </div>
+        {value.length > 0 && (
+          <button
+            type="button" onClick={() => onChange([])}
+            className="mt-1 w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+          >
+            Limpar seleção
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TemaFilter({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const { data: temas = [] } = useQuery({
+    queryKey: ["temas-frequentes-filter"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ticket_temas_frequentes")
+        .select("tema, total_ocorrencias")
+        .eq("ativo", true)
+        .order("total_ocorrencias", { ascending: false })
+        .limit(100);
+      return (data ?? []) as { tema: string; total_ocorrencias: number }[];
+    },
+  });
+  const toggle = (v: string) => {
+    if (value.includes(v)) onChange(value.filter((x) => x !== v));
+    else onChange([...value, v]);
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs">
+          <SlidersHorizontal className="h-3 w-3" />
+          Tema
+          {value.length > 0 && (
+            <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{value.length}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-0">
+        <Command>
+          <CommandInput placeholder="Buscar tema..." />
+          <CommandList>
+            <CommandEmpty>Nenhum tema.</CommandEmpty>
+            <CommandGroup>
+              {temas.map((t) => (
+                <CommandItem key={t.tema} value={t.tema} onSelect={() => toggle(t.tema)}>
+                  <Checkbox checked={value.includes(t.tema)} className="mr-2" />
+                  <span className="flex-1 truncate">{t.tema}</span>
+                  <span className="text-[10px] text-muted-foreground">{t.total_ocorrencias}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ColumnToggle({ extraCols, onToggle }: { extraCols: Record<string, boolean>; onToggle: (k: string) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs">
+          <Columns3 className="h-3 w-3" /> Mais colunas
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-52 p-1">
+        {COL_DEFS.map((c) => (
+          <label key={c.key} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
+            <Checkbox checked={!!extraCols[c.key]} onCheckedChange={() => onToggle(c.key)} />
+            <span>{c.label}</span>
+          </label>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddStageClick }: { tickets: any[]; showResolved: boolean; canManageStages?: boolean; onAddStageClick?: () => void }) {
   const [excluirEtapa, setExcluirEtapa] = useState<CustomStage | null>(null);
