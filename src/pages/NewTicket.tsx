@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { TemaAutocomplete } from "@/components/tickets/TemaAutocomplete";
+import { AssistSugestoes } from "@/components/tickets/AssistSugestoes";
 import {
   PRIORITY_LABEL,
   CHANNEL_LABEL,
@@ -146,6 +147,10 @@ export default function NewTicket() {
               </Select>
             </div>
           </div>
+
+          <AssistSugestoes tema={form.tema} moduloAfetado={form.modulo_afetado} />
+
+
 
           <div className="space-y-1.5">
             <Label htmlFor="desc">Descrição do problema *</Label>

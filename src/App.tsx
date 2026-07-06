@@ -14,6 +14,7 @@ import MyTasks from "./pages/MyTasks";
 import Implantacao from "./pages/Implantacao";
 import ImplantacaoDetail from "./pages/ImplantacaoDetail";
 import Performance from "./pages/Performance";
+import Assist from "./pages/Assist";
 
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/nps" element={<Nps />} />
+            <Route path="/assist" element={<Assist />} />
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Route>

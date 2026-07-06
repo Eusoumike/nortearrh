@@ -22,6 +22,7 @@ import { STATUS_FLOW, STATUS_LABEL, STATUS_TONE, type TicketStatus, TIMED_STAGES
 import { formatDuration } from "@/lib/formatters";
 import { AutoCloseWarning } from "@/components/AutoCloseWarning";
 import { cn } from "@/lib/utils";
+import { ModuloBadge } from "@/components/tickets/ModuloBadge";
 
 const PAGE_SIZE = 30;
 
@@ -51,6 +52,8 @@ interface KanbanTicket {
   entered_vera_n1_at: string | null;
   entered_n2_at: string | null;
   active_custom_stage_key: string | null;
+  modulo_afetado?: string | null;
+  tema?: string | null;
 }
 
 interface Props {
@@ -121,6 +124,11 @@ const TicketCard = memo(function TicketCard({ t, now, isOverlay = false, hasAssi
         isOverlay && "kanban-dragging shadow-lg",
       )}
     >
+      {t.modulo_afetado && (
+        <div className="mb-1.5">
+          <ModuloBadge modulo={t.modulo_afetado} size="sm" />
+        </div>
+      )}
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="font-mono text-[11px] text-muted-foreground group-hover:text-primary">
           #{t.ticket_number}

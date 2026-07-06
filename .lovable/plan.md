@@ -1,41 +1,72 @@
-# Fase 2 — Reestruturar formulários de chamado
+## Fase 3 — Visualização e Base de Conhecimento
 
-Aplicar os novos campos da Fase 1 nos formulários de criar/editar chamado. Nada é removido do banco — apenas escondido do UI.
+Escopo grande; proponho aplicar em blocos incrementais e **deixar item 7 (remoção física das colunas antigas) para depois de 1-2 semanas em produção**, como você mesmo pediu.
 
-## O que será feito
+### 1. Constantes e helpers (base para tudo)
+- Em `src/lib/constants.ts`: adicionar `MODULO_AFETADO_COLORS` (mapa `value → hex`) alinhado ao `MODULO_AFETADO_OPTIONS`.
+- Novo componente `src/components/tickets/ModuloBadge.tsx` — badge colorido reaproveitável (listagem + kanban + dashboard).
 
-### 1. Novo componente `TemaAutocomplete`
-- Arquivo: `src/components/tickets/TemaAutocomplete.tsx`
-- Combobox baseado em `Command` + `Popover` (padrão shadcn já usado no projeto).
-- Consulta `ticket_temas_frequentes` ordenada por `total_ocorrencias`.
-- Filtra localmente conforme digitação; se nenhum item bate, oferece "Criar tema: …".
-- Ao selecionar um tema existente, dispara `onChange(tema, modulo_afetado_sugerido)` para permitir auto-preenchimento do módulo.
+### 2. Listagem de chamados (Tickets.tsx — vista Lista)
+- Novas colunas visíveis: `#`, Tema, Cliente, **Módulo (badge colorido)**, Status, Aberto há, Ações.
+- Botão "Mais colunas" (Popover com checkboxes, persistido em `localStorage`) para: Origem, Quem reportou, Canal, Prioridade, Solução (essa só renderiza para `resolvido/fechado`).
+- Grid dinâmico conforme colunas ativas.
 
-### 2. Refatorar `NewTicketDialog.tsx`
-- Reorganizar em duas seções: **Sobre o problema** e **Contato (opcional)** (recolhível via `Collapsible`).
-- Campos visíveis: Cliente, Tema*, Módulo afetado*, Quem reportou, Prioridade, Canal, Descrição*.
-- Campos escondidos do UI (permanecem no banco): `impacto`, `resultado_esperado`, `resultado_obtido`, `ja_tentou`, `category`, `acao_tentada`, `ticket_type`, `title` (será derivado de `tema`).
-- Insert em `tickets`: gravar `tema`, `modulo_afetado`, além de `title = tema` para manter compatibilidade com telas ainda não migradas.
-- Módulo auto-preenche quando tema é escolhido, mas usuário pode sobrescrever.
+### 3. Filtros avançados
+Barra de filtros acima do conteúdo (aplica tanto na lista quanto no kanban):
+- Módulo (multi-select) → `.in("modulo_afetado", ...)`.
+- Origem do problema (multi-select) → `.in("origem_problema", ...)`.
+- Tema (busca com autocomplete em `ticket_temas_frequentes`) → `.in("tema", ...)`.
+- Quem reportou (multi-select) e Prioridade (já existe como single — vira multi).
+- Chips removíveis + botão "Limpar filtros" quando algum ativo. Estado sincronizado com `searchParams` para deep-link.
 
-### 3. Refatorar `EditTicketDialog.tsx`
-- Mesma estrutura de campos.
-- Adicionar `solucao_curta` (obrigatório quando status = resolvido) e checkbox `vira_artigo_assist`.
-- Origem do problema como select (`erro_configuracao`, `duvida_operacional`, `bug_sistema`, `permissao_faltando`, `dado_incorreto`, `cliente_resolveu_sozinho`, `outros`).
+### 4. Kanban — card com módulo
+- Em `TicketKanban.tsx`, no `TicketCard`: adicionar `<ModuloBadge>` compacto no topo (mesma linha do `#numero`), quando `t.modulo_afetado` existir.
+- Incluir `modulo_afetado` no `select` da query do kanban (Tickets.tsx).
 
-### 4. Página `src/pages/NewTicket.tsx`
-- Redirecionar para abrir o dialog novo (ou aplicar os mesmos campos). Verificar uso atual antes de decidir.
+### 5. Dashboard — 3 novos insights
+Em `src/pages/Dashboard.tsx`, nova seção "Insights de Chamados":
+- **Chamados por módulo (7 dias)** — barras horizontais (recharts, se já disponível; fallback CSS bars).
+- **Origem dos problemas (30 dias)** — donut (recharts PieChart).
+- **Temas em alta** — lista dos 5 temas com maior crescimento (últimos 7 vs 7 anteriores), com seta ↑ e delta.
 
-## Detalhes técnicos
+Queries feitas via `supabase.from("tickets").select("modulo_afetado, origem_problema, tema, created_at")` filtrando pelo período e agregando no cliente (evita RPC nova e mantém RLS existente).
 
-- Constantes novas em `src/lib/constants.ts`:
-  - `MODULO_AFETADO_OPTIONS` (10 valores)
-  - `ORIGEM_PROBLEMA_OPTIONS` (7 valores)
-  - `QUEM_REPORTOU_OPTIONS`
-- `TemaAutocomplete` usa `useQuery(['temas-frequentes'])` com `staleTime: 60_000`.
-- Validações: `tema` e `modulo_afetado` obrigatórios na criação; `solucao_curta` obrigatório na edição quando `status === 'resolvido'`.
-- Nada de novo tipo TS até o Supabase regenerar `types.ts` (colunas novas já existem no banco, então já devem estar tipadas).
+### 6. Página /assist — Base de Conhecimento
+Nova rota (registrar em `src/App.tsx`) e página `src/pages/Assist.tsx`:
+- Tabela de `assist_artigos` com colunas: Título, Módulo (badge), Tema, Status (rascunho/publicado), 👁 Visualizações, 👍/👎.
+- Filtros: status (todos / rascunhos / publicados), módulo.
+- Botão "Revisar rascunhos" no header — atalho para filtro `publicado=false`.
+- Ações por linha: Editar, Publicar/Despublicar, Excluir (com AlertDialog).
+- Modal `EditarArtigoAssistDialog` (novo): título, problema relatado, causa raiz (select ORIGEM_PROBLEMA), passos_solucao (textarea grande), módulo, tags (input com chips), botões `Salvar rascunho` e `Publicar` (define `publicado=true`).
+- Link no `AppSidebar` para `/assist`.
 
-## Fora do escopo
-- Kanban, detalhes do chamado (`TicketDetail.tsx`), exportação, Assist — ficam para depois.
-- Remoção de colunas antigas do banco (Fase 3).
+### 7. Sugestões inline ao criar chamado
+- Em `NewTicketDialog.tsx` (e `NewTicket.tsx`), depois do tema+módulo:
+  - `useQuery(['assist-sugestoes', tema, modulo])` buscando `assist_artigos` publicados por `tema_relacionado` (fallback `modulo_afetado`), ordenados por `util_positivo`, limite 3.
+  - Card "Sugestões da base de conhecimento" com lista clicável abrindo `/assist?artigo=<id>` em nova aba (drawer de leitura na página Assist).
+
+### 8. Item 7 do briefing — remoção física das colunas antigas
+**Não vou executar agora.** Deixo pronto um arquivo `docs/migracao-fase3-remocao-campos-antigos.sql` com backup + `ALTER TABLE DROP COLUMN` para você rodar depois via migration quando confirmar que nada quebrou em produção.
+
+### O que fica fora deste plano
+- Fluxo público de leitura de artigo (`/assist/:id`) — se quiser, faço numa próxima rodada; por ora o modal de edição serve para revisar conteúdo.
+- Markdown rendering avançado nos passos: uso textarea + `whitespace-pre-wrap` (sem lib nova).
+- Alteração no schema `assist_artigos` — já tem tudo que precisa (verificado nos types).
+
+### Arquivos criados
+- `src/components/tickets/ModuloBadge.tsx`
+- `src/components/tickets/AssistSugestoes.tsx`
+- `src/components/assist/EditarArtigoAssistDialog.tsx`
+- `src/pages/Assist.tsx`
+- `docs/migracao-fase3-remocao-campos-antigos.sql`
+
+### Arquivos alterados
+- `src/lib/constants.ts` (cores por módulo)
+- `src/pages/Tickets.tsx` (colunas, filtros, kanban tem `modulo_afetado`)
+- `src/components/TicketKanban.tsx` (badge no card)
+- `src/pages/Dashboard.tsx` (nova seção Insights)
+- `src/components/NewTicketDialog.tsx` e `src/pages/NewTicket.tsx` (sugestões inline)
+- `src/App.tsx` (rota `/assist`)
+- `src/components/AppSidebar.tsx` (link menu)
+
+Confirma que posso executar assim? Se quiser cortar algum bloco (ex.: pular sugestões inline ou a página /assist nesta rodada), me diz antes de eu começar.

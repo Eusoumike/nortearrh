@@ -5,10 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter, Download } from "lucide-react";
+import { Search, X, Eye, EyeOff, Plus, LayoutGrid, List, Filter, Download, Columns3, SlidersHorizontal } from "lucide-react";
 import { ExportTicketsDialog } from "@/components/tickets/ExportTicketsDialog";
-import { STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
+import { ModuloBadge } from "@/components/tickets/ModuloBadge";
+import { MODULO_AFETADO_OPTIONS, ORIGEM_PROBLEMA_OPTIONS, ORIGEM_PROBLEMA_LABEL, QUEM_REPORTOU_OPTIONS, QUEM_REPORTOU_LABEL, CHANNEL_LABEL, STATUS_LABEL, STATUS_FLOW, PRIORITY_LABEL, type TicketStatus, type TicketPriority } from "@/lib/constants";
 import { isOpenStatus, isSlaOverdue, isSlaApproaching } from "@/lib/sla";
 import { TicketKanban, type CustomStage } from "@/components/TicketKanban";
 import { useEtapasKanban } from "@/hooks/useEtapasKanban";
@@ -47,6 +51,21 @@ export default function Tickets() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(SHOW_RESOLVED_KEY) === "1";
   });
+  const [moduloFilter, setModuloFilter] = useState<string[]>([]);
+  const [origemFilter, setOrigemFilter] = useState<string[]>([]);
+  const [quemFilter, setQuemFilter] = useState<string[]>([]);
+  const [temaFilter, setTemaFilter] = useState<string[]>([]);
+  const [extraCols, setExtraCols] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(window.localStorage.getItem("nortear_ticket_cols") ?? "{}"); } catch { return {}; }
+  });
+  const toggleCol = (k: string) => {
+    setExtraCols((prev) => {
+      const next = { ...prev, [k]: !prev[k] };
+      try { window.localStorage.setItem("nortear_ticket_cols", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const openOnly = searchParams.get("open") === "1";
   const slaMode = searchParams.get("sla");
@@ -93,16 +112,20 @@ export default function Tickets() {
   };
 
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ["tickets", statusFilter, priorityFilter, includeResolved],
+    queryKey: ["tickets", statusFilter, priorityFilter, includeResolved, moduloFilter.join(","), origemFilter.join(","), quemFilter.join(","), temaFilter.join(",")],
     queryFn: async () => {
       let query = supabase
         .from("tickets")
-        .select("id, title, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, active_custom_stage_key, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
+        .select("id, title, tema, modulo_afetado, origem_problema, solucao_curta, quem_reportou, status, priority, channel, client_name, opened_at, created_at, first_response_at, assigned_to, sla_deadline, ticket_number, category, client_id, active_custom_stage_key, client:clients!fk_tickets_client(id, name), assignee:profiles!assigned_to(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (statusFilter !== "all") query = query.eq("status", statusFilter as TicketStatus);
       else if (!includeResolved) query = query.not("status", "in", "(resolvido,fechado)");
       if (priorityFilter !== "all") query = query.eq("priority", priorityFilter as TicketPriority);
+      if (moduloFilter.length) query = query.in("modulo_afetado", moduloFilter);
+      if (origemFilter.length) query = query.in("origem_problema", origemFilter);
+      if (quemFilter.length) query = query.in("quem_reportou", quemFilter);
+      if (temaFilter.length) query = query.in("tema", temaFilter);
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -255,6 +278,41 @@ export default function Tickets() {
         </div>
       </div>
 
+      {/* FILTROS AVANÇADOS */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <MultiFilter
+          label="Módulo"
+          options={MODULO_AFETADO_OPTIONS}
+          value={moduloFilter}
+          onChange={setModuloFilter}
+        />
+        <MultiFilter
+          label="Origem"
+          options={ORIGEM_PROBLEMA_OPTIONS}
+          value={origemFilter}
+          onChange={setOrigemFilter}
+        />
+        <MultiFilter
+          label="Quem reportou"
+          options={QUEM_REPORTOU_OPTIONS}
+          value={quemFilter}
+          onChange={setQuemFilter}
+        />
+        <TemaFilter value={temaFilter} onChange={setTemaFilter} />
+        {viewMode === "list" && (
+          <ColumnToggle extraCols={extraCols} onToggle={toggleCol} />
+        )}
+        {(moduloFilter.length || origemFilter.length || quemFilter.length || temaFilter.length) > 0 && (
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-9 gap-1 rounded-xl text-xs text-muted-foreground"
+            onClick={() => { setModuloFilter([]); setOrigemFilter([]); setQuemFilter([]); setTemaFilter([]); }}
+          >
+            <X className="h-3.5 w-3.5" /> Limpar
+          </Button>
+        )}
+      </div>
+
       {specialLabel && (
         <div className="flex shrink-0 items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
@@ -278,7 +336,7 @@ export default function Tickets() {
             onAddStageClick={() => setNovaEtapaOpen(true)}
           />
         ) : (
-          <TicketList tickets={filtered as any} onOpen={(id) => navigate(`/tickets/${id}`)} />
+          <TicketList tickets={filtered as any} onOpen={(id) => navigate(`/tickets/${id}`)} extraCols={extraCols} />
         )}
       </div>
 
@@ -305,7 +363,28 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) => void }) {
+const COL_DEFS: { key: string; label: string; width: string }[] = [
+  { key: "origem_problema", label: "Origem", width: "140px" },
+  { key: "quem_reportou", label: "Quem reportou", width: "130px" },
+  { key: "channel", label: "Canal", width: "100px" },
+  { key: "priority", label: "Prioridade", width: "110px" },
+  { key: "solucao_curta", label: "Solução", width: "minmax(180px,1.5fr)" },
+];
+
+function TicketList({ tickets, onOpen, extraCols }: { tickets: any[]; onOpen: (id: string) => void; extraCols: Record<string, boolean> }) {
+  const activeExtras = COL_DEFS.filter((c) => extraCols[c.key]);
+  const gridTemplate = [
+    "80px",
+    "minmax(180px,1fr)",
+    "minmax(200px,2fr)",
+    "150px",
+    "150px",
+    ...activeExtras.map((c) => c.width),
+    "140px",
+    "120px",
+  ].join("_");
+  const gridStyle = { display: "grid", gridTemplateColumns: gridTemplate.replace(/_/g, " "), gap: "0.75rem" } as React.CSSProperties;
+
   if (!tickets.length) {
     return (
       <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-card">
@@ -315,30 +394,40 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
   }
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className="grid grid-cols-[80px_minmax(180px,1fr)_minmax(220px,2fr)_140px_110px_140px_120px] gap-3 border-b border-border bg-muted/40 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div style={gridStyle} className="border-b border-border bg-muted/40 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         <span>#</span>
+        <span>Tema</span>
         <span>Cliente</span>
-        <span>Título</span>
+        <span>Módulo</span>
         <span>Status</span>
-        <span>Prioridade</span>
+        {activeExtras.map((c) => <span key={c.key}>{c.label}</span>)}
         <span>Responsável</span>
         <span>Aberto</span>
       </div>
       <div className="flex-1 overflow-y-auto">
         {tickets.map((t) => {
           const opened = t.opened_at ?? t.created_at;
+          const tema = t.tema ?? t.title ?? "—";
+          const isClosed = t.status === "resolvido" || t.status === "fechado";
           return (
             <button
               key={t.id} type="button" onClick={() => onOpen(t.id)}
-              className="grid w-full grid-cols-[80px_minmax(180px,1fr)_minmax(220px,2fr)_140px_110px_140px_120px] items-center gap-3 border-b border-border/60 px-5 py-3 text-left text-sm transition-colors hover:bg-muted/40"
+              style={gridStyle}
+              className="w-full items-center border-b border-border/60 px-5 py-3 text-left text-sm transition-colors hover:bg-muted/40"
             >
               <span className="font-mono text-[12px] text-muted-foreground">#{t.ticket_number}</span>
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-foreground">{t.client?.name ?? t.client_name ?? "—"}</p>
-              </div>
-              <p className="truncate text-foreground">{t.title}</p>
+              <p className="truncate font-medium text-foreground">{tema}</p>
+              <p className="truncate text-foreground">{t.client?.name ?? t.client_name ?? "—"}</p>
+              <div><ModuloBadge modulo={t.modulo_afetado} size="sm" /></div>
               <div><StatusBadge status={t.status} /></div>
-              <div><PriorityBadge priority={t.priority} /></div>
+              {activeExtras.map((c) => {
+                if (c.key === "priority") return <div key={c.key}><PriorityBadge priority={t.priority} /></div>;
+                if (c.key === "channel") return <span key={c.key} className="text-xs text-muted-foreground truncate">{CHANNEL_LABEL[t.channel as keyof typeof CHANNEL_LABEL] ?? "—"}</span>;
+                if (c.key === "origem_problema") return <span key={c.key} className="text-xs text-muted-foreground truncate">{t.origem_problema ? (ORIGEM_PROBLEMA_LABEL[t.origem_problema] ?? t.origem_problema) : "—"}</span>;
+                if (c.key === "quem_reportou") return <span key={c.key} className="text-xs text-muted-foreground truncate">{t.quem_reportou ? (QUEM_REPORTOU_LABEL[t.quem_reportou] ?? t.quem_reportou) : "—"}</span>;
+                if (c.key === "solucao_curta") return <span key={c.key} className="text-xs text-muted-foreground truncate" title={t.solucao_curta ?? ""}>{isClosed ? (t.solucao_curta ?? "—") : "—"}</span>;
+                return <span key={c.key} />;
+              })}
               <span className="truncate text-xs text-muted-foreground">{t.assignee?.full_name ?? "—"}</span>
               <span className="text-xs text-muted-foreground">
                 {opened ? formatDistanceToNow(new Date(opened), { locale: ptBR, addSuffix: true }) : "—"}
@@ -353,6 +442,114 @@ function TicketList({ tickets, onOpen }: { tickets: any[]; onOpen: (id: string) 
     </div>
   );
 }
+
+function MultiFilter({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (v: string) => {
+    if (value.includes(v)) onChange(value.filter((x) => x !== v));
+    else onChange([...value, v]);
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs">
+          <SlidersHorizontal className="h-3 w-3" />
+          {label}
+          {value.length > 0 && (
+            <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{value.length}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-1">
+        <div className="max-h-64 overflow-y-auto">
+          {options.map((o) => (
+            <label key={o.value} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
+              <Checkbox checked={value.includes(o.value)} onCheckedChange={() => toggle(o.value)} />
+              <span className="flex-1">{o.label}</span>
+            </label>
+          ))}
+        </div>
+        {value.length > 0 && (
+          <button
+            type="button" onClick={() => onChange([])}
+            className="mt-1 w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+          >
+            Limpar seleção
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TemaFilter({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const { data: temas = [] } = useQuery({
+    queryKey: ["temas-frequentes-filter"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ticket_temas_frequentes")
+        .select("tema, total_ocorrencias")
+        .eq("ativo", true)
+        .order("total_ocorrencias", { ascending: false })
+        .limit(100);
+      return (data ?? []) as { tema: string; total_ocorrencias: number }[];
+    },
+  });
+  const toggle = (v: string) => {
+    if (value.includes(v)) onChange(value.filter((x) => x !== v));
+    else onChange([...value, v]);
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs">
+          <SlidersHorizontal className="h-3 w-3" />
+          Tema
+          {value.length > 0 && (
+            <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{value.length}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-0">
+        <Command>
+          <CommandInput placeholder="Buscar tema..." />
+          <CommandList>
+            <CommandEmpty>Nenhum tema.</CommandEmpty>
+            <CommandGroup>
+              {temas.map((t) => (
+                <CommandItem key={t.tema} value={t.tema} onSelect={() => toggle(t.tema)}>
+                  <Checkbox checked={value.includes(t.tema)} className="mr-2" />
+                  <span className="flex-1 truncate">{t.tema}</span>
+                  <span className="text-[10px] text-muted-foreground">{t.total_ocorrencias}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ColumnToggle({ extraCols, onToggle }: { extraCols: Record<string, boolean>; onToggle: (k: string) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl text-xs">
+          <Columns3 className="h-3 w-3" /> Mais colunas
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-52 p-1">
+        {COL_DEFS.map((c) => (
+          <label key={c.key} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
+            <Checkbox checked={!!extraCols[c.key]} onCheckedChange={() => onToggle(c.key)} />
+            <span>{c.label}</span>
+          </label>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 function TicketKanbanWithAssist({ tickets, showResolved, canManageStages, onAddStageClick }: { tickets: any[]; showResolved: boolean; canManageStages?: boolean; onAddStageClick?: () => void }) {
   const [excluirEtapa, setExcluirEtapa] = useState<CustomStage | null>(null);
