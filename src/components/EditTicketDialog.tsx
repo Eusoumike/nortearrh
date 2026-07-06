@@ -206,6 +206,9 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
   }, [open, ticket]);
 
   const isResolvido = form.status === "resolvido";
+  const originalStatus = ticket?.status as TicketStatus | undefined;
+  const wasResolvido = originalStatus === "resolvido" || originalStatus === "fechado";
+  const isReabrindo = wasResolvido && !isResolvido;
 
   const save = useMutation({
     mutationFn: async () => {
