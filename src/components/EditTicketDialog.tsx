@@ -206,6 +206,9 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
   }, [open, ticket]);
 
   const isResolvido = form.status === "resolvido";
+  const originalStatus = ticket?.status as TicketStatus | undefined;
+  const wasResolvido = originalStatus === "resolvido" || originalStatus === "fechado";
+  const isReabrindo = wasResolvido && !isResolvido;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -238,6 +241,10 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
         opened_at: brazilInputToISO(form.opened_at) ?? ticket.opened_at,
         anydesk_id: form.anydesk_id.trim() || null,
       };
+
+      if (isReabrindo) {
+        patch.resolved_at = null;
+      }
 
       const { error } = await supabase.from("tickets").update(patch as any).eq("id", ticket.id);
       if (error) throw error;
@@ -395,11 +402,23 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as TicketStatus })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {STATUS_FLOW.map((k) => (
-                      <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
-                    ))}
+                    {STATUS_FLOW
+                      .filter((k) => wasResolvido || k !== "resolvido")
+                      .map((k) => (
+                        <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
+                {!wasResolvido && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Use o botão “Encerrar Chamado” para fechar o chamado.
+                  </p>
+                )}
+                {isReabrindo && (
+                  <p className="text-[11px] text-warning">
+                    Ao salvar, o chamado será reaberto (data de resolução será apagada).
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Prioridade</Label>
