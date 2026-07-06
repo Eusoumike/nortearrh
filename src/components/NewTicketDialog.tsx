@@ -499,6 +499,10 @@ export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
                 </Select>
               </div>
 
+              <div className="col-span-2">
+                <AssistSugestoes tema={form.tema} moduloAfetado={form.modulo_afetado} />
+              </div>
+
               {/* Prioridade | Canal */}
               <div className="space-y-1">
                 <Label className="text-xs">
