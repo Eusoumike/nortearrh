@@ -278,6 +278,41 @@ export default function Tickets() {
         </div>
       </div>
 
+      {/* FILTROS AVANÇADOS */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <MultiFilter
+          label="Módulo"
+          options={MODULO_AFETADO_OPTIONS}
+          value={moduloFilter}
+          onChange={setModuloFilter}
+        />
+        <MultiFilter
+          label="Origem"
+          options={ORIGEM_PROBLEMA_OPTIONS}
+          value={origemFilter}
+          onChange={setOrigemFilter}
+        />
+        <MultiFilter
+          label="Quem reportou"
+          options={QUEM_REPORTOU_OPTIONS}
+          value={quemFilter}
+          onChange={setQuemFilter}
+        />
+        <TemaFilter value={temaFilter} onChange={setTemaFilter} />
+        {viewMode === "list" && (
+          <ColumnToggle extraCols={extraCols} onToggle={toggleCol} />
+        )}
+        {(moduloFilter.length || origemFilter.length || quemFilter.length || temaFilter.length) > 0 && (
+          <Button
+            type="button" variant="ghost" size="sm"
+            className="h-9 gap-1 rounded-xl text-xs text-muted-foreground"
+            onClick={() => { setModuloFilter([]); setOrigemFilter([]); setQuemFilter([]); setTemaFilter([]); }}
+          >
+            <X className="h-3.5 w-3.5" /> Limpar
+          </Button>
+        )}
+      </div>
+
       {specialLabel && (
         <div className="flex shrink-0 items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
