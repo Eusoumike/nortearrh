@@ -383,7 +383,7 @@ function TicketList({ tickets, onOpen, extraCols }: { tickets: any[]; onOpen: (i
     "140px",
     "120px",
   ].join("_");
-  const gridCls = `grid grid-cols-[${gridTemplate}] gap-3`;
+  const gridStyle = { display: "grid", gridTemplateColumns: gridTemplate.replace(/_/g, " "), gap: "0.75rem" } as React.CSSProperties;
 
   if (!tickets.length) {
     return (
