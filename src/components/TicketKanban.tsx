@@ -393,9 +393,16 @@ export function TicketKanban({ tickets, showResolved = false, assistedIds, custo
       }
 
       if (currentBase === targetStatus && currentCustom === targetCustom) return;
+
+      // Interceptar movimentação para "resolvido" — força passar pelo modal
+      if (targetStatus === "resolvido" && onRequestClose) {
+        onRequestClose(ticket);
+        return;
+      }
+
       updateStage.mutate({ id, status: targetStatus, customKey: targetCustom });
     },
-    [tickets, updateStage, customStages],
+    [tickets, updateStage, customStages, onRequestClose],
   );
 
   const visibleBaseStatuses = STATUS_FLOW.filter((s) => showResolved || s !== "resolvido");
