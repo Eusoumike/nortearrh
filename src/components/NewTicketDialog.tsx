@@ -23,16 +23,17 @@ import { Loader2, Search, Check, ChevronsUpDown, Monitor, Save, Mic } from "luci
 import { TicketStatusPopup } from "@/components/tickets/TicketStatusPopup";
 import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { cn } from "@/lib/utils";
-import { TicketTitleCombobox } from "@/components/TicketTitleCombobox";
+import { TemaAutocomplete } from "@/components/tickets/TemaAutocomplete";
 import {
   SLA_RESPONSE_HOURS,
   SLA_RESOLUTION_HOURS,
-  TICKET_TYPE_GROUPS,
-  TICKET_TYPE_LABEL,
+  MODULO_AFETADO_OPTIONS,
+  QUEM_REPORTOU_OPTIONS,
   type TicketPriority,
   type TicketChannel,
   type TicketType,
 } from "@/lib/constants";
+
 import { SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { nowBrasilia, brazilInputToISO } from "@/lib/formatters";
 import {
