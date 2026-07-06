@@ -1,17 +1,41 @@
+# Fase 2 — Reestruturar formulários de chamado
 
-Mudanças simples no `TicketDetail`:
+Aplicar os novos campos da Fase 1 nos formulários de criar/editar chamado. Nada é removido do banco — apenas escondido do UI.
 
-**1. Excluir chamado**
-- Botão "Excluir" no header (ícone lixeira, variante destructive ghost), visível só para admin/manager (RLS já bloqueia os outros, mas escondo na UI usando `useAuth` + checagem em `user_roles`).
-- Abre `AlertDialog` confirmando ação.
-- Ao confirmar: `supabase.from("tickets").delete().eq("id", id)`, invalida `["tickets"]` e `["dashboard-tickets"]`, toast e `navigate("/tickets")`.
+## O que será feito
 
-**2. Form de atendimento simplificado**
-- No formulário de "Registrar atendimento" (aba dentro de Atendimentos), remover os 2 campos atuais `problem_description` e `solution_applied`.
-- Substituir por um único `Textarea` chamado **"Resumo"** (4-5 linhas), salvando no campo já existente `summary` da tabela `ticket_interactions`.
-- Mantém o resto: tipo, canal, resultado, tempo gasto, interno/público.
-- Na listagem de interações, exibir o `summary` no lugar onde hoje aparece "Problema/Solução".
+### 1. Novo componente `TemaAutocomplete`
+- Arquivo: `src/components/tickets/TemaAutocomplete.tsx`
+- Combobox baseado em `Command` + `Popover` (padrão shadcn já usado no projeto).
+- Consulta `ticket_temas_frequentes` ordenada por `total_ocorrencias`.
+- Filtra localmente conforme digitação; se nenhum item bate, oferece "Criar tema: …".
+- Ao selecionar um tema existente, dispara `onChange(tema, modulo_afetado_sugerido)` para permitir auto-preenchimento do módulo.
 
-**Banco**: nenhuma migração. As colunas `problem_description` e `solution_applied` continuam existindo (interações antigas preservadas), só não preenchemos mais. Na exibição da timeline, se `summary` existir mostro ele; senão, mostro o `problem_description`/`solution_applied` antigos (compat).
+### 2. Refatorar `NewTicketDialog.tsx`
+- Reorganizar em duas seções: **Sobre o problema** e **Contato (opcional)** (recolhível via `Collapsible`).
+- Campos visíveis: Cliente, Tema*, Módulo afetado*, Quem reportou, Prioridade, Canal, Descrição*.
+- Campos escondidos do UI (permanecem no banco): `impacto`, `resultado_esperado`, `resultado_obtido`, `ja_tentou`, `category`, `acao_tentada`, `ticket_type`, `title` (será derivado de `tema`).
+- Insert em `tickets`: gravar `tema`, `modulo_afetado`, além de `title = tema` para manter compatibilidade com telas ainda não migradas.
+- Módulo auto-preenche quando tema é escolhido, mas usuário pode sobrescrever.
 
-**Arquivos tocados**: apenas `src/pages/TicketDetail.tsx`.
+### 3. Refatorar `EditTicketDialog.tsx`
+- Mesma estrutura de campos.
+- Adicionar `solucao_curta` (obrigatório quando status = resolvido) e checkbox `vira_artigo_assist`.
+- Origem do problema como select (`erro_configuracao`, `duvida_operacional`, `bug_sistema`, `permissao_faltando`, `dado_incorreto`, `cliente_resolveu_sozinho`, `outros`).
+
+### 4. Página `src/pages/NewTicket.tsx`
+- Redirecionar para abrir o dialog novo (ou aplicar os mesmos campos). Verificar uso atual antes de decidir.
+
+## Detalhes técnicos
+
+- Constantes novas em `src/lib/constants.ts`:
+  - `MODULO_AFETADO_OPTIONS` (10 valores)
+  - `ORIGEM_PROBLEMA_OPTIONS` (7 valores)
+  - `QUEM_REPORTOU_OPTIONS`
+- `TemaAutocomplete` usa `useQuery(['temas-frequentes'])` com `staleTime: 60_000`.
+- Validações: `tema` e `modulo_afetado` obrigatórios na criação; `solucao_curta` obrigatório na edição quando `status === 'resolvido'`.
+- Nada de novo tipo TS até o Supabase regenerar `types.ts` (colunas novas já existem no banco, então já devem estar tipadas).
+
+## Fora do escopo
+- Kanban, detalhes do chamado (`TicketDetail.tsx`), exportação, Assist — ficam para depois.
+- Remoção de colunas antigas do banco (Fase 3).
