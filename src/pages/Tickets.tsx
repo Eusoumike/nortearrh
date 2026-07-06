@@ -47,6 +47,21 @@ export default function Tickets() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(SHOW_RESOLVED_KEY) === "1";
   });
+  const [moduloFilter, setModuloFilter] = useState<string[]>([]);
+  const [origemFilter, setOrigemFilter] = useState<string[]>([]);
+  const [quemFilter, setQuemFilter] = useState<string[]>([]);
+  const [temaFilter, setTemaFilter] = useState<string[]>([]);
+  const [extraCols, setExtraCols] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(window.localStorage.getItem("nortear_ticket_cols") ?? "{}"); } catch { return {}; }
+  });
+  const toggleCol = (k: string) => {
+    setExtraCols((prev) => {
+      const next = { ...prev, [k]: !prev[k] };
+      try { window.localStorage.setItem("nortear_ticket_cols", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const openOnly = searchParams.get("open") === "1";
   const slaMode = searchParams.get("sla");
