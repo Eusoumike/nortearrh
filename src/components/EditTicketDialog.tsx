@@ -242,6 +242,10 @@ export function EditTicketDialog({ ticket, open, onOpenChange }: EditTicketDialo
         anydesk_id: form.anydesk_id.trim() || null,
       };
 
+      if (isReabrindo) {
+        patch.resolved_at = null;
+      }
+
       const { error } = await supabase.from("tickets").update(patch as any).eq("id", ticket.id);
       if (error) throw error;
     },
