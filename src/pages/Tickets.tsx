@@ -16,6 +16,8 @@ import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { NewTicketDialog } from "@/components/NewTicketDialog";
 import { NovaEtapaDialog } from "@/components/tickets/NovaEtapaDialog";
 import { ExcluirEtapaDialog } from "@/components/tickets/ExcluirEtapaDialog";
+import { FecharChamadoDialog } from "@/components/tickets/FecharChamadoDialog";
+import { useEncerrarChamado } from "@/hooks/useEncerrarChamado";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
