@@ -363,13 +363,13 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-const COL_DEFS = [
+const COL_DEFS: { key: string; label: string; width: string }[] = [
   { key: "origem_problema", label: "Origem", width: "140px" },
   { key: "quem_reportou", label: "Quem reportou", width: "130px" },
   { key: "channel", label: "Canal", width: "100px" },
   { key: "priority", label: "Prioridade", width: "110px" },
   { key: "solucao_curta", label: "Solução", width: "minmax(180px,1.5fr)" },
-] as const;
+];
 
 function TicketList({ tickets, onOpen, extraCols }: { tickets: any[]; onOpen: (id: string) => void; extraCols: Record<string, boolean> }) {
   const activeExtras = COL_DEFS.filter((c) => extraCols[c.key]);
