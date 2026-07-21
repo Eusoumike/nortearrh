@@ -532,6 +532,36 @@ export default function ConsultaCnpj() {
           </ul>
         )}
       </Card>
+
+      <AlertDialog open={confirmCriar} onOpenChange={setConfirmCriar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cadastrar no Pipedrive?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vamos criar a organização com os dados da Receita, vincular os sócios como pessoas e anexar uma nota com o cadastro completo.
+              Deseja também criar um <strong>negócio inicial</strong> para começar a prospecção?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!sincronizando}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="outline"
+              disabled={!!sincronizando}
+              onClick={() => { setConfirmCriar(false); sincronizar("create", { criar_deal_inicial: false }); }}
+            >
+              Só cadastrar
+            </Button>
+            <AlertDialogAction
+              disabled={!!sincronizando}
+              onClick={(e) => { e.preventDefault(); setConfirmCriar(false); sincronizar("create", { criar_deal_inicial: true }); }}
+              className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+            >
+              Cadastrar + criar deal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
