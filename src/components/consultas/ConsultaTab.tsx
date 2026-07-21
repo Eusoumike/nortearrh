@@ -598,7 +598,7 @@ export default function ConsultaTab({ initialCnpj, autoRun }: { initialCnpj?: st
               className="bg-gradient-brand text-primary-foreground hover:opacity-90"
             >
               Sim, criar outro deal
-            </Button>
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
