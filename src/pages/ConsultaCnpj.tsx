@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Copy, Check, Loader2, Building2, MapPin, Phone, Users, History } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Copy, Check, Loader2, Building2, MapPin, Phone, Users, History, ExternalLink, AlertTriangle, CheckCircle2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatCnpj } from "@/lib/formatters";
 import { formatBrazilDateTime } from "@/lib/formatters";
@@ -102,6 +106,12 @@ export default function ConsultaCnpj() {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [pipedrive, setPipedrive] = useState<any>(null);
+  const [pipedriveLoading, setPipedriveLoading] = useState(false);
+  const [consultaId, setConsultaId] = useState<string | null>(null);
+  const [confirmCriar, setConfirmCriar] = useState(false);
+  const [sincronizando, setSincronizando] = useState<null | "create" | "update">(null);
+  const [resumo, setResumo] = useState<any>(null);
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -118,14 +128,6 @@ export default function ConsultaCnpj() {
     },
   });
 
-  const registrar = useMutation({
-    mutationFn: async (payload: any) => {
-      const { error } = await supabase.from("consultas").insert(payload);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["consultas-recentes"] }),
-  });
-
   const consultar = async (raw?: string) => {
     const value = raw ?? input;
     const cnpj = onlyDigits(value);
@@ -135,6 +137,9 @@ export default function ConsultaCnpj() {
     }
     setLoading(true);
     setResult(null);
+    setPipedrive(null);
+    setResumo(null);
+    setConsultaId(null);
     try {
       const { data, error } = await supabase.functions.invoke("consultar-cnpj", { body: { cnpj } });
       if (error) throw error;
@@ -142,7 +147,8 @@ export default function ConsultaCnpj() {
       const receita = (data as any).data;
       setResult({ cnpj, receita });
 
-      await registrar.mutateAsync({
+      // Registra a consulta (retorna id p/ atualizações posteriores)
+      const { data: inserted, error: insErr } = await supabase.from("consultas").insert({
         cnpj,
         razao_social: receita?.razao_social ?? null,
         nome_fantasia: receita?.nome_fantasia ?? null,
@@ -152,13 +158,76 @@ export default function ConsultaCnpj() {
         acao: "somente_consulta",
         consultado_por: user?.id ?? null,
         consultado_por_nome: user?.user_metadata?.full_name ?? user?.email ?? null,
-      });
+      }).select("id").single();
+      if (insErr) throw insErr;
+      setConsultaId(inserted.id);
+      qc.invalidateQueries({ queryKey: ["consultas-recentes"] });
+
+      // Dispara verificação no Pipedrive em background
+      verificarPipedrive(cnpj);
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao consultar CNPJ");
     } finally {
       setLoading(false);
     }
   };
+
+  const verificarPipedrive = async (cnpj: string) => {
+    setPipedriveLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pipedrive-verificar", { body: { cnpj } });
+      if (error) throw error;
+      setPipedrive(data);
+      if ((data as any)?.found && consultaId) {
+        await supabase.from("consultas")
+          .update({ encontrado_no_pipedrive: true, pipedrive_org_id: (data as any).organization.id })
+          .eq("id", consultaId);
+        qc.invalidateQueries({ queryKey: ["consultas-recentes"] });
+      }
+    } catch (e: any) {
+      setPipedrive({ error: e.message ?? "Falha na verificação Pipedrive" });
+    } finally {
+      setPipedriveLoading(false);
+    }
+  };
+
+  const sincronizar = async (mode: "create" | "update" | "skip", opts: { criar_deal_inicial?: boolean } = {}) => {
+    if (!result) return;
+    if (mode !== "skip" && !pipedrive?.cnpj_field_key) {
+      toast.error("Campo CNPJ não localizado no Pipedrive.");
+      return;
+    }
+    setSincronizando(mode === "skip" ? null : mode);
+    try {
+      const { data, error } = await supabase.functions.invoke("pipedrive-sincronizar", {
+        body: {
+          mode,
+          cnpj: result.cnpj,
+          receita: result.receita,
+          cnpj_field_key: pipedrive?.cnpj_field_key,
+          organization_id: pipedrive?.organization?.id,
+          criar_deal_inicial: !!opts.criar_deal_inicial,
+          consulta_id: consultaId,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if (mode === "skip") {
+        toast.success("Registrado como lead em potencial.");
+      } else {
+        setResumo((data as any).resumo);
+        toast.success(mode === "create" ? "Empresa cadastrada no Pipedrive." : "Empresa atualizada no Pipedrive.");
+        // reverifica para pegar org_id em modo create
+        verificarPipedrive(result.cnpj);
+      }
+      qc.invalidateQueries({ queryKey: ["consultas-recentes"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha na sincronização");
+    } finally {
+      setSincronizando(null);
+    }
+  };
+
 
   const r = result?.receita;
 
@@ -208,6 +277,105 @@ export default function ConsultaCnpj() {
         <div className="grid gap-3 md:grid-cols-2">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-40" />)}
         </div>
+      )}
+
+      {r && (
+        <Card className="p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              {pipedriveLoading ? (
+                <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-muted-foreground" />
+              ) : pipedrive?.error ? (
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+              ) : pipedrive?.cnpj_field_missing ? (
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-warning" />
+              ) : pipedrive?.found ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
+              ) : (
+                <HelpCircle className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Status no Pipedrive</p>
+                {pipedriveLoading && (
+                  <p className="text-xs text-muted-foreground">Verificando…</p>
+                )}
+                {pipedrive?.error && (
+                  <p className="text-xs text-destructive">{pipedrive.error}</p>
+                )}
+                {pipedrive?.cnpj_field_missing && (
+                  <p className="text-xs text-warning">
+                    {pipedrive.error}
+                  </p>
+                )}
+                {pipedrive?.found && (
+                  <>
+                    <p className="text-sm font-medium">{pipedrive.organization.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Org #{pipedrive.organization.id}
+                      {pipedrive.deals?.length ? ` · ${pipedrive.deals.length} deal(s)` : ""}
+                      {pipedrive.persons?.length ? ` · ${pipedrive.persons.length} pessoa(s)` : ""}
+                    </p>
+                  </>
+                )}
+                {!pipedriveLoading && pipedrive && !pipedrive.error && !pipedrive.cnpj_field_missing && !pipedrive.found && (
+                  <p className="text-xs text-muted-foreground">
+                    Empresa não encontrada no Pipedrive. Deseja cadastrar?
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {pipedrive?.found && (
+                <Button
+                  size="sm"
+                  onClick={() => sincronizar("update")}
+                  disabled={sincronizando === "update"}
+                  className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+                >
+                  {sincronizando === "update" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-1.5 h-4 w-4" />}
+                  Atualizar no Pipedrive
+                </Button>
+              )}
+              {!pipedriveLoading && pipedrive && !pipedrive.error && !pipedrive.cnpj_field_missing && !pipedrive.found && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => setConfirmCriar(true)}
+                    disabled={!!sincronizando}
+                    className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+                  >
+                    {sincronizando === "create" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
+                    Sim, cadastrar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => sincronizar("skip")}
+                    disabled={!!sincronizando}
+                  >
+                    Não, só marcar como lead
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {resumo && (
+            <div className="mt-3 rounded-md border border-border/60 bg-muted/30 p-3 text-xs">
+              <p className="font-semibold">Resumo da sincronização</p>
+              <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                <li>Organização {resumo.org_criada ? "criada" : "atualizada"} (ID {resumo.org_id})</li>
+                {(resumo.pessoas_criadas > 0 || resumo.pessoas_atualizadas > 0) && (
+                  <li>Sócios: {resumo.pessoas_criadas} criado(s), {resumo.pessoas_atualizadas} atualizado(s)</li>
+                )}
+                {resumo.deals_atualizados > 0 && <li>Deals atualizados: {resumo.deals_atualizados}</li>}
+                {resumo.deal_criado && <li>Deal inicial criado (ID {resumo.deal_criado})</li>}
+                {resumo.nota_id && <li>Nota com dados da Receita anexada</li>}
+              </ul>
+            </div>
+          )}
+        </Card>
       )}
 
       {r && (
@@ -364,6 +532,36 @@ export default function ConsultaCnpj() {
           </ul>
         )}
       </Card>
+
+      <AlertDialog open={confirmCriar} onOpenChange={setConfirmCriar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cadastrar no Pipedrive?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vamos criar a organização com os dados da Receita, vincular os sócios como pessoas e anexar uma nota com o cadastro completo.
+              Deseja também criar um <strong>negócio inicial</strong> para começar a prospecção?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!sincronizando}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="outline"
+              disabled={!!sincronizando}
+              onClick={() => { setConfirmCriar(false); sincronizar("create", { criar_deal_inicial: false }); }}
+            >
+              Só cadastrar
+            </Button>
+            <AlertDialogAction
+              disabled={!!sincronizando}
+              onClick={(e) => { e.preventDefault(); setConfirmCriar(false); sincronizar("create", { criar_deal_inicial: true }); }}
+              className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+            >
+              Cadastrar + criar deal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
