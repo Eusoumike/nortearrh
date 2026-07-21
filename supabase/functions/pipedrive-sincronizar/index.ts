@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       receita,
       cnpj_field_key,
       organization_id,      // obrigatório em update
-      criar_deal_inicial,   // bool, apenas em create
+      criar_deal_inicial,   // bool: em create OU update, cria um novo deal
       consulta_id,          // id do registro na tabela consultas p/ atualizar
     } = body ?? {};
 
@@ -264,13 +264,17 @@ Deno.serve(async (req) => {
           resumo.deals_atualizados++;
         } catch { /* segue */ }
       }
-    } else if (mode === "create" && criar_deal_inicial) {
+    }
+
+    // ----------- CRIAR NOVO DEAL (create com flag OU update com flag) -----------
+    if (criar_deal_inicial && (mode === "create" || mode === "update")) {
       try {
+        const hoje = new Date().toLocaleDateString("pt-BR");
         const dealCriado = await pdFetch(`${base}/deals?${auth}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: `${orgPayload.name} — Novo lead`,
+            title: `${orgPayload.name} — ${hoje}`,
             org_id: orgId,
           }),
         });
