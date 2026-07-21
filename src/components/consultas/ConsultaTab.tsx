@@ -102,8 +102,8 @@ function SectionHeader({ icon: Icon, title, copyAll }: { icon: any; title: strin
   );
 }
 
-export default function ConsultaCnpj() {
-  const [input, setInput] = useState("");
+export default function ConsultaTab({ initialCnpj, autoRun }: { initialCnpj?: string; autoRun?: boolean } = {}) {
+  const [input, setInput] = useState(initialCnpj ? maskCnpjInput(initialCnpj) : "");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [pipedrive, setPipedrive] = useState<any>(null);
@@ -114,6 +114,15 @@ export default function ConsultaCnpj() {
   const [resumo, setResumo] = useState<any>(null);
   const { user } = useAuth();
   const qc = useQueryClient();
+
+  // Auto-consulta quando recebe CNPJ inicial vindo de outra aba
+  useEffect(() => {
+    if (autoRun && initialCnpj && isValidCnpj(initialCnpj)) {
+      consultar(initialCnpj);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCnpj, autoRun]);
+
 
   const { data: recentes } = useQuery({
     queryKey: ["consultas-recentes"],
