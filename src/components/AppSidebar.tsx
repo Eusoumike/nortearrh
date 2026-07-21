@@ -4,7 +4,7 @@ import {
   Sparkles,
   Rocket,
   Headphones,
-  
+  Search,
   DollarSign,
   TrendingUp,
   CheckSquare,
@@ -78,6 +78,12 @@ const groups: NavGroup[] = [
     title: "Clientes",
     icon: Users,
     children: [{ title: "Carteira", url: "/clientes" }],
+  },
+  {
+    key: "consulta-cnpj",
+    title: "Consulta CNPJ",
+    icon: Search,
+    url: "/consulta-cnpj",
   },
   {
     key: "onboarding",

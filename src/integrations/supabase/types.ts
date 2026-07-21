@@ -499,6 +499,51 @@ export type Database = {
           },
         ]
       }
+      consultas: {
+        Row: {
+          acao: string | null
+          cnpj: string
+          consultado_em: string
+          consultado_por: string | null
+          consultado_por_nome: string | null
+          dados_receita: Json | null
+          encontrado_no_pipedrive: boolean
+          id: string
+          nome_fantasia: string | null
+          pipedrive_org_id: number | null
+          razao_social: string | null
+          situacao_cadastral: string | null
+        }
+        Insert: {
+          acao?: string | null
+          cnpj: string
+          consultado_em?: string
+          consultado_por?: string | null
+          consultado_por_nome?: string | null
+          dados_receita?: Json | null
+          encontrado_no_pipedrive?: boolean
+          id?: string
+          nome_fantasia?: string | null
+          pipedrive_org_id?: number | null
+          razao_social?: string | null
+          situacao_cadastral?: string | null
+        }
+        Update: {
+          acao?: string | null
+          cnpj?: string
+          consultado_em?: string
+          consultado_por?: string | null
+          consultado_por_nome?: string | null
+          dados_receita?: Json | null
+          encontrado_no_pipedrive?: boolean
+          id?: string
+          nome_fantasia?: string | null
+          pipedrive_org_id?: number | null
+          razao_social?: string | null
+          situacao_cadastral?: string | null
+        }
+        Relationships: []
+      }
       contratos_rh_digital: {
         Row: {
           ativo: boolean

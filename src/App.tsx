@@ -22,6 +22,7 @@ import ComingSoon from "./pages/ComingSoon";
 import Settings from "./pages/Settings";
 import Financeiro from "./pages/Financeiro";
 import Nps from "./pages/Nps";
+import ConsultaCnpj from "./pages/ConsultaCnpj";
 import NpsForm from "./pages/NpsForm";
 import NotFound from "./pages/NotFound.tsx";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/performance" element={<Performance />} />
             <Route path="/nps" element={<Nps />} />
             <Route path="/assist" element={<Assist />} />
+            <Route path="/consulta-cnpj" element={<ConsultaCnpj />} />
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Route>
