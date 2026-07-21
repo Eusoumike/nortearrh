@@ -573,7 +573,37 @@ export default function ConsultaTab({ initialCnpj, autoRun }: { initialCnpj?: st
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={confirmDealDuplicado} onOpenChange={setConfirmDealDuplicado}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Já existe um negócio aberto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta empresa já possui {(pipedrive?.deals ?? []).filter((d: any) => d.status === "open").length} negócio(s) aberto(s) no Pipedrive.
+              Deseja criar outro negócio mesmo assim ao sincronizar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!sincronizando}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="outline"
+              disabled={!!sincronizando}
+              onClick={() => { setConfirmDealDuplicado(false); sincronizar("update", { criar_deal_inicial: false }); }}
+            >
+              Só atualizar dados
+            </Button>
+            <AlertDialogAction
+              disabled={!!sincronizando}
+              onClick={(e) => { e.preventDefault(); setConfirmDealDuplicado(false); sincronizar("update", { criar_deal_inicial: true }); }}
+              className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+            >
+              Sim, criar outro deal
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 
