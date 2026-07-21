@@ -334,7 +334,14 @@ export default function ConsultaTab({ initialCnpj, autoRun }: { initialCnpj?: st
               {pipedrive?.found && (
                 <Button
                   size="sm"
-                  onClick={() => sincronizar("update")}
+                  onClick={() => {
+                    const abertos = (pipedrive?.deals ?? []).filter((d: any) => d.status === "open");
+                    if (abertos.length > 0) {
+                      setConfirmDealDuplicado(true);
+                    } else {
+                      sincronizar("update", { criar_deal_inicial: true });
+                    }
+                  }}
                   disabled={sincronizando === "update"}
                   className="bg-gradient-brand text-primary-foreground hover:opacity-90"
                 >
