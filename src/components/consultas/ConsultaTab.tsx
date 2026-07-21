@@ -248,13 +248,8 @@ export default function ConsultaTab({ initialCnpj, autoRun }: { initialCnpj?: st
   const qsa: any[] = r?.qsa ?? [];
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Consulta de CNPJ</h1>
-        <p className="text-xs text-muted-foreground md:text-sm">
-          Busque dados públicos da Receita Federal e registre o histórico de consultas.
-        </p>
-      </div>
+    <div className="space-y-4">
+
 
       <Card className="p-3">
         <form
