@@ -110,6 +110,7 @@ export default function ConsultaTab({ initialCnpj, autoRun }: { initialCnpj?: st
   const [pipedriveLoading, setPipedriveLoading] = useState(false);
   const [consultaId, setConsultaId] = useState<string | null>(null);
   const [confirmCriar, setConfirmCriar] = useState(false);
+  const [confirmDealDuplicado, setConfirmDealDuplicado] = useState(false);
   const [sincronizando, setSincronizando] = useState<null | "create" | "update">(null);
   const [resumo, setResumo] = useState<any>(null);
   const { user } = useAuth();
