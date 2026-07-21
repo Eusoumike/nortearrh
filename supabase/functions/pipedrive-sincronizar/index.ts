@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       receita,
       cnpj_field_key,
       organization_id,      // obrigatório em update
-      criar_deal_inicial,   // bool, apenas em create
+      criar_deal_inicial,   // bool: em create OU update, cria um novo deal
       consulta_id,          // id do registro na tabela consultas p/ atualizar
     } = body ?? {};
 
