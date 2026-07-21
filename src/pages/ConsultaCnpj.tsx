@@ -280,6 +280,105 @@ export default function ConsultaCnpj() {
       )}
 
       {r && (
+        <Card className="p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              {pipedriveLoading ? (
+                <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-muted-foreground" />
+              ) : pipedrive?.error ? (
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+              ) : pipedrive?.cnpj_field_missing ? (
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-warning" />
+              ) : pipedrive?.found ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
+              ) : (
+                <HelpCircle className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Status no Pipedrive</p>
+                {pipedriveLoading && (
+                  <p className="text-xs text-muted-foreground">Verificando…</p>
+                )}
+                {pipedrive?.error && (
+                  <p className="text-xs text-destructive">{pipedrive.error}</p>
+                )}
+                {pipedrive?.cnpj_field_missing && (
+                  <p className="text-xs text-warning">
+                    {pipedrive.error}
+                  </p>
+                )}
+                {pipedrive?.found && (
+                  <>
+                    <p className="text-sm font-medium">{pipedrive.organization.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Org #{pipedrive.organization.id}
+                      {pipedrive.deals?.length ? ` · ${pipedrive.deals.length} deal(s)` : ""}
+                      {pipedrive.persons?.length ? ` · ${pipedrive.persons.length} pessoa(s)` : ""}
+                    </p>
+                  </>
+                )}
+                {!pipedriveLoading && pipedrive && !pipedrive.error && !pipedrive.cnpj_field_missing && !pipedrive.found && (
+                  <p className="text-xs text-muted-foreground">
+                    Empresa não encontrada no Pipedrive. Deseja cadastrar?
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {pipedrive?.found && (
+                <Button
+                  size="sm"
+                  onClick={() => sincronizar("update")}
+                  disabled={sincronizando === "update"}
+                  className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+                >
+                  {sincronizando === "update" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-1.5 h-4 w-4" />}
+                  Atualizar no Pipedrive
+                </Button>
+              )}
+              {!pipedriveLoading && pipedrive && !pipedrive.error && !pipedrive.cnpj_field_missing && !pipedrive.found && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => setConfirmCriar(true)}
+                    disabled={!!sincronizando}
+                    className="bg-gradient-brand text-primary-foreground hover:opacity-90"
+                  >
+                    {sincronizando === "create" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
+                    Sim, cadastrar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => sincronizar("skip")}
+                    disabled={!!sincronizando}
+                  >
+                    Não, só marcar como lead
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {resumo && (
+            <div className="mt-3 rounded-md border border-border/60 bg-muted/30 p-3 text-xs">
+              <p className="font-semibold">Resumo da sincronização</p>
+              <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                <li>Organização {resumo.org_criada ? "criada" : "atualizada"} (ID {resumo.org_id})</li>
+                {(resumo.pessoas_criadas > 0 || resumo.pessoas_atualizadas > 0) && (
+                  <li>Sócios: {resumo.pessoas_criadas} criado(s), {resumo.pessoas_atualizadas} atualizado(s)</li>
+                )}
+                {resumo.deals_atualizados > 0 && <li>Deals atualizados: {resumo.deals_atualizados}</li>}
+                {resumo.deal_criado && <li>Deal inicial criado (ID {resumo.deal_criado})</li>}
+                {resumo.nota_id && <li>Nota com dados da Receita anexada</li>}
+              </ul>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {r && (
         <div className="grid gap-3 md:grid-cols-2">
           <Card className="p-4">
             <SectionHeader
