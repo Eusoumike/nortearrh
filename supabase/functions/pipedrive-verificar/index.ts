@@ -53,7 +53,12 @@ Deno.serve(async (req) => {
     }
 
     const PIPEDRIVE_TOKEN = Deno.env.get("PIPEDRIVE_API_TOKEN");
-    const PIPEDRIVE_DOMAIN = Deno.env.get("PIPEDRIVE_DOMAIN") || "api";
+    const rawDomain = Deno.env.get("PIPEDRIVE_DOMAIN") || "api";
+    // Aceita "vempraponto", "vempraponto.pipedrive.com" ou URL completa
+    const PIPEDRIVE_DOMAIN = rawDomain
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/.*$/, "")
+      .replace(/\.pipedrive\.com$/i, "");
     if (!PIPEDRIVE_TOKEN) {
       return new Response(JSON.stringify({ error: "PIPEDRIVE_API_TOKEN não configurado" }), {
         status: 500,
