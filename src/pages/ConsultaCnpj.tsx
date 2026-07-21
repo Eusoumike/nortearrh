@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Copy, Check, Loader2, Building2, MapPin, Phone, Users, History } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Copy, Check, Loader2, Building2, MapPin, Phone, Users, History, ExternalLink, AlertTriangle, CheckCircle2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatCnpj } from "@/lib/formatters";
 import { formatBrazilDateTime } from "@/lib/formatters";
@@ -102,6 +106,12 @@ export default function ConsultaCnpj() {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [pipedrive, setPipedrive] = useState<any>(null);
+  const [pipedriveLoading, setPipedriveLoading] = useState(false);
+  const [consultaId, setConsultaId] = useState<string | null>(null);
+  const [confirmCriar, setConfirmCriar] = useState(false);
+  const [sincronizando, setSincronizando] = useState<null | "create" | "update">(null);
+  const [resumo, setResumo] = useState<any>(null);
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -118,14 +128,6 @@ export default function ConsultaCnpj() {
     },
   });
 
-  const registrar = useMutation({
-    mutationFn: async (payload: any) => {
-      const { error } = await supabase.from("consultas").insert(payload);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["consultas-recentes"] }),
-  });
-
   const consultar = async (raw?: string) => {
     const value = raw ?? input;
     const cnpj = onlyDigits(value);
@@ -135,6 +137,9 @@ export default function ConsultaCnpj() {
     }
     setLoading(true);
     setResult(null);
+    setPipedrive(null);
+    setResumo(null);
+    setConsultaId(null);
     try {
       const { data, error } = await supabase.functions.invoke("consultar-cnpj", { body: { cnpj } });
       if (error) throw error;
@@ -142,7 +147,8 @@ export default function ConsultaCnpj() {
       const receita = (data as any).data;
       setResult({ cnpj, receita });
 
-      await registrar.mutateAsync({
+      // Registra a consulta (retorna id p/ atualizações posteriores)
+      const { data: inserted, error: insErr } = await supabase.from("consultas").insert({
         cnpj,
         razao_social: receita?.razao_social ?? null,
         nome_fantasia: receita?.nome_fantasia ?? null,
@@ -152,13 +158,76 @@ export default function ConsultaCnpj() {
         acao: "somente_consulta",
         consultado_por: user?.id ?? null,
         consultado_por_nome: user?.user_metadata?.full_name ?? user?.email ?? null,
-      });
+      }).select("id").single();
+      if (insErr) throw insErr;
+      setConsultaId(inserted.id);
+      qc.invalidateQueries({ queryKey: ["consultas-recentes"] });
+
+      // Dispara verificação no Pipedrive em background
+      verificarPipedrive(cnpj);
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao consultar CNPJ");
     } finally {
       setLoading(false);
     }
   };
+
+  const verificarPipedrive = async (cnpj: string) => {
+    setPipedriveLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pipedrive-verificar", { body: { cnpj } });
+      if (error) throw error;
+      setPipedrive(data);
+      if ((data as any)?.found && consultaId) {
+        await supabase.from("consultas")
+          .update({ encontrado_no_pipedrive: true, pipedrive_org_id: (data as any).organization.id })
+          .eq("id", consultaId);
+        qc.invalidateQueries({ queryKey: ["consultas-recentes"] });
+      }
+    } catch (e: any) {
+      setPipedrive({ error: e.message ?? "Falha na verificação Pipedrive" });
+    } finally {
+      setPipedriveLoading(false);
+    }
+  };
+
+  const sincronizar = async (mode: "create" | "update" | "skip", opts: { criar_deal_inicial?: boolean } = {}) => {
+    if (!result) return;
+    if (mode !== "skip" && !pipedrive?.cnpj_field_key) {
+      toast.error("Campo CNPJ não localizado no Pipedrive.");
+      return;
+    }
+    setSincronizando(mode === "skip" ? null : mode);
+    try {
+      const { data, error } = await supabase.functions.invoke("pipedrive-sincronizar", {
+        body: {
+          mode,
+          cnpj: result.cnpj,
+          receita: result.receita,
+          cnpj_field_key: pipedrive?.cnpj_field_key,
+          organization_id: pipedrive?.organization?.id,
+          criar_deal_inicial: !!opts.criar_deal_inicial,
+          consulta_id: consultaId,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if (mode === "skip") {
+        toast.success("Registrado como lead em potencial.");
+      } else {
+        setResumo((data as any).resumo);
+        toast.success(mode === "create" ? "Empresa cadastrada no Pipedrive." : "Empresa atualizada no Pipedrive.");
+        // reverifica para pegar org_id em modo create
+        verificarPipedrive(result.cnpj);
+      }
+      qc.invalidateQueries({ queryKey: ["consultas-recentes"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha na sincronização");
+    } finally {
+      setSincronizando(null);
+    }
+  };
+
 
   const r = result?.receita;
 
