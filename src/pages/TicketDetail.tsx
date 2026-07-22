@@ -53,7 +53,6 @@ import {
   Monitor,
   Copy,
   Plus,
-  Mic,
   Building2,
   User as UserIcon,
   CheckCircle2,
@@ -67,7 +66,6 @@ import {
   RotateCcw,
   Settings,
 } from "lucide-react";
-import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -379,7 +377,7 @@ export default function TicketDetail() {
     interaction_at: nowBrasilia(),
     time_spent_minutes: "" as string,
   });
-  const [audioOpen, setAudioOpen] = useState(false);
+  
 
   const addInteraction = useMutation({
     mutationFn: async () => {
@@ -933,20 +931,6 @@ export default function TicketDetail() {
               )}
             />
 
-            {audioOpen && (
-              <div className="border-t bg-surface-muted/30 px-4 py-2">
-                <AudioTranscription
-                  onCancel={() => setAudioOpen(false)}
-                  onConfirm={(text) => {
-                    setNewInt((n) => ({
-                      ...n,
-                      summary: n.summary ? `${n.summary}\n${text}` : text,
-                    }));
-                    setAudioOpen(false);
-                  }}
-                />
-              </div>
-            )}
 
             {/* Toolbar inferior */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-surface-muted/30 px-4 py-2.5">
@@ -1044,16 +1028,6 @@ export default function TicketDetail() {
                   disabled
                 >
                   <Paperclip className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setAudioOpen((o) => !o)}
-                  className="h-8 px-2 text-muted-foreground"
-                  title="Gravar áudio"
-                >
-                  <Mic className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex items-center gap-1.5">

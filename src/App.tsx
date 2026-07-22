@@ -21,9 +21,7 @@ import ClientDetail from "./pages/ClientDetail";
 import ComingSoon from "./pages/ComingSoon";
 import Settings from "./pages/Settings";
 import Financeiro from "./pages/Financeiro";
-import Nps from "./pages/Nps";
 import ConsultaCnpj from "./pages/ConsultaCnpj";
-import NpsForm from "./pages/NpsForm";
 import NotFound from "./pages/NotFound.tsx";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -42,8 +40,6 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/pesquisa" element={<NpsForm />} />
-          <Route path="/pesquisa/:token" element={<NpsForm />} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/tickets" element={<Tickets />} />
@@ -56,7 +52,6 @@ const App = () => (
             <Route path="/clientes/:id" element={<ClientDetail />} />
             <Route path="/inbox" element={<ComingSoon title="Caixa de entrada" description="Centralizador de e-mails, WhatsApp e chat. Chega na Onda 2." />} />
             <Route path="/performance" element={<Performance />} />
-            <Route path="/nps" element={<Nps />} />
             <Route path="/assist" element={<Assist />} />
             <Route path="/consulta-cnpj" element={<ConsultaCnpj />} />
             <Route path="/financeiro" element={<Financeiro />} />
