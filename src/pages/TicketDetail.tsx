@@ -379,7 +379,7 @@ export default function TicketDetail() {
     interaction_at: nowBrasilia(),
     time_spent_minutes: "" as string,
   });
-  const [audioOpen, setAudioOpen] = useState(false);
+  
 
   const addInteraction = useMutation({
     mutationFn: async () => {
