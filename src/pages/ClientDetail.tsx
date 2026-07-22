@@ -149,39 +149,6 @@ export default function ClientDetail() {
     },
   });
 
-  const { data: npsLatest } = useQuery({
-    queryKey: ["client-nps", id],
-    enabled: !!id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("nps_responses")
-        .select("id, nps_score, nome, feedback_aberto, created_at")
-        .eq("client_id", id!)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      return data?.[0] ?? null;
-    },
-  });
-
-  const sendSurvey = useMutation({
-    mutationFn: async () => {
-      if (!client) throw new Error("Cliente não carregado");
-      let token = client.nps_token;
-      if (!token) {
-        token = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
-        const { error } = await supabase.from("clients").update({ nps_token: token }).eq("id", id!);
-        if (error) throw error;
-      }
-      const url = `${window.location.origin}/pesquisa/${token}`;
-      await navigator.clipboard.writeText(url);
-      return url;
-    },
-    onSuccess: (url) => {
-      qc.invalidateQueries({ queryKey: ["client", id] });
-      toast.success("Link copiado: " + url);
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   if (isLoading || !client) {
     return (
