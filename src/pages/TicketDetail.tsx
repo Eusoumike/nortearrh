@@ -53,7 +53,6 @@ import {
   Monitor,
   Copy,
   Plus,
-  Mic,
   Building2,
   User as UserIcon,
   CheckCircle2,
@@ -67,7 +66,6 @@ import {
   RotateCcw,
   Settings,
 } from "lucide-react";
-import { AudioTranscription } from "@/components/tickets/AudioTranscription";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
