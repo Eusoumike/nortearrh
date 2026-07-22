@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_nps_responses: {
+        Row: {
+          atendimento_evolucao: string | null
+          client_id: string | null
+          comentario_adicional: string | null
+          confianca_informacoes: number | null
+          created_at: string | null
+          email: string | null
+          empresa: string | null
+          experiencia_geral: string | null
+          feedback_aberto: string | null
+          frequencia_uso: string | null
+          id: string | null
+          nome: string | null
+          nota_atendimento: number | null
+          nps_score: number | null
+          source: string | null
+          sugestao_melhoria: string | null
+          tempo_cliente: string | null
+          tempo_resposta: string | null
+          token: string | null
+        }
+        Insert: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string | null
+          nome?: string | null
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string | null
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Update: {
+          atendimento_evolucao?: string | null
+          client_id?: string | null
+          comentario_adicional?: string | null
+          confianca_informacoes?: number | null
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          experiencia_geral?: string | null
+          feedback_aberto?: string | null
+          frequencia_uso?: string | null
+          id?: string | null
+          nome?: string | null
+          nota_atendimento?: number | null
+          nps_score?: number | null
+          source?: string | null
+          sugestao_melhoria?: string | null
+          tempo_cliente?: string | null
+          tempo_resposta?: string | null
+          token?: string | null
+        }
+        Relationships: []
+      }
       assist_artigos: {
         Row: {
           causa_raiz: string | null
@@ -244,7 +310,6 @@ export type Database = {
           notes: string | null
           nps_data: string | null
           nps_score: number | null
-          nps_token: string | null
           numero: string | null
           onboarding_iniciado_em: string | null
           parceiro_id: string | null
@@ -307,7 +372,6 @@ export type Database = {
           notes?: string | null
           nps_data?: string | null
           nps_score?: number | null
-          nps_token?: string | null
           numero?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
@@ -370,7 +434,6 @@ export type Database = {
           notes?: string | null
           nps_data?: string | null
           nps_score?: number | null
-          nps_token?: string | null
           numero?: string | null
           onboarding_iniciado_em?: string | null
           parceiro_id?: string | null
@@ -1437,72 +1500,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      nps_responses: {
-        Row: {
-          atendimento_evolucao: string | null
-          client_id: string | null
-          comentario_adicional: string | null
-          confianca_informacoes: number | null
-          created_at: string
-          email: string
-          empresa: string
-          experiencia_geral: string | null
-          feedback_aberto: string | null
-          frequencia_uso: string | null
-          id: string
-          nome: string
-          nota_atendimento: number | null
-          nps_score: number | null
-          source: string
-          sugestao_melhoria: string | null
-          tempo_cliente: string | null
-          tempo_resposta: string | null
-          token: string | null
-        }
-        Insert: {
-          atendimento_evolucao?: string | null
-          client_id?: string | null
-          comentario_adicional?: string | null
-          confianca_informacoes?: number | null
-          created_at?: string
-          email?: string
-          empresa?: string
-          experiencia_geral?: string | null
-          feedback_aberto?: string | null
-          frequencia_uso?: string | null
-          id?: string
-          nome?: string
-          nota_atendimento?: number | null
-          nps_score?: number | null
-          source?: string
-          sugestao_melhoria?: string | null
-          tempo_cliente?: string | null
-          tempo_resposta?: string | null
-          token?: string | null
-        }
-        Update: {
-          atendimento_evolucao?: string | null
-          client_id?: string | null
-          comentario_adicional?: string | null
-          confianca_informacoes?: number | null
-          created_at?: string
-          email?: string
-          empresa?: string
-          experiencia_geral?: string | null
-          feedback_aberto?: string | null
-          frequencia_uso?: string | null
-          id?: string
-          nome?: string
-          nota_atendimento?: number | null
-          nps_score?: number | null
-          source?: string
-          sugestao_melhoria?: string | null
-          tempo_cliente?: string | null
-          tempo_resposta?: string | null
-          token?: string | null
-        }
-        Relationships: []
       }
       parceiros: {
         Row: {
