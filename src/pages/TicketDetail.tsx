@@ -1045,16 +1045,6 @@ export default function TicketDetail() {
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setAudioOpen((o) => !o)}
-                  className="h-8 px-2 text-muted-foreground"
-                  title="Gravar áudio"
-                >
-                  <Mic className="h-4 w-4" />
-                </Button>
               </div>
               <div className="flex items-center gap-1.5">
                 <Button
