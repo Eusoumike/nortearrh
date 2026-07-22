@@ -89,30 +89,6 @@ function addHoursToBrasiliaInput(localValue: string, hours: number): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-function AudioToggle({ onConfirm }: { onConfirm: (t: string) => void }) {
-  const [open, setOpen] = useState(false);
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-1"
-      >
-        <Mic className="h-3 w-3" /> Gravar explicação
-      </button>
-    );
-  }
-  return (
-    <AudioTranscription
-      className="mt-2"
-      onCancel={() => setOpen(false)}
-      onConfirm={(t) => {
-        onConfirm(t);
-        setOpen(false);
-      }}
-    />
-  );
-}
 
 export function NewTicketDialog({ open, onOpenChange }: NewTicketDialogProps) {
   const navigate = useNavigate();
