@@ -933,20 +933,6 @@ export default function TicketDetail() {
               )}
             />
 
-            {audioOpen && (
-              <div className="border-t bg-surface-muted/30 px-4 py-2">
-                <AudioTranscription
-                  onCancel={() => setAudioOpen(false)}
-                  onConfirm={(text) => {
-                    setNewInt((n) => ({
-                      ...n,
-                      summary: n.summary ? `${n.summary}\n${text}` : text,
-                    }));
-                    setAudioOpen(false);
-                  }}
-                />
-              </div>
-            )}
 
             {/* Toolbar inferior */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-surface-muted/30 px-4 py-2.5">
