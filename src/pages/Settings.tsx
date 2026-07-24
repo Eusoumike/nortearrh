@@ -37,6 +37,7 @@ import { ImplantacaoStagesManager } from "@/components/settings/ImplantacaoStage
 import { ImplantacaoTemplatesManager } from "@/components/settings/ImplantacaoTemplatesManager";
 import { AssistSolutionsCard } from "@/components/settings/AssistSolutionsCard";
 import { BackupCard } from "@/components/settings/BackupCard";
+import { BackupLogs } from "@/components/settings/BackupLogs";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -406,6 +407,7 @@ export default function Settings() {
 
       {/* Backup completo (admin) */}
       {isAdmin && <BackupCard />}
+      {isAdmin && <BackupLogs />}
 
       {/* Pipedrive (admin) */}
       {isAdmin && (

@@ -1,5 +1,6 @@
 // Edge Function: gera backup completo, sobe para o Storage,
-// cria link assinado (30 dias) e envia por e-mail. Registra tudo em backup_logs.
+// cria link assinado (30 dias) e registra em backup_logs.
+// NÃO envia e-mail — admin confere o histórico em Configurações.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -24,7 +25,6 @@ const TABLES = [
   "consultas","system_settings","profiles","user_roles",
 ];
 
-const DEST_EMAIL = "contato@nortearsolucoes.com.br";
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 dias
 
 Deno.serve(async (req) => {
@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(supabaseUrl, serviceKey);
 
-  const origem = (await req.json().catch(() => ({}))).origem ?? "automatico";
+  const body = await req.json().catch(() => ({}));
+  const origem = body?.origem ?? "automatico";
   const startedAt = new Date();
 
   const data: Record<string, unknown[]> = {};
@@ -77,8 +78,8 @@ Deno.serve(async (req) => {
     const dd = String(startedAt.getDate()).padStart(2, "0");
     const hh = String(startedAt.getHours()).padStart(2, "0");
     const mi = String(startedAt.getMinutes()).padStart(2, "0");
-    const filename = `nortear-connect-backup-${yyyy}-${mm}-${dd}.json`;
-    const storagePath = `${yyyy}/${mm}/${filename.replace(".json", `-${hh}${mi}.json`)}`;
+    const filename = `nortear-connect-backup-${yyyy}-${mm}-${dd}-${hh}${mi}.json`;
+    const storagePath = `${yyyy}/${mm}/${filename}`;
 
     const json = JSON.stringify(backup, null, 2);
     const bytes = new TextEncoder().encode(json);
@@ -96,33 +97,6 @@ Deno.serve(async (req) => {
 
     const signedUrl = signed?.signedUrl ?? null;
     const expiraEm = new Date(Date.now() + SIGNED_URL_TTL_SECONDS * 1000).toISOString();
-
-    // Tenta enviar por e-mail (pode falhar se domínio não configurado)
-    let emailEnviado = false;
-    let emailErro: string | null = null;
-    try {
-      const { error: mailErr } = await admin.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "backup-mensal",
-          recipientEmail: DEST_EMAIL,
-          idempotencyKey: `backup-${yyyy}-${mm}-${dd}-${hh}${mi}`,
-          templateData: {
-            filename,
-            totalLinhas,
-            totalTabelas: TABLES.length,
-            dataLocal: startedAt.toLocaleString("pt-BR"),
-            downloadUrl: signedUrl,
-            expiraEm: new Date(expiraEm).toLocaleString("pt-BR"),
-            origem,
-          },
-        },
-      });
-      if (mailErr) throw mailErr;
-      emailEnviado = true;
-    } catch (e) {
-      emailErro = (e as Error)?.message ?? "Falha ao enviar e-mail";
-    }
-
     const status = Object.keys(errors).length ? "parcial" : "sucesso";
 
     await admin.from("backup_logs").insert({
@@ -135,14 +109,11 @@ Deno.serve(async (req) => {
       storage_path: storagePath,
       signed_url: signedUrl,
       signed_url_expira_em: expiraEm,
-      email_enviado: emailEnviado,
-      email_destinatario: DEST_EMAIL,
-      email_erro: emailErro,
       detalhes: { row_counts: counts, tabelas_com_erro: errors },
     });
 
     return new Response(
-      JSON.stringify({ ok: true, status, totalLinhas, storagePath, signedUrl, emailEnviado, emailErro }),
+      JSON.stringify({ ok: true, status, totalLinhas, storagePath, signedUrl }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
@@ -153,7 +124,6 @@ Deno.serve(async (req) => {
       status: "erro",
       total_tabelas: TABLES.length,
       total_linhas: Object.values(counts).reduce((a, b) => a + b, 0),
-      email_destinatario: DEST_EMAIL,
       erro: msg,
       detalhes: { row_counts: counts, tabelas_com_erro: errors },
     });
