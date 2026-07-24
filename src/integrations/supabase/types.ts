@@ -218,6 +218,63 @@ export type Database = {
           },
         ]
       }
+      backup_logs: {
+        Row: {
+          created_at: string
+          detalhes: Json | null
+          email_destinatario: string | null
+          email_enviado: boolean
+          email_erro: string | null
+          erro: string | null
+          executado_em: string
+          id: string
+          origem: string
+          signed_url: string | null
+          signed_url_expira_em: string | null
+          status: string
+          storage_path: string | null
+          tamanho_bytes: number | null
+          total_linhas: number | null
+          total_tabelas: number | null
+        }
+        Insert: {
+          created_at?: string
+          detalhes?: Json | null
+          email_destinatario?: string | null
+          email_enviado?: boolean
+          email_erro?: string | null
+          erro?: string | null
+          executado_em?: string
+          id?: string
+          origem?: string
+          signed_url?: string | null
+          signed_url_expira_em?: string | null
+          status: string
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          total_linhas?: number | null
+          total_tabelas?: number | null
+        }
+        Update: {
+          created_at?: string
+          detalhes?: Json | null
+          email_destinatario?: string | null
+          email_enviado?: boolean
+          email_erro?: string | null
+          erro?: string | null
+          executado_em?: string
+          id?: string
+          origem?: string
+          signed_url?: string | null
+          signed_url_expira_em?: string | null
+          status?: string
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          total_linhas?: number | null
+          total_tabelas?: number | null
+        }
+        Relationships: []
+      }
       checklist_items: {
         Row: {
           concluido: boolean
