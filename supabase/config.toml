@@ -2,3 +2,6 @@ project_id = "bxibhzanfscdrkbkvulp"
 
 [functions.gerar-email-n2]
 verify_jwt = true
+
+[functions.backup-mensal]
+verify_jwt = false
