@@ -71,6 +71,17 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isStaff = (roles ?? []).some((r) => ["admin", "manager", "agent"].includes(r.role));
+    if (!isStaff) {
+      return new Response(JSON.stringify({ error: "Apenas equipe Nortear pode sincronizar com o Pipedrive" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const PIPEDRIVE_TOKEN = Deno.env.get("PIPEDRIVE_API_TOKEN");
     const rawDomain = Deno.env.get("PIPEDRIVE_DOMAIN") || "api";
     const PIPEDRIVE_DOMAIN = rawDomain

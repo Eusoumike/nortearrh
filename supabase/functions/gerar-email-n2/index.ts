@@ -32,12 +32,20 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authHeader = req.headers.get("Authorization") ?? "";
 
-    // Cliente com a sessão do usuário (para identificar quem gerou)
+    // Cliente com a sessão do usuário (para identificar quem gerou e checar o papel)
     const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData } = await supabaseUser.auth.getUser();
     const userId = userData.user?.id ?? null;
+    if (!userId) return json(401, { error: "Não autenticado" });
+
+    const { data: roles } = await supabaseUser
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isStaff = (roles ?? []).some((r) => ["admin", "manager", "agent"].includes(r.role));
+    if (!isStaff) return json(403, { error: "Apenas equipe Nortear pode gerar e-mail N2" });
 
     // Cliente admin (bypass RLS) para ler tudo do ticket
     const admin = createClient(supabaseUrl, serviceKey);
