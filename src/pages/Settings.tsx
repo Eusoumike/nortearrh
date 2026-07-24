@@ -407,6 +407,7 @@ export default function Settings() {
 
       {/* Backup completo (admin) */}
       {isAdmin && <BackupCard />}
+      {isAdmin && <BackupLogs />}
 
       {/* Pipedrive (admin) */}
       {isAdmin && (
