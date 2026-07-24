@@ -404,6 +404,9 @@ export default function Settings() {
       {/* Nortear Assist — soluções confirmadas */}
       <AssistSolutionsCard />
 
+      {/* Backup completo (admin) */}
+      {isAdmin && <BackupCard />}
+
       {/* Pipedrive (admin) */}
       {isAdmin && (
         <Card>
