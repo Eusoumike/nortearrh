@@ -62,14 +62,32 @@ export function BackupCard() {
       const errors: Record<string, string> = {};
 
       for (const table of TABLES) {
-        const { data: rows, error } = await supabase.from(table as any).select("*");
-        if (error) {
-          errors[table] = error.message;
+        const PAGE = 1000;
+        let from = 0;
+        const all: unknown[] = [];
+        let tableError: string | null = null;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data: rows, error } = await supabase
+            .from(table as any)
+            .select("*")
+            .range(from, from + PAGE - 1);
+          if (error) {
+            tableError = error.message;
+            break;
+          }
+          const batch = rows ?? [];
+          all.push(...batch);
+          if (batch.length < PAGE) break;
+          from += PAGE;
+        }
+        if (tableError) {
+          errors[table] = tableError;
           data[table] = [];
           counts[table] = 0;
         } else {
-          data[table] = rows ?? [];
-          counts[table] = rows?.length ?? 0;
+          data[table] = all;
+          counts[table] = all.length;
         }
       }
 
