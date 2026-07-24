@@ -36,6 +36,7 @@ import { ComissoesPadraoSection } from "@/components/settings/ComissoesPadraoSec
 import { ImplantacaoStagesManager } from "@/components/settings/ImplantacaoStagesManager";
 import { ImplantacaoTemplatesManager } from "@/components/settings/ImplantacaoTemplatesManager";
 import { AssistSolutionsCard } from "@/components/settings/AssistSolutionsCard";
+import { BackupCard } from "@/components/settings/BackupCard";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
